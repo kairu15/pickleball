@@ -1,0 +1,70 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - PickleSphere{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-lg" style="border-radius: 15px;">
+                <div class="card-header bg-info text-white" style="border-radius: 15px 15px 0 0;">
+                    <h5 class="mb-0"><i class="fas fa-images me-2"></i>{{ page_title }}</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        {% if gallery %}
+                        <div class="mb-3 text-center">
+                            <label class="form-label fw-bold d-block">Current Image</label>
+                            <img src="{{ gallery.image.url }}" alt="Current" class="img-thumbnail" style="max-height: 200px;">
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Upload Image</label>
+                            <input type="file" name="image" class="form-control" 
+                                   accept="image/*" {% if not gallery %}required{% endif %}>
+                            <small class="text-muted">Recommended size: 800x600 pixels or larger</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Title</label>
+                            <input type="text" name="title" class="form-control" 
+                                   value="{{ gallery.title|default:'' }}"
+                                   placeholder="e.g., Premium Court, Indoor Facility">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Alt Text (Accessibility)</label>
+                            <input type="text" name="alt_text" class="form-control" 
+                                   value="{{ gallery.alt_text|default:'' }}" required
+                                   placeholder="e.g., Indoor pickleball court with professional lighting">
+                            <small class="text-muted">Describe the image for accessibility and SEO</small>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Display Order</label>
+                            <input type="number" name="display_order" class="form-control" 
+                                   value="{{ gallery.display_order|default:'0' }}" min="0"
+                                   placeholder="Lower numbers appear first">
+                            <small class="text-muted">Items will be sorted by this order on the homepage</small>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'homepage_management' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-info">
+                                <i class="fas fa-save me-2"></i>Save Gallery Image
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,168 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+{% block title %}Website Branding CMS{% endblock %}
+{% block page_title %}<i class="fas fa-paint-brush me-2"></i>Website Branding{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+.color-input-group { display: flex; align-items: center; gap: 0.5rem; }
+.color-input-group input[type="color"] { width: 40px; height: 40px; border: 2px solid #dee2e6; border-radius: 8px; cursor: pointer; padding: 2px; flex-shrink: 0; }
+.color-input-group input[type="text"] { flex: 1; }
+.icon-picker-trigger-btn { cursor: pointer; transition: all 0.2s ease; border-radius: 8px; }
+.icon-picker-trigger-btn:hover { transform: scale(1.05); box-shadow: 0 4px 12px rgba(59,122,140,0.2); }
+.brand-preview-card {
+    border-radius: 16px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 2rem;
+    text-align: center;
+}
+.brand-preview-logo {
+    width: 80px;
+    height: 80px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    font-size: 2rem;
+}
+</style>
+{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="admin-card mb-4">
+            <div class="admin-card-header d-flex justify-content-between align-items-center">
+                <h5 class="admin-card-title mb-0"><i class="fas fa-images me-2"></i>Brand Assets</h5>
+                <a href="{% url 'super_admin_branding_restore' %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Restore all branding defaults?');">
+                    <i class="fas fa-undo me-1"></i>Restore Defaults
+                </a>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" id="brandingForm">
+                    {% csrf_token %}
+                    <div class="row g-4">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Brand Name</label>
+                            <input type="text" name="brand_name" class="form-control form-control-lg" value="{{ branding.brand_name }}" placeholder="PickleSphere" id="brandName">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Website Logo <small class="text-muted">(200x200, square)</small></label>
+                            <input type="file" name="website_logo" class="form-control" accept="image/*">
+                            {% if branding.website_logo %}
+                            <div class="mt-2 position-relative d-inline-block">
+                                <img src="{{ branding.website_logo.url }}" alt="Website Logo" style="max-height:80px;border-radius:8px;">
+                                <a href="{% url 'super_admin_branding_remove_logo' 'website_logo' %}" class="btn btn-sm btn-danger position-absolute top-0 end-0" style="transform:translate(50%,-50%);border-radius:50%;width:24px;height:24px;padding:0;display:flex;align-items:center;justify-content:center;"><i class="fas fa-times"></i></a>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Header Logo <small class="text-muted">(32x32)</small></label>
+                            <input type="file" name="header_logo" class="form-control" accept="image/*">
+                            {% if branding.header_logo %}
+                            <div class="mt-2 position-relative d-inline-block">
+                                <img src="{{ branding.header_logo.url }}" alt="Header Logo" style="max-height:50px;border-radius:8px;">
+                                <a href="{% url 'super_admin_branding_remove_logo' 'header_logo' %}" class="btn btn-sm btn-danger position-absolute top-0 end-0" style="transform:translate(50%,-50%);border-radius:50%;width:24px;height:24px;padding:0;"><i class="fas fa-times"></i></a>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Footer Logo <small class="text-muted">(48x48)</small></label>
+                            <input type="file" name="footer_logo" class="form-control" accept="image/*">
+                            {% if branding.footer_logo %}
+                            <div class="mt-2 position-relative d-inline-block">
+                                <img src="{{ branding.footer_logo.url }}" alt="Footer Logo" style="max-height:60px;border-radius:8px;">
+                                <a href="{% url 'super_admin_branding_remove_logo' 'footer_logo' %}" class="btn btn-sm btn-danger position-absolute top-0 end-0" style="transform:translate(50%,-50%);border-radius:50%;width:24px;height:24px;padding:0;"><i class="fas fa-times"></i></a>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Favicon <small class="text-muted">(32x32, .ico/.png)</small></label>
+                            <input type="file" name="favicon" class="form-control" accept="image/*,.ico">
+                            {% if branding.favicon %}
+                            <div class="mt-2 position-relative d-inline-block">
+                                <img src="{{ branding.favicon.url }}" alt="Favicon" style="max-height:40px;border-radius:4px;">
+                                <a href="{% url 'super_admin_branding_remove_logo' 'favicon' %}" class="btn btn-sm btn-danger position-absolute top-0 end-0" style="transform:translate(50%,-50%);border-radius:50%;width:24px;height:24px;padding:0;"><i class="fas fa-times"></i></a>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Login Page Logo <small class="text-muted">(200x200)</small></label>
+                            <input type="file" name="login_logo" class="form-control" accept="image/*">
+                            {% if branding.login_logo %}
+                            <div class="mt-2 position-relative d-inline-block">
+                                <img src="{{ branding.login_logo.url }}" alt="Login Logo" style="max-height:60px;border-radius:8px;">
+                                <a href="{% url 'super_admin_branding_remove_logo' 'login_logo' %}" class="btn btn-sm btn-danger position-absolute top-0 end-0" style="transform:translate(50%,-50%);border-radius:50%;width:24px;height:24px;padding:0;"><i class="fas fa-times"></i></a>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Loading Screen Logo</label>
+                            <input type="file" name="loading_logo" class="form-control" accept="image/*">
+                            {% if branding.loading_logo %}
+                            <div class="mt-2 position-relative d-inline-block">
+                                <img src="{{ branding.loading_logo.url }}" alt="Loading Logo" style="max-height:60px;border-radius:8px;">
+                                <a href="{% url 'super_admin_branding_remove_logo' 'loading_logo' %}" class="btn btn-sm btn-danger position-absolute top-0 end-0" style="transform:translate(50%,-50%);border-radius:50%;width:24px;height:24px;padding:0;"><i class="fas fa-times"></i></a>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Email Template Logo</label>
+                            <input type="file" name="email_logo" class="form-control" accept="image/*">
+                            {% if branding.email_logo %}
+                            <div class="mt-2 position-relative d-inline-block">
+                                <img src="{{ branding.email_logo.url }}" alt="Email Logo" style="max-height:60px;border-radius:8px;">
+                                <a href="{% url 'super_admin_branding_remove_logo' 'email_logo' %}" class="btn btn-sm btn-danger position-absolute top-0 end-0" style="transform:translate(50%,-50%);border-radius:50%;width:24px;height:24px;padding:0;"><i class="fas fa-times"></i></a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="mt-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-save me-2"></i>Save Branding</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="admin-card mb-4">
+            <div class="admin-card-header"><h5 class="admin-card-title"><i class="fas fa-eye me-2"></i>Brand Preview</h5></div>
+            <div class="card-body">
+                <div class="brand-preview-card">
+                    <div class="brand-preview-logo" id="brandPreviewLogo" style="background:#3B7A8C;color:#fff;">
+                        <i class="fas fa-table-tennis"></i>
+                    </div>
+                    <h5 id="brandPreviewName" style="color:#1a3a42;font-weight:700;">{{ branding.brand_name|default:'PickleSphere' }}</h5>
+                    <p style="color:#6c757d;font-size:0.85rem;margin-bottom:0;">Brand identity preview</p>
+                </div>
+                <hr>
+                <h6 class="fw-bold"><i class="fas fa-info-circle me-2"></i>Tips</h6>
+                <ul class="list-unstyled mb-0 small">
+                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i><strong>Website Logo</strong>: 200x200px square PNG with transparent bg</li>
+                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i><strong>Header Logo</strong>: 32x32px small logo for navbar</li>
+                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i><strong>Footer Logo</strong>: 48x48px logo for footer</li>
+                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i><strong>Favicon</strong>: 32x32px .ico or .png for browser tabs</li>
+                    <li class="mb-0"><i class="fas fa-info-circle text-info me-2"></i>Uploaded images are optimized automatically</li>
+                </ul>
+                <hr>
+                <div class="alert alert-info mb-0 py-2 small">
+                    <i class="fas fa-palette me-1"></i>Brand colors (primary, accent, etc.) are managed in <a href="{% url 'super_admin_global_design' %}" class="alert-link">Global Design Settings</a>.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var brandNameInput = document.getElementById('brandName');
+    var brandPreview = document.getElementById('brandPreviewName');
+    if (brandNameInput && brandPreview) {
+        brandNameInput.addEventListener('input', function() {
+            brandPreview.textContent = this.value || 'PickleSphere';
+        });
+    }
+});
+</script>
+{% endblock %}

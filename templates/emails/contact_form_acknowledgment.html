@@ -1,0 +1,19 @@
+{% extends 'emails/base_email.html' %}
+
+{% block email_content %}
+    <span class="notification-badge success">✉️ Message Received</span>
+    <h2>We Received Your Message</h2>
+    <p>Hi <strong>{{ name }}</strong>,</p>
+    <p>Thank you for reaching out to {{ site_name }}! We have received your message and our team will review it shortly.</p>
+    
+    <p style="font-size: 14px; color: #888;">We typically respond within 24-48 hours during business days.</p>
+    
+    {% if message_preview %}
+    <div style="background: #f8fbfa; border: 1px solid #e8f0ee; border-radius: 8px; padding: 16px; margin: 16px 0;">
+        <p style="font-size: 13px; color: #888; margin: 0 0 8px 0;"><strong>Your message preview:</strong></p>
+        <p style="font-size: 14px; color: #555; margin: 0; font-style: italic;">"{{ message_preview }}"</p>
+    </div>
+    {% endif %}
+    
+    <p>If you have an urgent concern, please visit the facility directly or call our support hotline.</p>
+{% endblock %}

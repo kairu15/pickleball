@@ -1,0 +1,114 @@
+{% extends 'base/dashboard_base.html' %}
+{% block title %}Courts Page CMS{% endblock %}
+{% block page_title %}<i class="fas fa-map-marker-alt me-2"></i>Courts Page CMS{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="admin-card mb-4">
+            <div class="admin-card-header"><h5 class="admin-card-title"><i class="fas fa-cog me-2"></i>Page Settings</h5></div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Hero Title</label>
+                            <input type="text" name="hero_title" class="form-control" value="{{ settings.hero_title }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Page Title (browser tab)</label>
+                            <input type="text" name="page_title" class="form-control" value="{{ settings.page_title }}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Hero Subtitle</label>
+                            <textarea name="hero_subtitle" class="form-control" rows="2">{{ settings.hero_subtitle }}</textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Meta Description</label>
+                            <textarea name="meta_description" class="form-control" rows="2">{{ settings.meta_description }}</textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Banner Image</label>
+                            <input type="file" name="banner_image" class="form-control">
+                            {% if settings.banner_image %}<small class="text-muted">Current: {{ settings.banner_image.url }}</small>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch mt-4">
+                                <input type="checkbox" name="show_search" class="form-check-input" id="showSearch" {% if settings.show_search %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold" for="showSearch">Show Search &amp; Filter Bar</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input type="checkbox" name="show_featured_first" class="form-check-input" id="showFeaturedFirst" {% if settings.show_featured_first %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold" for="showFeaturedFirst">Show Featured Courts First</label>
+                            </div>
+                        </div>
+                        <div class="col-12"><hr><h6 class="fw-bold">Featured Courts Section</h6></div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Featured Title</label>
+                            <input type="text" name="featured_title" class="form-control" value="{{ settings.featured_title }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Featured Subtitle</label>
+                            <input type="text" name="featured_subtitle" class="form-control" value="{{ settings.featured_subtitle }}">
+                        </div>
+                        <div class="col-12"><hr><h6 class="fw-bold">Promotional Banner</h6></div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Banner Title</label>
+                            <input type="text" name="promo_banner_title" class="form-control" value="{{ settings.promo_banner_title }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Banner Link</label>
+                            <input type="url" name="promo_banner_link" class="form-control" value="{{ settings.promo_banner_link }}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Banner Text</label>
+                            <textarea name="promo_banner_text" class="form-control" rows="2">{{ settings.promo_banner_text }}</textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Promo Banner Image</label>
+                            <input type="file" name="promo_banner_image" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch mt-4">
+                                <input type="checkbox" name="promo_banner_active" class="form-check-input" id="promoActive" {% if settings.promo_banner_active %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold" for="promoActive">Promo Banner Active</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input type="checkbox" name="is_active" class="form-check-input" id="isActive" {% if settings.is_active %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold" for="isActive">Settings Active</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Save Settings</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="admin-card mb-4">
+            <div class="admin-card-header d-flex justify-content-between align-items-center">
+                <h5 class="admin-card-title mb-0"><i class="fas fa-star me-2"></i>Featured Courts</h5>
+                <a href="{% url 'super_admin_courts_featured_add' %}" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i></a>
+            </div>
+            <div class="card-body p-0">
+                {% for fc in featured_courts %}
+                <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+                    <div>
+                        <strong>{{ fc.court.name }}</strong>
+                        {% if fc.label %}<span class="badge bg-warning ms-2">{{ fc.label }}</span>{% endif %}
+                        <small class="d-block text-muted">Order: {{ fc.display_order }}</small>
+                    </div>
+                    <div class="d-flex gap-1">
+                        <a href="{% url 'super_admin_courts_featured_edit' fc.id %}" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></a>
+                        <a href="{% url 'super_admin_courts_featured_delete' fc.id %}" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></a>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="p-4 text-center text-muted">No featured courts yet.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

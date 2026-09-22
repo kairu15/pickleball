@@ -1,0 +1,36 @@
+{% extends 'base/dashboard_base.html' %}
+{% block title %}Content Version History{% endblock %}
+{% block page_title %}<i class="fas fa-history me-2"></i>Content Version History{% endblock %}
+{% block content %}
+<div class="admin-card">
+    <div class="card-body">
+        <form method="get" class="row g-3 mb-4">
+            <div class="col-md-4">
+                <select name="content_type" class="form-select" onchange="this.form.submit()">
+                    <option value="">All Content Types</option>
+                    {% for k,v in content_type_choices %}<option value="{{ k }}" {% if selected_type == k %}selected{% endif %}>{{ v }}</option>{% endfor %}
+                </select>
+            </div>
+        </form>
+        <div class="table-responsive">
+            <table class="table admin-table">
+                <thead><tr><th>Content</th><th>Section</th><th>Version</th><th>Changed By</th><th>Published</th><th>Date</th></tr></thead>
+                <tbody>
+                    {% for v in versions %}
+                    <tr>
+                        <td><span class="badge bg-primary">{{ v.get_content_type_display }}</span></td>
+                        <td>{{ v.section }}</td>
+                        <td>v{{ v.version_number }}</td>
+                        <td>{{ v.changed_by.username|default:"System" }}</td>
+                        <td>{% if v.is_published %}<span class="badge bg-success">Published</span>{% else %}<span class="badge bg-warning">Draft</span>{% endif %}</td>
+                        <td><small>{{ v.created_at|date:"M d, Y h:i A" }}</small></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="text-center text-muted py-4">No version history yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

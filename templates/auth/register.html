@@ -1,0 +1,1693 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Create Account{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ===== OTP MODAL OVERRIDES ===== */
+.otp-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(6px);
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: overlayFadeIn 0.3s ease;
+}
+.otp-modal-overlay.active {
+    display: flex;
+}
+@keyframes overlayFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+.otp-modal-card {
+    background: white;
+    border-radius: 24px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.35);
+    padding: 48px 40px;
+    max-width: 460px;
+    width: 100%;
+    text-align: center;
+    position: relative;
+    animation: modalSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    max-height: 90vh;
+    overflow-y: auto;
+}
+@keyframes modalSlideUp {
+    from { opacity: 0; transform: translateY(30px) scale(0.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.otp-modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: #f0f0f0;
+    color: #6c757d;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-size: 14px;
+}
+.otp-modal-close:hover {
+    background: #e0e0e0;
+    color: #dc3545;
+}
+.otp-modal-icon {
+    width: 72px;
+    height: 72px;
+    background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    font-size: 28px;
+    color: white;
+}
+.otp-modal-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1a3a42;
+    margin: 0 0 6px;
+}
+.otp-modal-subtitle {
+    font-size: 14px;
+    color: #6c757d;
+    margin: 0 0 28px;
+    line-height: 1.5;
+}
+.otp-modal-subtitle strong {
+    color: #1a3a42;
+}
+.otp-modal-input-group {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+.otp-modal-input {
+    width: 48px;
+    height: 58px;
+    text-align: center;
+    font-size: 26px;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    border: 2px solid #dee2e6;
+    border-radius: 12px;
+    outline: none;
+    transition: all 0.2s ease;
+    color: #1a3a42;
+    background: #f8f9fa;
+}
+.otp-modal-input:focus {
+    border-color: #3B7A8C;
+    box-shadow: 0 0 0 4px rgba(59,122,140,0.15);
+    background: white;
+}
+.otp-modal-input.filled {
+    border-color: #28a745;
+    background: #f0fff4;
+}
+.otp-modal-input.error {
+    border-color: #dc3545;
+    background: #fff5f5;
+}
+.otp-modal-timer {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 18px;
+    background: #f8f9fa;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6c757d;
+    margin-bottom: 20px;
+}
+.otp-modal-timer.warning {
+    color: #dc3545;
+    background: #fff5f5;
+}
+.otp-modal-btn {
+    width: 100%;
+    padding: 13px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 10px;
+}
+.otp-modal-btn-primary {
+    background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);
+    color: white;
+}
+.otp-modal-btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(59,122,140,0.3);
+}
+.otp-modal-btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+.otp-modal-btn-secondary {
+    background: transparent;
+    color: #3B7A8C;
+    border: 2px solid #3B7A8C;
+}
+.otp-modal-btn-secondary:hover:not(:disabled) {
+    background: #f0f7fa;
+}
+.otp-modal-btn-secondary:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.otp-modal-alert {
+    padding: 11px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    margin-bottom: 14px;
+    display: none;
+}
+.otp-modal-alert.show {
+    display: block;
+}
+.otp-modal-alert.error {
+    background: #fff5f5;
+    color: #dc3545;
+    border: 1px solid #fecaca;
+}
+.otp-modal-alert.success {
+    background: #f0fff4;
+    color: #28a745;
+    border: 1px solid #bbf7d0;
+}
+.otp-modal-spinner {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 2.5px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: otpSpin 0.6s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+}
+@keyframes otpSpin { to { transform: rotate(360deg); } }
+@media (max-width: 480px) {
+    .otp-modal-card { padding: 32px 20px; }
+    .otp-modal-input { width: 42px; height: 50px; font-size: 22px; }
+    .otp-modal-input-group { gap: 8px; }
+    .otp-modal-title { font-size: 19px; }
+}
+
+/* ===== AUTH LAYOUT (same as login) ===== */
+.auth-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.auth-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background: linear-gradient(135deg, #0f172a 0%, #1a3a42 30%, #2D5F6E 60%, #1a3a42 100%);
+    background-size: 400% 400%;
+    animation: authGradient 15s ease infinite;
+}
+
+@keyframes authGradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.auth-bg::before,
+.auth-bg::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.08;
+}
+
+.auth-bg::before {
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, #3B7A8C 0%, transparent 70%);
+    top: -200px;
+    right: -200px;
+    animation: floatCircle 20s ease-in-out infinite;
+}
+
+.auth-bg::after {
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, #5A9AA8 0%, transparent 70%);
+    bottom: -150px;
+    left: -150px;
+    animation: floatCircle 25s ease-in-out infinite reverse;
+}
+
+@keyframes floatCircle {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(30px, -30px) scale(1.1); }
+    66% { transform: translate(-20px, 20px) scale(0.9); }
+}
+
+.auth-card {
+    background: rgba(255, 255, 255, 0.97);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5);
+    width: 100%;
+    max-width: 1060px;
+    display: flex;
+    overflow: hidden;
+    animation: authSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+}
+
+@keyframes authSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(40px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* ===== LEFT BRAND PANEL ===== */
+.auth-brand {
+    flex: 1;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.97) 0%, rgba(26, 58, 66, 0.95) 50%, rgba(45, 95, 110, 0.9) 100%),
+                url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800') center/cover;
+    padding: 60px 48px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.auth-brand::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 30% 50%, rgba(59, 122, 140, 0.15) 0%, transparent 50%);
+    animation: brandShimmer 8s ease-in-out infinite;
+}
+
+@keyframes brandShimmer {
+    0%, 100% { transform: translate(-10%, -10%); }
+    50% { transform: translate(10%, 10%); }
+}
+
+.auth-brand-content {
+    position: relative;
+    z-index: 1;
+}
+
+.auth-brand-logo {
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 28px;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.auth-brand-logo:hover {
+    transform: scale(1.05) rotate(-3deg);
+}
+
+.auth-brand-logo i {
+    font-size: 2.2rem;
+    color: white;
+}
+
+.auth-brand h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 12px;
+    line-height: 1.2;
+}
+
+.auth-brand p {
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 0.95rem;
+    line-height: 1.7;
+    margin-bottom: 32px;
+    max-width: 360px;
+}
+
+.auth-benefits {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.auth-benefit-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.9rem;
+    animation: benefitFadeIn 0.5s ease forwards;
+    opacity: 0;
+}
+
+.auth-benefit-item:nth-child(1) { animation-delay: 0.3s; }
+.auth-benefit-item:nth-child(2) { animation-delay: 0.4s; }
+.auth-benefit-item:nth-child(3) { animation-delay: 0.5s; }
+.auth-benefit-item:nth-child(4) { animation-delay: 0.6s; }
+.auth-benefit-item:nth-child(5) { animation-delay: 0.7s; }
+
+@keyframes benefitFadeIn {
+    to { opacity: 1; transform: translateX(0); }
+    from { opacity: 0; transform: translateX(-10px); }
+}
+
+.auth-benefit-icon {
+    width: 36px;
+    height: 36px;
+    background: rgba(90, 154, 168, 0.25);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.auth-benefit-icon i {
+    font-size: 0.85rem;
+    color: #5A9AA8;
+}
+
+/* ===== RIGHT FORM PANEL ===== */
+.auth-form-panel {
+    flex: 1;
+    padding: 36px 48px 32px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-width: 540px;
+    overflow-y: auto;
+    max-height: 100vh;
+}
+
+.auth-form-header {
+    margin-bottom: 24px;
+}
+
+.auth-mobile-logo {
+    display: none;
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.auth-mobile-logo .logo-icon {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #3B7A8C, #1a3a42);
+    border-radius: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.auth-mobile-logo .logo-icon i {
+    font-size: 1.6rem;
+    color: white;
+}
+
+.auth-mobile-logo h2 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #1a1a2e;
+}
+
+.auth-form-header h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 6px;
+}
+
+.auth-form-header p {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* ===== FORM ELEMENTS ===== */
+.auth-input-group {
+    position: relative;
+    margin-bottom: 16px;
+}
+
+.auth-input-group .input-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #adb5bd;
+    font-size: 0.9rem;
+    z-index: 10;
+    pointer-events: none;
+    transition: color 0.2s ease;
+}
+
+.auth-input-group:focus-within .input-icon {
+    color: #3B7A8C;
+}
+
+.auth-input {
+    height: 46px;
+    padding-left: 42px !important;
+    padding-right: 14px !important;
+    border: 2px solid #e9ecef !important;
+    border-radius: 11px !important;
+    font-size: 0.875rem !important;
+    background: #f8f9fa !important;
+    transition: all 0.25s ease !important;
+    width: 100%;
+}
+
+.auth-input:focus {
+    border-color: #3B7A8C !important;
+    background: white !important;
+    box-shadow: 0 0 0 4px rgba(59, 122, 140, 0.1) !important;
+    transform: translateY(-1px);
+}
+
+.auth-input.is-invalid {
+    border-color: #dc3545 !important;
+    background: #fff5f5 !important;
+}
+
+.auth-input.is-valid {
+    border-color: #28a745 !important;
+    background: #f0fff4 !important;
+}
+
+.password-wrapper {
+    position: relative;
+}
+
+.password-wrapper .auth-input {
+    padding-right: 46px !important;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 38px;
+    height: 38px;
+    border: none;
+    background: transparent;
+    border-radius: 9px;
+    color: #adb5bd;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.password-toggle:hover {
+    background: #f0f0f0;
+    color: #3B7A8C;
+}
+
+.password-toggle:focus {
+    outline: none;
+}
+
+/* ===== VALIDATION ===== */
+.auth-field-error {
+    font-size: 0.75rem;
+    color: #dc3545;
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    animation: errorSlideIn 0.2s ease;
+}
+
+@keyframes errorSlideIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.auth-field-error i {
+    font-size: 0.65rem;
+}
+
+.auth-field-success {
+    font-size: 0.75rem;
+    color: #16a34a;
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ===== ALERTS ===== */
+.auth-alert {
+    padding: 12px 14px;
+    border-radius: 11px;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    animation: alertSlideIn 0.3s ease;
+}
+
+@keyframes alertSlideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.auth-alert i { font-size: 1rem; flex-shrink: 0; }
+.auth-alert-error { background: #fff5f5; border: 1px solid #fecaca; color: #dc3545; }
+.auth-alert-success { background: #f0fff4; border: 1px solid #bbf7d0; color: #16a34a; }
+
+/* ===== PASSWORD STRENGTH ===== */
+.password-strength {
+    margin: 12px 0 8px;
+    padding: 14px;
+    background: #f8f9fa;
+    border-radius: 11px;
+    border: 1px solid #e9ecef;
+    width: 100%;
+    clear: both;
+}
+
+.strength-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.strength-bar {
+    flex: 1;
+    height: 5px;
+    border-radius: 3px;
+    background: #e9ecef;
+    overflow: hidden;
+}
+
+.strength-bar-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 3px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.strength-bar-fill.weak { width: 20%; background: #dc3545; }
+.strength-bar-fill.fair { width: 40%; background: #ff9800; }
+.strength-bar-fill.good { width: 65%; background: #e8b308; }
+.strength-bar-fill.strong { width: 100%; background: #28a745; }
+
+.strength-text {
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-width: 130px;
+}
+
+.strength-text.weak { color: #dc3545; }
+.strength-text.fair { color: #ff9800; }
+.strength-text.good { color: #856404; }
+.strength-text.strong { color: #16a34a; }
+
+.password-requirements {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 20px;
+    margin-top: 0;
+}
+
+.password-req {
+    font-size: 0.75rem;
+    color: #adb5bd;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.25s ease;
+    padding: 2px 0;
+}
+
+.password-req.met {
+    color: #16a34a;
+}
+
+.password-req i {
+    font-size: 0.65rem;
+    width: 14px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+@media (max-width: 420px) {
+    .password-requirements {
+        grid-template-columns: 1fr;
+    }
+    .strength-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+    }
+    .strength-text {
+        white-space: normal;
+        min-width: auto;
+    }
+}
+
+/* ===== PROFILE PICTURE UPLOAD ===== */
+.auth-photo-upload {
+    text-align: center;
+    margin-bottom: 16px;
+}
+
+.auth-photo-preview {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #f0f4f8;
+    border: 3px dashed #d1d5db;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 10px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.auth-photo-preview:hover {
+    border-color: #3B7A8C;
+    background: #f0f7fa;
+}
+
+.auth-photo-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.auth-photo-preview i {
+    font-size: 1.5rem;
+    color: #adb5bd;
+}
+
+.auth-photo-input {
+    display: none;
+}
+
+.auth-photo-label {
+    font-size: 0.8rem;
+    color: #3B7A8C;
+    cursor: pointer;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.auth-photo-label:hover {
+    color: #1a3a42;
+}
+
+/* ===== BUTTON ===== */
+.auth-btn {
+    width: 100%;
+    height: 50px;
+    border: none;
+    border-radius: 11px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.auth-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.auth-btn:hover::before { left: 100%; }
+
+.auth-btn-primary {
+    background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);
+    color: white;
+}
+
+.auth-btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(59, 122, 140, 0.35);
+}
+
+.auth-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.auth-btn .spinner {
+    width: 20px;
+    height: 20px;
+    border: 2.5px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: authSpin 0.6s linear infinite;
+    display: none;
+}
+
+.auth-btn.loading .spinner { display: inline-block; }
+.auth-btn.loading .btn-text { display: none; }
+.auth-btn.loading .btn-icon { display: none; }
+
+@keyframes authSpin { to { transform: rotate(360deg); } }
+
+/* ===== TERMS CHECKBOX ===== */
+.auth-checkbox-group {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 16px 0;
+}
+
+.auth-checkbox {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px !important;
+    border: 2px solid #d1d5db !important;
+    cursor: pointer;
+    margin-top: 2px !important;
+    flex-shrink: 0;
+}
+
+.auth-checkbox:checked {
+    background-color: #3B7A8C !important;
+    border-color: #3B7A8C !important;
+}
+
+.auth-checkbox-label {
+    font-size: 0.82rem;
+    color: #6c757d;
+    cursor: pointer;
+    user-select: none;
+    line-height: 1.5;
+}
+
+.auth-checkbox-label a {
+    color: #3B7A8C;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.auth-checkbox-label a:hover { text-decoration: underline; }
+
+/* ===== FOOTER ===== */
+.auth-footer {
+    text-align: center;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.auth-footer p {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin: 0;
+}
+
+.auth-footer a {
+    color: #3B7A8C;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.auth-footer a:hover {
+    color: #1a3a42;
+    text-decoration: underline;
+}
+
+.auth-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #6c757d;
+    text-decoration: none;
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+    transition: all 0.2s ease;
+}
+
+.auth-back-link:hover {
+    color: #3B7A8C;
+    transform: translateX(-4px);
+}
+
+/* Two-column layout for form fields */
+.auth-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+@media (max-width: 575.98px) {
+    .auth-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 991.98px) {
+    .auth-brand { display: none !important; }
+    .auth-card { max-width: 520px; }
+    .auth-form-panel { padding: 32px 28px 24px; max-width: 100%; }
+    .auth-mobile-logo { display: block; }
+    .auth-form-header { text-align: center; }
+}
+
+@media (max-width: 575.98px) {
+    .auth-page { padding: 12px; }
+    .auth-card { border-radius: 16px; }
+    .auth-form-panel { padding: 24px 16px 20px; }
+    .auth-form-header h3 { font-size: 1.25rem; }
+    .auth-input { height: 44px; font-size: 0.85rem !important; }
+    .auth-btn { height: 46px; font-size: 0.9rem; }
+}
+
+/* Scrollbar styling for form panel */
+.auth-form-panel::-webkit-scrollbar { width: 4px; }
+.auth-form-panel::-webkit-scrollbar-track { background: transparent; }
+.auth-form-panel::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="auth-page">
+    <div class="auth-bg"></div>
+
+    <!-- Floating Toast Notifications -->
+    <div class="floating-toast-container" id="toastContainer">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="floating-toast {{ message.tags }}" role="alert" data-auto-dismiss="5000">
+                    <div class="floating-toast-icon">
+                        {% if message.tags == 'success' %}
+                            <i class="fas fa-check-circle"></i>
+                        {% elif message.tags == 'error' %}
+                            <i class="fas fa-exclamation-circle"></i>
+                        {% elif message.tags == 'warning' %}
+                            <i class="fas fa-exclamation-triangle"></i>
+                        {% else %}
+                            <i class="fas fa-info-circle"></i>
+                        {% endif %}
+                    </div>
+                    <div class="floating-toast-content">{{ message }}</div>
+                    <button type="button" class="floating-toast-close" onclick="dismissToast(this)">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <div class="auth-card" id="authCard">
+        <!-- Left Brand Panel -->
+        <div class="auth-brand">
+            <div class="auth-brand-content">
+                <div class="auth-brand-logo">
+                    <i class="fas fa-user-plus"></i>
+                </div>
+                <h1>Join the Community!</h1>
+                <p>Create your account and unlock exclusive member benefits, priority court booking, and access to tournaments.</p>
+
+                <div class="auth-benefits">
+                    <div class="auth-benefit-item">
+                        <div class="auth-benefit-icon"><i class="fas fa-calendar-check"></i></div>
+                        <span>Priority court reservations</span>
+                    </div>
+                    <div class="auth-benefit-item">
+                        <div class="auth-benefit-icon"><i class="fas fa-trophy"></i></div>
+                        <span>Tournament discounts & access</span>
+                    </div>
+                    <div class="auth-benefit-item">
+                        <div class="auth-benefit-icon"><i class="fas fa-chart-line"></i></div>
+                        <span>Track match history & stats</span>
+                    </div>
+                    <div class="auth-benefit-item">
+                        <div class="auth-benefit-icon"><i class="fas fa-users"></i></div>
+                        <span>Connect with other players</span>
+                    </div>
+                    <div class="auth-benefit-item">
+                        <div class="auth-benefit-icon"><i class="fas fa-percent"></i></div>
+                        <span>Exclusive member discounts</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Form Panel -->
+        <div class="auth-form-panel">
+            <!-- Mobile Logo -->
+            <div class="auth-mobile-logo">
+                <div class="logo-icon"><i class="fas fa-table-tennis"></i></div>
+                <h2>PickleSphere</h2>
+            </div>
+
+            <!-- Back Link -->
+            <a href="{% url 'home' %}" class="auth-back-link">
+                <i class="fas fa-arrow-left"></i>
+                <span>Back to Home</span>
+            </a>
+
+            <!-- Header -->
+            <div class="auth-form-header">
+                <h3>Create Your Account</h3>
+                <p>Join us for exclusive benefits and faster reservations</p>
+            </div>
+
+            <!-- Non-field errors -->
+            {% if form.non_field_errors %}
+            <div class="auth-alert auth-alert-error" role="alert">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>{{ form.non_field_errors.0 }}</span>
+            </div>
+            {% endif %}
+
+            <!-- Registration Form -->
+            <form method="post" action="{% url 'register' %}" enctype="multipart/form-data" id="registerForm" novalidate>
+                {% csrf_token %}
+
+                <!-- Profile Picture -->
+                <div class="auth-photo-upload">
+                    <div class="auth-photo-preview" id="photoPreview" onclick="document.getElementById('id_profile_picture').click()">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <label for="id_profile_picture" class="auth-photo-label">
+                        <i class="fas fa-camera me-1"></i> Add Profile Photo
+                    </label>
+                    <input type="file" name="profile_picture" class="auth-photo-input" id="id_profile_picture" accept="image/*">
+                </div>
+
+                <!-- Name Row -->
+                <div class="auth-row">
+                    <div class="auth-input-group">
+                        <i class="fas fa-user input-icon"></i>
+                        <input type="text" name="first_name" class="auth-input" placeholder="First Name" id="id_first_name" autocomplete="given-name" value="{{ form.first_name.value|default:'' }}" required>
+                        {% if form.first_name.errors %}<div class="auth-field-error"><i class="fas fa-exclamation-circle"></i>{{ form.first_name.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="auth-input-group">
+                        <i class="fas fa-user input-icon"></i>
+                        <input type="text" name="middle_name" class="auth-input" placeholder="Middle Name (optional)" id="id_middle_name" autocomplete="additional-name" value="{{ form.middle_name.value|default:'' }}">
+                    </div>
+                </div>
+
+                <div class="auth-row">
+                    <div class="auth-input-group">
+                        <i class="fas fa-user input-icon"></i>
+                        <input type="text" name="last_name" class="auth-input" placeholder="Last Name" id="id_last_name" autocomplete="family-name" value="{{ form.last_name.value|default:'' }}" required>
+                        {% if form.last_name.errors %}<div class="auth-field-error"><i class="fas fa-exclamation-circle"></i>{{ form.last_name.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="auth-input-group">
+                        <i class="fas fa-at input-icon"></i>
+                        <input type="text" name="username" class="auth-input" placeholder="Username" id="id_username" autocomplete="username" value="{{ form.username.value|default:'' }}" required>
+                        <div class="auth-field-error" id="usernameError" style="display:none;"></div>
+                        {% if form.username.errors %}<div class="auth-field-error"><i class="fas fa-exclamation-circle"></i>{{ form.username.errors.0 }}</div>{% endif %}
+                    </div>
+                </div>
+
+                <!-- Email & Phone -->
+                <div class="auth-row">
+                    <div class="auth-input-group">
+                        <i class="fas fa-envelope input-icon"></i>
+                        <input type="email" name="email" class="auth-input" placeholder="Email Address" id="id_email" autocomplete="email" value="{{ form.email.value|default:'' }}" required>
+                        <div class="auth-field-error" id="emailError" style="display:none;"></div>
+                        {% if form.email.errors %}<div class="auth-field-error"><i class="fas fa-exclamation-circle"></i>{{ form.email.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="auth-input-group">
+                        <i class="fas fa-phone input-icon"></i>
+                        <input type="tel" name="phone_number" class="auth-input" placeholder="Phone Number (optional)" id="id_phone_number" autocomplete="tel" value="{{ form.phone_number.value|default:'' }}">
+                    </div>
+                </div>
+
+                <!-- Password Fields -->
+                <div class="auth-row">
+                    <div class="auth-input-group">
+                        <i class="fas fa-lock input-icon"></i>
+                        <div class="password-wrapper">
+                            <input type="password" name="password1" class="auth-input" placeholder="Password" id="id_password1" autocomplete="new-password" required>
+                            <button type="button" class="password-toggle" onclick="togglePasswordVisibility('id_password1', this)" tabindex="-1" aria-label="Toggle password visibility">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        {% if form.password1.errors %}<div class="auth-field-error"><i class="fas fa-exclamation-circle"></i>{{ form.password1.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="auth-input-group">
+                        <i class="fas fa-lock input-icon"></i>
+                        <div class="password-wrapper">
+                            <input type="password" name="password2" class="auth-input" placeholder="Confirm Password" id="id_password2" autocomplete="new-password" required>
+                            <button type="button" class="password-toggle" onclick="togglePasswordVisibility('id_password2', this)" tabindex="-1" aria-label="Toggle password visibility">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <div class="auth-field-error" id="passwordMatchError" style="display:none;"><i class="fas fa-exclamation-circle"></i> Passwords do not match</div>
+                        <div class="auth-field-success" id="passwordMatchSuccess" style="display:none;"><i class="fas fa-check-circle"></i> Passwords match</div>
+                        {% if form.password2.errors %}<div class="auth-field-error"><i class="fas fa-exclamation-circle"></i>{{ form.password2.errors.0 }}</div>{% endif %}
+                    </div>
+                </div>
+
+                <!-- Password Strength Section (full width below password fields) -->
+                <div class="password-strength" id="passwordStrength" style="display:none;">
+                    <div class="strength-header">
+                        <span class="strength-text" id="strengthText"></span>
+                        <div class="strength-bar"><div class="strength-bar-fill" id="strengthFill"></div></div>
+                    </div>
+                    <div class="password-requirements" id="passwordRequirements">
+                        <span class="password-req" id="reqLength"><i class="far fa-circle"></i> 8+ characters</span>
+                        <span class="password-req" id="reqUpper"><i class="far fa-circle"></i> Uppercase letter</span>
+                        <span class="password-req" id="reqLower"><i class="far fa-circle"></i> Lowercase letter</span>
+                        <span class="password-req" id="reqNumber"><i class="far fa-circle"></i> Number</span>
+                        <span class="password-req" id="reqSpecial"><i class="far fa-circle"></i> Special character</span>
+                    </div>
+                </div>
+
+                <!-- Terms -->
+                <div class="auth-checkbox-group">
+                    <input type="checkbox" name="agree_terms" class="auth-checkbox" id="id_agree_terms" required>
+                    <label for="id_agree_terms" class="auth-checkbox-label">
+                        I agree to the <a href="{% url 'terms_of_service' %}" target="_blank">Terms of Service</a> and <a href="{% url 'privacy_policy' %}" target="_blank">Privacy Policy</a>
+                    </label>
+                </div>
+                {% if form.agree_terms.errors %}
+                <div class="auth-field-error" style="margin-top:-8px;margin-bottom:12px;"><i class="fas fa-exclamation-circle"></i> You must agree to the terms</div>
+                {% endif %}
+
+                <!-- Submit -->
+                <button type="submit" class="auth-btn auth-btn-primary" id="registerBtn">
+                    <i class="fas fa-user-plus btn-icon"></i>
+                    <span class="btn-text">Create Account</span>
+                    <div class="spinner"></div>
+                </button>
+            </form>
+
+            <!-- Footer -->
+            <div class="auth-footer">
+                <p>Already have an account? <a href="{% url 'login' %}">Sign in</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== OTP MODAL ===== -->
+<div class="otp-modal-overlay" id="otpModalOverlay">
+    <div class="otp-modal-card">
+        <button type="button" class="otp-modal-close" id="otpModalClose" aria-label="Close">
+            <i class="fas fa-times"></i>
+        </button>
+        <div class="otp-modal-icon">
+            <i class="fas fa-envelope-open-text"></i>
+        </div>
+        <h3 class="otp-modal-title">Verify Your Email</h3>
+        <p class="otp-modal-subtitle" id="otpModalSubtitle">
+            We've sent a 6-digit verification code to<br>
+            <strong id="otpModalEmail"></strong>
+        </p>
+
+        <div id="otpModalAlert" class="otp-modal-alert"></div>            <form id="otpModalForm" action="{% url 'verify_otp' %}" novalidate>
+            {% csrf_token %}
+            <input type="hidden" name="email" id="otpModalEmailInput" value="">
+            <input type="hidden" name="purpose" id="otpModalPurposeInput" value="registration">
+            
+            <div class="otp-modal-input-group" id="otpInputGroup">
+                {% for i in "123456" %}
+                <input type="text"
+                       class="otp-modal-input"
+                       id="otp_m_{{ forloop.counter0 }}"
+                       maxlength="1"
+                       inputmode="numeric"
+                       pattern="[0-9]"
+                       autocomplete="one-time-code"
+                       required>
+                {% endfor %}
+            </div>
+
+            <div id="otpModalTimer" class="otp-modal-timer">
+                <i class="fas fa-clock"></i>
+                <span id="otpModalTimerDisplay">{{ otp_expiry_minutes }}:00</span>
+            </div>
+
+            <button type="submit" id="otpVerifyBtn" class="otp-modal-btn otp-modal-btn-primary">
+                <i class="fas fa-check-circle"></i> Verify Code
+            </button>
+            
+            <button type="button" id="otpResendBtn" class="otp-modal-btn otp-modal-btn-secondary" disabled>
+                <i class="fas fa-redo"></i> Resend Code
+            </button>
+        </form>
+
+        <div class="otp-modal-alert" id="otpModalSuccessBanner" style="display:none; margin-top: 16px; padding: 16px; border-radius: 12px; background: #f0fff4; border: 1px solid #bbf7d0; text-align: center;">
+            <i class="fas fa-check-circle" style="color: #28a745; font-size: 32px; display: block; margin-bottom: 8px;"></i>
+            <h5 style="color: #1a3a42; font-weight: 700; margin: 0 0 4px;">Email Verified!</h5>
+            <p style="color: #6c757d; font-size: 14px; margin: 0;">Redirecting you to sign in...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    'use strict';
+
+    // ===== PASSWORD STRENGTH METER =====
+    const pw1 = document.getElementById('id_password1');
+    const strengthSection = document.getElementById('passwordStrength');
+    const strengthFill = document.getElementById('strengthFill');
+    const strengthText = document.getElementById('strengthText');
+
+    if (pw1) {
+        pw1.addEventListener('input', function() {
+            const val = this.value;
+            if (val.length === 0) {
+                strengthSection.style.display = 'none';
+                return;
+            }
+            strengthSection.style.display = 'block';
+
+            const hasLength = val.length >= 8;
+            const hasUpper = /[A-Z]/.test(val);
+            const hasLower = /[a-z]/.test(val);
+            const hasNumber = /[0-9]/.test(val);
+            const hasSpecial = /[!@#$%^&*(),.?":{}|<>_\-+=~`[\]\\';/]/.test(val);
+
+            updateReq('reqLength', hasLength);
+            updateReq('reqUpper', hasUpper);
+            updateReq('reqLower', hasLower);
+            updateReq('reqNumber', hasNumber);
+            updateReq('reqSpecial', hasSpecial);
+
+            const metCount = [hasLength, hasUpper, hasLower, hasNumber, hasSpecial].filter(Boolean).length;
+            let level, cls;
+            if (metCount <= 1) { level = 'Weak'; cls = 'weak'; }
+            else if (metCount === 2) { level = 'Fair'; cls = 'fair'; }
+            else if (metCount <= 4) { level = 'Good'; cls = 'good'; }
+            else { level = 'Strong'; cls = 'strong'; }
+
+            strengthFill.className = 'strength-bar-fill ' + cls;
+            strengthText.textContent = 'Password strength: ' + level;
+            strengthText.className = 'strength-text ' + cls;
+        });
+    }
+
+    function updateReq(id, met) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.classList.toggle('met', met);
+        el.querySelector('i').className = met ? 'fas fa-check-circle' : 'far fa-circle';
+    }
+
+    // ===== CONFIRM PASSWORD MATCH =====
+    const pw2 = document.getElementById('id_password2');
+    const pwMatchError = document.getElementById('passwordMatchError');
+    const pwMatchSuccess = document.getElementById('passwordMatchSuccess');
+
+    function checkPasswordMatch() {
+        if (!pw1 || !pw2) return;
+        if (pw2.value.length === 0) {
+            pwMatchError.style.display = 'none';
+            pwMatchSuccess.style.display = 'none';
+            return;
+        }
+        if (pw1.value === pw2.value) {
+            pwMatchError.style.display = 'none';
+            pwMatchSuccess.style.display = 'block';
+            pw2.classList.remove('is-invalid');
+            pw2.classList.add('is-valid');
+        } else {
+            pwMatchError.style.display = 'block';
+            pwMatchSuccess.style.display = 'none';
+            pw2.classList.remove('is-valid');
+            pw2.classList.add('is-invalid');
+        }
+    }
+
+    if (pw1) pw1.addEventListener('input', checkPasswordMatch);
+    if (pw2) pw2.addEventListener('input', checkPasswordMatch);
+
+    // ===== PROFILE PICTURE PREVIEW =====
+    const photoInput = document.getElementById('id_profile_picture');
+    const photoPreview = document.getElementById('photoPreview');
+
+    if (photoInput) {
+        photoInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    photoPreview.innerHTML = '<img src="' + e.target.result + '" alt="Profile">';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                photoPreview.innerHTML = '<i class="fas fa-user"></i>';
+            }
+        });
+    }
+
+})();
+
+// ===== OTP MODAL GLOBALS =====
+var otpTimerInterval = null;
+var otpTotalSeconds = 0;
+var otpInitialExpiryMinutes = {{ otp_expiry_minutes|default:"10" }};
+
+// ===== AJAX REGISTRATION FORM SUBMISSION =====
+(function() {
+    const form = document.getElementById('registerForm');
+    const btn = document.getElementById('registerBtn');
+    if (!form) return;
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        // Basic client-side validation
+        const terms = document.getElementById('id_agree_terms');
+        if (terms && !terms.checked) {
+            showFormAlert('You must agree to the Terms of Service and Privacy Policy.');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.classList.add('loading');
+
+        var formData = new FormData(form);
+        formData.append('X-Requested-With', 'XMLHttpRequest');
+
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(function(response) {
+            return response.json().then(function(data) {
+                return { status: response.status, data: data };
+            });
+        })
+        .then(function(result) {
+            btn.disabled = false;
+            btn.classList.remove('loading');
+
+            if (result.data.success) {
+                // Registration successful - show OTP modal
+                openOtpModal(result.data.email, otpInitialExpiryMinutes);
+            } else if (result.data.errors) {
+                // Show validation errors inline
+                var errs = result.data.errors;
+                for (var field in errs) {
+                    var errEl = document.getElementById(field + 'Error');
+                    if (errEl) {
+                        errEl.textContent = errs[field];
+                        errEl.style.display = 'flex';
+                    }
+                }
+                if (result.data.errors.non_field_errors) {
+                    showFormAlert(result.data.errors.non_field_errors);
+                }
+            } else {
+                showFormAlert(result.data.error || 'Registration failed. Please try again.');
+            }
+        })
+        .catch(function(err) {
+            btn.disabled = false;
+            btn.classList.remove('loading');
+            showFormAlert('Network error. Please try again.');
+            console.error('Registration error:', err);
+        });
+    });
+})();
+
+function showFormAlert(message) {
+    var container = document.getElementById('toastContainer');
+    if (!container) return;
+    var toast = document.createElement('div');
+    toast.className = 'floating-toast error';
+    toast.innerHTML = '<div class="floating-toast-icon"><i class="fas fa-exclamation-circle"></i></div><div class="floating-toast-content">' + message + '</div><button type="button" class="floating-toast-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>';
+    container.appendChild(toast);
+    setTimeout(function() { toast.remove(); }, 5000);
+}
+
+// ===== OTP MODAL CONTROLS =====
+function openOtpModal(email, expiryMinutes) {
+    var overlay = document.getElementById('otpModalOverlay');
+    var emailDisplay = document.getElementById('otpModalEmail');
+    var emailInput = document.getElementById('otpModalEmailInput');
+
+    if (emailDisplay) emailDisplay.textContent = email;
+    if (emailInput) emailInput.value = email;
+
+    // Reset inputs
+    var inputs = document.querySelectorAll('.otp-modal-input');
+    inputs.forEach(function(inp) {
+        inp.value = '';
+        inp.classList.remove('filled', 'error');
+    });
+
+    // Reset alert
+    var alert = document.getElementById('otpModalAlert');
+    if (alert) { alert.className = 'otp-modal-alert'; alert.textContent = ''; }
+
+    // Start timer
+    startOtpTimer(expiryMinutes);
+
+    // Enable verify, disable resend
+    document.getElementById('otpVerifyBtn').disabled = false;
+    document.getElementById('otpVerifyBtn').innerHTML = '<i class="fas fa-check-circle"></i> Verify Code';
+    var resendBtn = document.getElementById('otpResendBtn');
+    resendBtn.disabled = true;
+    resendBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Code';
+
+    // Show modal
+    overlay.classList.add('active');
+
+    // Focus first input after animation
+    setTimeout(function() {
+        if (inputs.length > 0) inputs[0].focus();
+    }, 400);
+}
+
+function closeOtpModal() {
+    document.getElementById('otpModalOverlay').classList.remove('active');
+    if (otpTimerInterval) {
+        clearInterval(otpTimerInterval);
+        otpTimerInterval = null;
+    }
+}
+
+// ===== OTP MODAL CLOSE =====
+document.getElementById('otpModalClose').addEventListener('click', closeOtpModal);
+document.getElementById('otpModalOverlay').addEventListener('click', function(e) {
+    if (e.target === this) closeOtpModal();
+});
+
+// ===== OTP INPUT AUTO-ADVANCE =====
+(function() {
+    var inputs = document.querySelectorAll('.otp-modal-input');
+    inputs.forEach(function(input, index) {
+        input.addEventListener('input', function(e) {
+            this.value = this.value.replace(/[^0-9]/g, '');
+            if (this.value.length === 1) {
+                this.classList.add('filled');
+                this.classList.remove('error');
+                if (index < inputs.length - 1) {
+                    inputs[index + 1].focus();
+                }
+            } else {
+                this.classList.remove('filled');
+            }
+        });
+
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Backspace' && this.value === '' && index > 0) {
+                inputs[index - 1].focus();
+                inputs[index - 1].classList.remove('filled');
+            }
+            if (e.key === 'Enter') {
+                document.getElementById('otpVerifyBtn').click();
+            }
+        });
+
+        input.addEventListener('paste', function(e) {
+            e.preventDefault();
+            var paste = (e.clipboardData || window.clipboardData).getData('text');
+            var digits = paste.replace(/[^0-9]/g, '').split('');
+            digits.forEach(function(digit, i) {
+                if (i < inputs.length) {
+                    inputs[i].value = digit;
+                    inputs[i].classList.add('filled');
+                }
+            });
+            var nextEmpty = Array.from(inputs).find(function(i) { return i.value === ''; });
+            if (nextEmpty) nextEmpty.focus();
+            else inputs[inputs.length - 1].focus();
+        });
+    });
+})();
+
+// ===== OTP TIMER =====
+function startOtpTimer(expiryMinutes) {
+    if (otpTimerInterval) clearInterval(otpTimerInterval);
+
+    otpTotalSeconds = expiryMinutes * 60;
+    var display = document.getElementById('otpModalTimerDisplay');
+    var timer = document.getElementById('otpModalTimer');
+
+    if (!display) return;
+
+    otpTimerInterval = setInterval(function() {
+        var minutes = Math.floor(otpTotalSeconds / 60);
+        var seconds = otpTotalSeconds % 60;
+        display.textContent = minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+
+        if (otpTotalSeconds <= 60) {
+            timer.classList.add('warning');
+        }
+
+        if (otpTotalSeconds <= 0) {
+            clearInterval(otpTimerInterval);
+            otpTimerInterval = null;
+            display.textContent = 'Expired';
+            document.getElementById('otpVerifyBtn').disabled = true;
+            document.getElementById('otpResendBtn').disabled = false;
+            showOtpAlert('OTP has expired. Please request a new one.', 'error');
+        }
+        otpTotalSeconds--;
+    }, 1000);
+}
+
+// ===== OTP VERIFY SUBMIT =====
+(function() {
+    var form = document.getElementById('otpModalForm');
+    if (!form) return;
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        var inputs = document.querySelectorAll('.otp-modal-input');
+        var otp = '';
+        inputs.forEach(function(i) { otp += i.value; });
+
+        if (otp.length !== 6) {
+            showOtpAlert('Please enter all 6 digits.', 'error');
+            return;
+        }
+
+        var btn = document.getElementById('otpVerifyBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="otp-modal-spinner"></span>Verifying...';
+
+        var formData = new FormData(form);
+        formData.append('otp', otp);
+
+        fetch('{% url "verify_otp" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(function(response) {
+            return response.json().then(function(data) {
+                return { status: response.status, data: data };
+            });
+        })
+        .then(function(result) {
+            if (result.data.success) {
+                // Show success banner and redirect
+                var banner = document.getElementById('otpModalSuccessBanner');
+                if (banner) banner.style.display = 'block';
+                btn.innerHTML = '<i class="fas fa-check-circle"></i> Verified!';
+                document.getElementById('otpResendBtn').style.display = 'none';
+                if (otpTimerInterval) clearInterval(otpTimerInterval);
+
+                setTimeout(function() {
+                    window.location.href = result.data.redirect || '{% url "login" %}';
+                }, 2000);
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check-circle"></i> Verify Code';
+                showOtpAlert(result.data.error || 'Invalid verification code.', 'error');
+                // Shake inputs
+                inputs.forEach(function(i) {
+                    i.classList.add('error');
+                    setTimeout(function() { i.classList.remove('error'); }, 500);
+                });
+            }
+        })
+        .catch(function(err) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check-circle"></i> Verify Code';
+            showOtpAlert('Network error. Please try again.', 'error');
+            console.error('OTP verify error:', err);
+        });
+    });
+})();
+
+// ===== OTP RESEND =====
+(function() {
+    var btn = document.getElementById('otpResendBtn');
+    if (!btn) return;
+
+    btn.addEventListener('click', function() {
+        var email = document.getElementById('otpModalEmailInput').value;
+        var purpose = document.getElementById('otpModalPurposeInput').value;
+        if (!email) return;
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="otp-modal-spinner"></span>Sending...';
+
+        var formData = new FormData();
+        formData.append('email', email);
+        formData.append('purpose', purpose);
+
+        fetch('{% url "resend_otp" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                // Reset timer
+                startOtpTimer(otpInitialExpiryMinutes);
+                var timer = document.getElementById('otpModalTimer');
+                if (timer) timer.classList.remove('warning');
+                document.getElementById('otpVerifyBtn').disabled = false;
+                showOtpAlert('New code sent!', 'success');
+
+                // Clear inputs
+                document.querySelectorAll('.otp-modal-input').forEach(function(i) {
+                    i.value = ''; i.classList.remove('filled');
+                });
+                var firstInput = document.querySelector('.otp-modal-input');
+                if (firstInput) firstInput.focus();
+
+                // Resend cooldown
+                btn.disabled = true;
+                var cooldown = 60;
+                btn.innerHTML = '<i class="fas fa-redo"></i> Resend in ' + cooldown + 's';
+                var cooldownInterval = setInterval(function() {
+                    cooldown--;
+                    if (cooldown <= 0) {
+                        clearInterval(cooldownInterval);
+                        btn.innerHTML = '<i class="fas fa-redo"></i> Resend Code';
+                        btn.disabled = false;
+                    } else {
+                        btn.innerHTML = '<i class="fas fa-redo"></i> Resend in ' + cooldown + 's';
+                    }
+                }, 1000);
+            } else {
+                btn.innerHTML = '<i class="fas fa-redo"></i> Resend Code';
+                btn.disabled = false;
+                showOtpAlert(data.error || 'Failed to resend code', 'error');
+            }
+        })
+        .catch(function(err) {
+            btn.innerHTML = '<i class="fas fa-redo"></i> Resend Code';
+            btn.disabled = false;
+            showOtpAlert('Network error. Please try again.', 'error');
+        });
+    });
+})();
+
+function showOtpAlert(message, type) {
+    var alert = document.getElementById('otpModalAlert');
+    if (!alert) return;
+    alert.textContent = message;
+    alert.className = 'otp-modal-alert show ' + type;
+    setTimeout(function() { alert.classList.remove('show'); }, 8000);
+}
+
+function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// ===== TOAST DISMISS =====
+function dismissToast(el) {
+    var toast = el.closest('.floating-toast');
+    if (toast) {
+        toast.classList.add('hiding');
+        setTimeout(function() { toast.remove(); }, 300);
+    }
+}
+</script>
+{% endblock %}

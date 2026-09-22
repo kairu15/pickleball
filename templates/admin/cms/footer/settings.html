@@ -1,0 +1,245 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+{% block title %}Footer CMS{% endblock %}
+{% block page_title %}<i class="fas fa-shoe-prints me-2"></i>Footer CMS{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+.color-input-group { display: flex; align-items: center; gap: 0.5rem; }
+.color-input-group input[type="color"] { width: 40px; height: 40px; border: 2px solid #dee2e6; border-radius: 8px; cursor: pointer; padding: 2px; flex-shrink: 0; }
+.color-input-group input[type="text"] { flex: 1; }
+.footer-preview {
+    border-radius: 12px;
+    overflow: hidden;
+    padding: 2rem;
+    transition: all 0.3s ease;
+}
+</style>
+{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="admin-card mb-4">
+            <div class="admin-card-header"><h5 class="admin-card-title"><i class="fas fa-cog me-2"></i>Footer Settings</h5></div>
+            <div class="card-body">
+                <form method="post" id="footerForm">
+                    {% csrf_token %}
+                    <h6 class="fw-bold mb-3"><i class="fas fa-eye me-2"></i>Visibility</h6>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" name="is_visible" class="form-check-input" id="isVisible" {% if settings.is_visible %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold" for="isVisible">Show Footer</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" name="show_quick_links" class="form-check-input" id="showQL" {% if settings.show_quick_links %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold" for="showQL">Quick Links</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" name="show_contact_details" class="form-check-input" id="showContact" {% if settings.show_contact_details %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold" for="showContact">Contact Details</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" name="show_social_media" class="form-check-input" id="showSocial" {% if settings.show_social_media %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold" for="showSocial">Social Media</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" name="show_newsletter" class="form-check-input" id="showNews" {% if settings.show_newsletter %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold" for="showNews">Newsletter</label>
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+                    <h6 class="fw-bold mb-3"><i class="fas fa-building me-2"></i>Company Info</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Organization Name</label>
+                            <input type="text" name="organization_name" class="form-control" value="{{ settings.organization_name }}" placeholder="PickleSphere" id="orgName">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Copyright Text</label>
+                            <input type="text" name="copyright_text" class="form-control" value="{{ settings.copyright_text }}" placeholder="© PickleSphere. All rights reserved." id="copyrightText">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Short Description</label>
+                            <textarea name="short_description" class="form-control" rows="2" id="shortDesc">{{ settings.short_description }}</textarea>
+                        </div>
+                    </div>
+                    <hr>
+                    <h6 class="fw-bold mb-3"><i class="fas fa-newspaper me-2"></i>Newsletter Settings</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Heading</label>
+                            <input type="text" name="newsletter_heading" class="form-control" value="{{ settings.newsletter_heading }}" placeholder="Newsletter">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Button Text</label>
+                            <input type="text" name="newsletter_button_text" class="form-control" value="{{ settings.newsletter_button_text }}" placeholder="Subscribe">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Description</label>
+                            <textarea name="newsletter_description" class="form-control" rows="2">{{ settings.newsletter_description }}</textarea>
+                        </div>
+                    </div>
+                    <hr>
+                    <h6 class="fw-bold mb-3"><i class="fas fa-code me-2"></i>Developer Credit</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Credit Text</label>
+                            <input type="text" name="developer_credit" class="form-control" value="{{ settings.developer_credit }}" placeholder="Developed by...">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Contact</label>
+                            <input type="text" name="developer_contact" class="form-control" value="{{ settings.developer_contact }}" placeholder="email@example.com">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Version</label>
+                            <input type="text" name="version_text" class="form-control" value="{{ settings.version_text }}" placeholder="1.0.0">
+                        </div>
+                    </div>
+                    <hr>
+                    <h6 class="fw-bold mb-3"><i class="fas fa-palette me-2"></i>Styling</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Gradient Start</label>
+                            <div class="color-input-group">
+                                <input type="color" name="background_gradient_start" value="{{ settings.background_gradient_start }}" id="footerGradStart">
+                                <input type="text" class="form-control" value="{{ settings.background_gradient_start }}" id="footerGradStartText">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Gradient End</label>
+                            <div class="color-input-group">
+                                <input type="color" name="background_gradient_end" value="{{ settings.background_gradient_end }}" id="footerGradEnd">
+                                <input type="text" class="form-control" value="{{ settings.background_gradient_end }}" id="footerGradEndText">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Text Color</label>
+                            <div class="color-input-group">
+                                <input type="color" name="text_color" value="{{ settings.text_color }}" id="footerTextColor">
+                                <input type="text" class="form-control" value="{{ settings.text_color }}" id="footerTextColorText">
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" name="is_active" class="form-check-input" id="isActive" {% if settings.is_active %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold" for="isActive">Active</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-save me-2"></i>Save Settings</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="admin-card">
+            <div class="admin-card-header d-flex justify-content-between align-items-center">
+                <h5 class="admin-card-title mb-0"><i class="fas fa-link me-2"></i>Quick Links</h5>
+                <a href="{% url 'super_admin_footer_quick_link_add' %}" class="btn btn-sm btn-primary"><i class="fas fa-plus me-1"></i>Add Link</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead><tr><th>Order</th><th>Title</th><th>Icon</th><th>Type</th><th>Status</th><th>Actions</th></tr></thead>
+                        <tbody>
+                            {% for link in quick_links %}
+                            <tr>
+                                <td>{{ link.display_order }}</td>
+                                <td>
+                                    <strong>
+                                        {% if link.icon_class %}<i class="{{ link.icon_class }} me-1"></i>{% endif %}
+                                        {{ link.title }}
+                                    </strong>
+                                </td>
+                                <td><small class="text-muted">{{ link.icon_class|default:'—' }}</small></td>
+                                <td><span class="badge bg-secondary">{{ link.get_link_type_display }}</span></td>
+                                <td>{% if link.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td>
+                                <td>
+                                    <a href="{% url 'super_admin_footer_quick_link_edit' link.id %}" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></a>
+                                    <a href="{% url 'super_admin_footer_quick_link_delete' link.id %}" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="text-center py-4 text-muted">No quick links yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="admin-card mb-4">
+            <div class="admin-card-header"><h5 class="admin-card-title"><i class="fas fa-eye me-2"></i>Live Preview</h5></div>
+            <div class="card-body p-0">
+                <div class="footer-preview" id="footerPreview">
+                    <div class="text-center">
+                        <h6 id="previewOrgName" style="font-weight:700;margin-bottom:0.5rem;">{{ settings.organization_name|default:'PickleSphere' }}</h6>
+                        <p id="previewDesc" style="font-size:0.85rem;margin-bottom:1rem;opacity:0.8;">{{ settings.short_description|truncatewords:15 }}</p>
+                        <div style="display:flex;gap:1rem;justify-content:center;font-size:0.85rem;opacity:0.8;">
+                            <span><i class="fas fa-phone me-1"></i>+63 945 547 0173</span>
+                            <span><i class="fas fa-envelope me-1"></i>hello@picklesphere.com</span>
+                        </div>
+                        <hr style="opacity:0.15;margin:1rem 0;">
+                        <small id="previewCopyright" style="opacity:0.6;">{{ settings.copyright_text|default:'© PickleSphere. All rights reserved.' }}</small>
+                    </div>
+                </div>
+                <div class="p-3">
+                    <p class="text-muted small mb-0"><i class="fas fa-info-circle me-1"></i>Preview updates in real-time as you change colors and content above.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function updateFooterPreview() {
+        const preview = document.getElementById('footerPreview');
+        const gradStart = document.getElementById('footerGradStart').value;
+        const gradEnd = document.getElementById('footerGradEnd').value;
+        const textColor = document.getElementById('footerTextColorText').value;
+        
+        preview.style.background = `linear-gradient(135deg, ${gradStart}, ${gradEnd})`;
+        preview.style.color = textColor;
+        
+        document.getElementById('previewOrgName').textContent = document.querySelector('[name="organization_name"]').value || 'PickleSphere';
+        document.getElementById('previewDesc').textContent = document.querySelector('[name="short_description"]').value || '';
+        document.getElementById('previewCopyright').textContent = document.querySelector('[name="copyright_text"]').value || '© PickleSphere. All rights reserved.';
+    }
+    
+    // Sync color pickers with text inputs
+    document.querySelectorAll('.color-input-group input[type="color"]').forEach(picker => {
+        picker.addEventListener('input', function() {
+            const textInput = this.parentElement.querySelector('input[type="text"]');
+            if (textInput) textInput.value = this.value;
+            updateFooterPreview();
+        });
+    });
+    document.querySelectorAll('.color-input-group input[type="text"]').forEach(text => {
+        text.addEventListener('input', function() {
+            const colorPicker = this.parentElement.querySelector('input[type="color"]');
+            if (colorPicker && /^#[0-9a-f]{6}$/i.test(this.value)) colorPicker.value = this.value;
+            updateFooterPreview();
+        });
+    });
+    
+    document.querySelectorAll('#footerForm input, #footerForm select, #footerForm textarea').forEach(el => {
+        el.addEventListener('input', updateFooterPreview);
+        el.addEventListener('change', updateFooterPreview);
+    });
+    
+    updateFooterPreview();
+});
+</script>
+{% endblock %}

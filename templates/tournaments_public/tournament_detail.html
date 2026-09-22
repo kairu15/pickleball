@@ -1,0 +1,415 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}{{ tournament.name }} - PickleSphere{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'user_dashboard' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'tournament_list' %}">Tournaments</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ tournament.name|truncatechars:40 }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Tournament Header -->
+    <div class="card border-0 shadow-lg mb-4" style="border-radius: 15px; overflow: hidden;">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                <div class="flex-grow-1">
+                    <h1 class="display-6 fw-bold mb-3">{{ tournament.name }}</h1>
+                    <div class="mb-3">
+                        <span class="badge bg-white text-primary border border-primary px-3 py-2 me-2">
+                            <i class="fas fa-users me-1"></i>{{ tournament.get_category_display }}
+                        </span>
+                        <span class="badge bg-white text-info border border-info px-3 py-2 me-2">
+                            <i class="fas fa-sitemap me-1"></i>{{ tournament.get_format_display }}
+                        </span>
+                        <span class="badge bg-white text-warning border border-warning px-3 py-2 me-2">
+                            <i class="fas fa-signal me-1"></i>{{ tournament.get_skill_level_display }}
+                        </span>
+                        <span class="badge bg-secondary px-3 py-2">
+                            {{ tournament.get_status_display }}
+                        </span>
+                    </div>
+                    <p class="text-muted mb-0">{{ tournament.description }}</p>
+                </div>
+                <div class="text-md-end flex-shrink-0">
+                    {% if user_registration %}
+                        {% if user_registration.status == 'pending' %}
+                            <div class="alert alert-warning d-inline-block mb-0">
+                                <i class="fas fa-clock me-2"></i>Your registration is pending approval
+                            </div>
+                        {% elif user_registration.status == 'approved' %}
+                            <div class="alert alert-success d-inline-block mb-0">
+                                <i class="fas fa-check-circle me-2"></i>You are registered!
+                            </div>
+                        {% elif user_registration.status == 'rejected' %}
+                            <div class="alert alert-danger d-inline-block mb-0">
+                                <i class="fas fa-times-circle me-2"></i>Your registration was rejected
+                            </div>
+                        {% endif %}
+                    {% elif tournament.is_registration_open %}
+                        <a href="{% url 'tournament_register' tournament.pk %}" class="btn btn-success btn-lg px-4" style="border-radius: 10px; background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%); border: none;">
+                            <i class="fas fa-edit me-2"></i>Register Now
+                        </a>
+                    {% else %}
+                        {% if tournament.status == 'registration_open' %}
+                            <div class="alert alert-info d-inline-block mb-0">
+                                <i class="fas fa-door-open me-2"></i>Opens: {{ tournament.registration_start|date:"M d, Y" }}
+                            </div>
+                        {% elif tournament.status == 'draft' %}
+                            <div class="alert alert-secondary d-inline-block mb-0">Registration not yet open</div>
+                        {% elif tournament.status == 'registration_closed' %}
+                            <div class="alert alert-danger d-inline-block mb-0">
+                                <i class="fas fa-lock me-2"></i>Registration closed
+                            </div>
+                        {% elif tournament.status == 'in_progress' %}
+                            <div class="alert alert-primary d-inline-block mb-0">
+                                <i class="fas fa-play me-2"></i>Tournament in progress
+                            </div>
+                        {% elif tournament.status == 'completed' %}
+                            <div class="alert alert-dark d-inline-block mb-0">
+                                <i class="fas fa-trophy me-2"></i>Tournament completed
+                            </div>
+                        {% else %}
+                            <div class="alert alert-secondary d-inline-block mb-0">Registration unavailable</div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left Column - Info & Participants -->
+        <div class="col-lg-4">
+            <!-- Tournament Info -->
+            <div class="card border-0 shadow-lg mb-4" style="border-radius: 15px; overflow: hidden;">
+                <div class="card-header bg-transparent border-bottom p-4">
+                    <h5 class="fw-bold mb-0"><i class="fas fa-info-circle me-2 text-primary"></i>Tournament Info</h5>
+                </div>
+                <div class="card-body p-4">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-3">
+                            <span class="text-muted"><i class="fas fa-door-open me-2 text-success"></i>Registration Opens</span>
+                            <strong>{{ tournament.registration_start|date:"M d, Y H:i" }}</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-3">
+                            <span class="text-muted"><i class="fas fa-lock me-2 text-danger"></i>Registration Closes</span>
+                            <strong>{{ tournament.registration_end|date:"M d, Y H:i" }}</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-3">
+                            <span class="text-muted"><i class="fas fa-play-circle me-2 text-primary"></i>Tournament Starts</span>
+                            <strong>{{ tournament.tournament_start|date:"M d, Y H:i" }}</strong>
+                        </li>
+                        {% if tournament.tournament_end %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-3">
+                            <span class="text-muted"><i class="fas fa-flag-checkered me-2 text-dark"></i>Tournament Ends</span>
+                            <strong>{{ tournament.tournament_end|date:"M d, Y H:i" }}</strong>
+                        </li>
+                        {% endif %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-3">
+                            <span class="text-muted"><i class="fas fa-users me-2 text-info"></i>Max Participants</span>
+                            <strong>{{ tournament.max_participants }}</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-3">
+                            <span class="text-muted"><i class="fas fa-star me-2 text-warning"></i>Points per Win</span>
+                            <strong>{{ tournament.points_per_win }}</strong>
+                        </li>
+                        {% if tournament.prize_pool > 0 %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-3">
+                            <span class="text-muted"><i class="fas fa-gift me-2 text-success"></i>Prize Pool</span>
+                            <strong class="text-success">₱{{ tournament.prize_pool }}</strong>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Registered Players -->
+            <div class="card border-0 shadow-lg" style="border-radius: 15px; overflow: hidden;">
+                <div class="card-header bg-transparent border-bottom p-4">
+                    <h5 class="fw-bold mb-0">
+                        <i class="fas fa-users me-2 text-primary"></i>Participants
+                        <span class="badge bg-primary ms-2">{{ registration_count }}/{{ tournament.max_participants }}</span>
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    {% if registrations %}
+                        <div class="progress mb-3" style="height: 10px;">
+                            <div class="progress-bar bg-success" id="participantProgress" data-progress="{{ registration_count }}" data-max="{{ tournament.max_participants }}"></div>
+                        </div>
+                        <div class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto; overflow-x: hidden;">
+                            {% for reg in registrations %}
+                            <div class="list-group-item d-flex align-items-center py-3 px-2 border-bottom" style="min-width: 0;">
+                                <div class="flex-shrink-0">
+                                    {% if reg.user.profile_picture %}
+                                        <img src="{{ reg.user.profile_picture.url }}" alt="" class="rounded-circle" style="width: 45px; height: 45px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
+                                            <span class="fw-bold">{{ reg.user.username|first|upper }}</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="ms-3 flex-grow-1" style="min-width: 0;">
+                                    <div class="fw-bold text-truncate">{{ reg.user.get_full_name|default:reg.user.username }}</div>
+                                    <small class="text-muted">{{ reg.skill_level|title }}</small>
+                                </div>
+                                <div>
+                                    {% if reg.status == 'approved' %}
+                                        <i class="fas fa-check-circle text-success" title="Approved"></i>
+                                    {% elif reg.status == 'pending' %}
+                                        <i class="fas fa-clock text-warning" title="Pending"></i>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-users fa-2x text-muted mb-2"></i>
+                            <p class="text-muted mb-0">No participants yet</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Matches & Leaderboard -->
+        <div class="col-lg-8">
+            <!-- Tabs -->
+            <div class="card border-0" style="border-radius: 15px; overflow: hidden; box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.08);">
+                <div class="bg-white" style="border-bottom: 1px solid #e9ecef;">
+                    <ul class="nav nav-tabs w-100 mb-0" id="tournamentTabs" role="tablist" style="border-bottom: none;">
+                        <li class="nav-item flex-fill text-center" role="presentation">
+                            <button class="nav-link active w-100 px-4 py-3 fw-semibold" id="matches-tab" data-bs-toggle="tab" data-bs-target="#matches" type="button" role="tab" style="border: none; border-bottom: 3px solid var(--primary-color, #3B7A8C); color: var(--primary-color, #3B7A8C); background: transparent; margin: 0;">
+                                <i class="fas fa-gamepad me-2"></i>Matches
+                            </button>
+                        </li>
+                        <li class="nav-item flex-fill text-center" role="presentation">
+                            <button class="nav-link w-100 px-4 py-3 fw-semibold" id="leaderboard-tab" data-bs-toggle="tab" data-bs-target="#leaderboard" type="button" role="tab" style="border: none; border-bottom: 3px solid transparent; color: #6c757d; background: transparent; margin: 0;">
+                                <i class="fas fa-trophy me-2"></i>Leaderboard
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body p-4">
+                    <div class="tab-content" id="tournamentTabsContent">
+                        <!-- Matches Tab -->
+                        <div class="tab-pane fade show active" id="matches" role="tabpanel">
+                            {% if matches %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th style="padding: 15px;">Match</th>
+                                                <th style="padding: 15px;">Players</th>
+                                                <th style="padding: 15px;">Score</th>
+                                                <th style="padding: 15px;">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for match in matches %}
+                                            <tr class="hover-row" style="transition: all 0.3s ease;">
+                                                <td style="padding: 15px;">
+                                                    <small class="text-muted d-block">#{{ match.match_number }}</small>
+                                                    <span class="badge bg-secondary">{{ match.get_round_name_display }}</span>
+                                                    {% if match.group_name %}
+                                                        <span class="badge bg-light text-dark border ms-1">Group {{ match.group_name }}</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td style="padding: 15px;">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <span class="{% if match.winner == match.player1 or match.winner_team == match.team1 %}fw-bold text-success{% endif %}">
+                                                            {{ match.get_player1_display }}
+                                                        </span>
+                                                        <span class="text-muted">vs</span>
+                                                        <span class="{% if match.winner == match.player2 or match.winner_team == match.team2 %}fw-bold text-success{% endif %}">
+                                                            {{ match.get_player2_display }}
+                                                        </span>
+                                                    </div>
+                                                    {% if match.scheduled_date %}
+                                                        <small class="text-muted d-block mt-1">
+                                                            <i class="far fa-clock me-1"></i>
+                                                            {{ match.scheduled_date|date:"M d" }} {{ match.scheduled_time|time:"g:i A" }}
+                                                            {% if match.court %}
+                                                                @ {{ match.court.name }}
+                                                            {% endif %}
+                                                        </small>
+                                                    {% endif %}
+                                                </td>
+                                                <td style="padding: 15px;">
+                                                    {% if match.status == 'completed' %}
+                                                        <span class="badge bg-dark fs-6 px-3 py-2">{{ match.score1 }} - {{ match.score2 }}</span>
+                                                    {% else %}
+                                                        <span class="text-muted">-</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td style="padding: 15px;">
+                                                    <span class="badge bg-{% if match.status == 'scheduled' %}secondary{% elif match.status == 'in_progress' %}warning text-dark{% elif match.status == 'completed' %}success{% elif match.status == 'cancelled' %}danger{% elif match.status == 'postponed' %}dark{% else %}secondary{% endif %} px-3 py-2">
+                                                        {{ match.get_status_display }}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 15px;">
+                                        <i class="fas fa-table-tennis fa-2x text-muted"></i>
+                                    </div>
+                                    <h5 class="text-muted">No Matches Yet</h5>
+                                    <p class="text-muted mb-0">Matches will be generated once registration closes</p>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Leaderboard Tab -->
+                        <div class="tab-pane fade" id="leaderboard" role="tabpanel">
+                            {% if leaderboard %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th style="padding: 15px;">Rank</th>
+                                                <th style="padding: 15px;">Player/Team</th>
+                                                <th class="text-center" style="padding: 15px;">P</th>
+                                                <th class="text-center" style="padding: 15px;">W</th>
+                                                <th class="text-center" style="padding: 15px;">L</th>
+                                                <th class="text-center" style="padding: 15px;">Points</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for entry in leaderboard %}
+                                            <tr class="{% if entry.rank == 1 %}table-warning{% elif entry.rank == 2 %}table-secondary{% elif entry.rank == 3 %}table-info{% endif %} align-middle hover-row" style="transition: all 0.3s ease;">
+                                                <td style="padding: 15px;">
+                                                    {% if entry.rank == 1 %}
+                                                        <span class="badge bg-warning text-dark fs-6"><i class="fas fa-crown me-1"></i>1</span>
+                                                    {% elif entry.rank == 2 %}
+                                                        <span class="badge bg-secondary fs-6"><i class="fas fa-medal me-1"></i>2</span>
+                                                    {% elif entry.rank == 3 %}
+                                                        <span class="badge bg-info fs-6"><i class="fas fa-medal me-1"></i>3</span>
+                                                    {% else %}
+                                                        <span class="text-muted">{{ entry.rank }}</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td style="padding: 15px;">
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="flex-shrink-0">
+                                                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
+                                                                <small>{{ entry.player.username|first|upper }}</small>
+                                                            </div>
+                                                        </div>
+                                                        <div class="ms-2">
+                                                            {% if entry.player %}
+                                                                <div class="fw-bold">{{ entry.player.get_full_name|default:entry.player.username }}</div>
+                                                            {% else %}
+                                                                <div class="fw-bold">{{ entry.team.get_display_name }}</div>
+                                                            {% endif %}
+                                                            {% if entry.group_name %}
+                                                                <small class="text-muted">Group {{ entry.group_name }}</small>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="text-center" style="padding: 15px;">{{ entry.matches_played }}</td>
+                                                <td class="text-center" style="padding: 15px;"><span class="text-success fw-bold">{{ entry.wins }}</span></td>
+                                                <td class="text-center" style="padding: 15px;"><span class="text-danger">{{ entry.losses }}</span></td>
+                                                <td class="text-center" style="padding: 15px;"><span class="badge bg-primary fs-6">{{ entry.points }}</span></td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 15px;">
+                                        <i class="fas fa-trophy fa-2x text-muted"></i>
+                                    </div>
+                                    <h5 class="text-muted">Leaderboard Not Available</h5>
+                                    <p class="text-muted mb-0">The leaderboard will be displayed once matches begin</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin quick link -->
+    {% if user.is_admin or user.is_staff_user %}
+    <div class="mt-4">
+        <a href="{% url 'admin_tournament_manage' tournament.pk %}" class="btn btn-outline-primary" style="border-radius: 10px;">
+            <i class="fas fa-cog me-2"></i>Manage Tournament
+        </a>
+        {% if pending_count > 0 %}
+            <span class="badge bg-danger ms-2 px-3 py-2">{{ pending_count }} pending registration{{ pending_count|pluralize }}</span>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<style>
+/* Custom Tab Styling - Clean and No Overlap */
+#tournamentTabs {
+    display: flex;
+    border-bottom: none !important;
+}
+
+#tournamentTabs .nav-link {
+    border: none !important;
+    border-radius: 0 !important;
+    color: #6c757d;
+    font-weight: 600;
+    background: transparent;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+#tournamentTabs .nav-link:hover {
+    color: var(--primary-color, #3B7A8C);
+    background-color: rgba(59, 122, 140, 0.05);
+}
+
+#tournamentTabs .nav-link.active {
+    color: var(--primary-color, #3B7A8C) !important;
+    background-color: rgba(59, 122, 140, 0.08);
+}
+
+/* Remove Bootstrap default card-header-tabs styling */
+.nav-tabs .nav-link:focus,
+.nav-tabs .nav-link:hover {
+    border-color: transparent !important;
+    isolation: auto;
+}
+
+/* Hover Effects */
+.hover-row:hover {
+    background-color: #f8f9fa;
+}
+
+/* Smooth transitions */
+.card, .hover-row {
+    transition: all 0.3s ease;
+}
+</style>
+
+<script>
+// Set progress bar widths
+document.querySelectorAll('#participantProgress').forEach(function(bar) {
+    var progress = parseInt(bar.getAttribute('data-progress')) || 0;
+    var max = parseInt(bar.getAttribute('data-max')) || 1;
+    var percentage = Math.min(100, Math.round((progress / max) * 100));
+    bar.style.width = percentage + '%';
+});
+</script>
+{% endblock %}
+
+

@@ -1,0 +1,34 @@
+{% extends 'emails/base_email.html' %}
+
+{% block email_content %}
+    <span class="notification-badge">⏳ Pending</span>
+    <h2>Reservation Submitted</h2>
+    <p>Hi <strong>{{ user.get_full_name|default:user.username }}</strong>, your reservation request has been submitted and is awaiting confirmation.</p>
+    
+    <div class="details-card">
+        <table cellpadding="0" cellspacing="0">
+            <tr>
+                <td class="label">Court</td>
+                <td class="value">{{ court_name }}</td>
+            </tr>
+            <tr>
+                <td class="label">Date</td>
+                <td class="value">{{ date }}</td>
+            </tr>
+            <tr>
+                <td class="label">Time</td>
+                <td class="value">{{ start_time }} - {{ end_time }}</td>
+            </tr>
+            <tr>
+                <td class="label">Reservation #</td>
+                <td class="value">{{ reservation_id }}</td>
+            </tr>
+        </table>
+    </div>
+    
+    <p>You will receive a confirmation email once the facility staff confirms your booking. This usually takes just a few minutes.</p>
+    
+    <div style="text-align: center;">
+        <a href="{{ action_url }}" class="cta-button">{{ action_text }}</a>
+    </div>
+{% endblock %}

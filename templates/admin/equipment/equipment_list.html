@@ -1,0 +1,160 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Equipment Management{% endblock %}
+{% block page_title %}Equipment Management{% endblock %}
+
+{% block content %}
+{% include 'components/filter_bar_start.html' %}
+            <div class="col-md-3">
+                <label class="filter-label"><i class="fas fa-search me-1 text-primary"></i>Search</label>
+                <input type="text" name="search" class="filter-input" value="{{ search_query }}" placeholder="Name or brand...">
+            </div>
+            <div class="col-md-2">
+                <label class="filter-label"><i class="fas fa-tag me-1 text-primary"></i>Type</label>
+                <select name="type" class="filter-select">
+                    <option value="">All Types</option>
+                    <option value="paddle" {% if type_filter == 'paddle' %}selected{% endif %}>Paddle</option>
+                    <option value="ball" {% if type_filter == 'ball' %}selected{% endif %}>Ball</option>
+                    <option value="net" {% if type_filter == 'net' %}selected{% endif %}>Net</option>
+                    <option value="shoes" {% if type_filter == 'shoes' %}selected{% endif %}>Shoes</option>
+                    <option value="other" {% if type_filter == 'other' %}selected{% endif %}>Other</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="filter-label"><i class="fas fa-toggle-on me-1 text-primary"></i>Status</label>
+                <select name="status" class="filter-select">
+                    <option value="">All Status</option>
+                    <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                    <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <div class="filter-btn-row">
+                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search me-1"></i>Search</button>
+                    {% if search_query or type_filter or status_filter %}
+                    <a href="{% url 'super_admin_equipment_list' %}" class="btn btn-outline-secondary" title="Clear filters"><i class="fas fa-times"></i></a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-md-3">
+                <a href="{% url 'super_admin_equipment_create' %}" class="btn btn-success w-100"><i class="fas fa-plus me-1"></i>Add Equipment</a>
+            </div>
+{% include 'components/filter_bar_end.html' %}
+
+<!-- Equipment Table -->
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-tools text-primary"></i>
+            All Equipment
+        </h5>
+        <span class="badge bg-primary">{{ equipment|length }} total</span>
+    </div>
+    <div class="card-body p-0">
+        {% if equipment %}
+        <div class="admin-table-container">
+            <table class="table admin-table mb-0">
+                <thead>
+                    <tr>
+                        <th><a href="?sort_by=name&amp;sort_order={% if sort_by == 'name' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if type_filter %}&amp;type={{ type_filter }}{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}" class="sort-link">Equipment {% if sort_by == 'name' %}<i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %}"></i>{% elif sort_by == '-name' %}<i class="fas fa-sort-down"></i>{% endif %}</a></th>
+                        <th><a href="?sort_by=type&amp;sort_order={% if sort_by == 'type' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if type_filter %}&amp;type={{ type_filter }}{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}" class="sort-link">Type {% if sort_by == 'type' %}<i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %}"></i>{% elif sort_by == '-type' %}<i class="fas fa-sort-down"></i>{% endif %}</a></th>
+                        <th><a href="?sort_by=quantity_available&amp;sort_order={% if sort_by == 'quantity_available' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if type_filter %}&amp;type={{ type_filter }}{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}" class="sort-link">Stock {% if sort_by == 'quantity_available' %}<i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %}"></i>{% elif sort_by == '-quantity_available' %}<i class="fas fa-sort-down"></i>{% endif %}</a></th>
+                        <th><a href="?sort_by=rental_price&amp;sort_order={% if sort_by == 'rental_price' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if type_filter %}&amp;type={{ type_filter }}{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}" class="sort-link">Price {% if sort_by == 'rental_price' %}<i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %}"></i>{% elif sort_by == '-rental_price' %}<i class="fas fa-sort-down"></i>{% endif %}</a></th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in equipment %}
+                    <tr>
+                        <td data-label="Equipment">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar avatar-sm avatar-placeholder me-2">
+                                    <i class="fas fa-box"></i>
+                                </div>
+                                <div>
+                                    <span class="fw-semibold d-block">{{ item.name }}</span>
+                                    <small class="text-muted">{{ item.brand|default:"No brand" }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td data-label="Type">
+                            <span class="badge bg-light text-dark border">{{ item.get_type_display }}</span>
+                        </td>
+                        <td data-label="Stock">
+                            <div class="d-flex align-items-center">
+                                <span class="fw-semibold {% if item.quantity_available == 0 %}text-danger{% elif item.quantity_available < 5 %}text-warning{% else %}text-success{% endif %}">
+                                    {{ item.quantity_available }}
+                                </span>
+                                <span class="text-muted mx-1">/</span>
+                                <span class="text-muted">{{ item.quantity_total }}</span>
+                            </div>
+                        </td>
+                        <td data-label="Price">
+                            <span class="fw-semibold text-primary">₱{{ item.rental_price|floatformat:0 }}</span>
+                        </td>
+                        <td data-label="Status">
+                            {% if item.is_active %}
+                            <span class="status-badge active">Active</span>
+                            {% else %}
+                            <span class="status-badge inactive">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Actions">
+                            <div class="action-buttons justify-content-end">
+                                <a href="{% url 'equipment_detail' item.id %}" class="action-btn view" title="View">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'super_admin_equipment_edit' item.id %}" class="action-btn edit" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% if item.is_active %}
+                                <form method="post" action="{% url 'super_admin_equipment_delete' item.id %}" class="d-inline" data-confirm-message="Deactivate this equipment?">
+                                    {% csrf_token %}
+                                    <button type="submit" class="action-btn delete" title="Deactivate" onclick="event.preventDefault(); customConfirm(this.closest('form').dataset.confirmMessage, () => { this.closest('form').submit(); })">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+        {% if is_paginated %}
+        <nav aria-label="Page navigation" class="px-3 py-3 border-top">
+            <ul class="pagination justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if type_filter %}&amp;type={{ type_filter }}{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if sort_by %}&amp;sort_by={{ sort_by }}{% endif %}{% if sort_order %}&amp;sort_order={{ sort_order }}{% endif %}"><i class="fas fa-angle-double-left"></i></a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if type_filter %}&amp;type={{ type_filter }}{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if sort_by %}&amp;sort_by={{ sort_by }}{% endif %}{% if sort_order %}&amp;sort_order={{ sort_order }}{% endif %}"><i class="fas fa-angle-left"></i></a>
+                </li>
+                {% endif %}
+                {% for num in page_obj.paginator.page_range %}
+                    {% if num == page_obj.number %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item"><a class="page-link" href="?page={{ num }}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if type_filter %}&amp;type={{ type_filter }}{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if sort_by %}&amp;sort_by={{ sort_by }}{% endif %}{% if sort_order %}&amp;sort_order={{ sort_order }}{% endif %}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if type_filter %}&amp;type={{ type_filter }}{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if sort_by %}&amp;sort_by={{ sort_by }}{% endif %}{% if sort_order %}&amp;sort_order={{ sort_order }}{% endif %}"><i class="fas fa-angle-right"></i></a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if type_filter %}&amp;type={{ type_filter }}{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if sort_by %}&amp;sort_by={{ sort_by }}{% endif %}{% if sort_order %}&amp;sort_order={{ sort_order }}{% endif %}"><i class="fas fa-angle-double-right"></i></a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    {% endif %}
+    </div>
+</div>
+{% endblock %}
+

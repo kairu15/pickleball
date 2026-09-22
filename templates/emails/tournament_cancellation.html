@@ -1,0 +1,14 @@
+{% extends 'emails/base_email.html' %}
+
+{% block email_content %}
+    <span class="notification-badge error">❌ Tournament Cancelled</span>
+    <h2>Tournament Cancelled</h2>
+    <p>Hi <strong>{{ user.get_full_name|default:user.username }}</strong>,</p>
+    <p>We regret to inform you that <strong>{{ tournament_name }}</strong> has been cancelled.</p>
+    
+    <p>If you have any questions or concerns, please contact the tournament organizer or our support team.</p>
+    
+    <div style="text-align: center;">
+        <a href="{{ action_url }}" class="cta-button">{{ action_text }}</a>
+    </div>
+{% endblock %}

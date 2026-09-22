@@ -1,0 +1,35 @@
+{% extends 'emails/base_email.html' %}
+
+{% block email_content %}
+    <span class="notification-badge error">🔐 Security Alert</span>
+    <h2>{{ title }}</h2>
+    <p>Hi <strong>{{ user.get_full_name|default:user.username }}</strong>,</p>
+    <p>{{ message }}</p>
+    
+    {% if ip_address %}
+    <div class="details-card">
+        <table cellpadding="0" cellspacing="0">
+            <tr>
+                <td class="label">IP Address</td>
+                <td class="value">{{ ip_address }}</td>
+            </tr>
+            {% if user_agent %}
+            <tr>
+                <td class="label">Browser</td>
+                <td class="value">{{ user_agent|truncatechars:80 }}</td>
+            </tr>
+            {% endif %}
+            <tr>
+                <td class="label">Time</td>
+                <td class="value">{{ current_year|date:"F j, Y g:i A" }}</td>
+            </tr>
+        </table>
+    </div>
+    {% endif %}
+    
+    <p style="font-size: 14px; color: #888;">If this was you, you can ignore this alert. If you don't recognize this activity, please secure your account immediately.</p>
+    
+    <div style="text-align: center;">
+        <a href="{{ action_url }}" class="cta-button">{{ action_text }}</a>
+    </div>
+{% endblock %}

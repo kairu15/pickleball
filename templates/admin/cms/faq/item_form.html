@@ -1,0 +1,49 @@
+{% extends 'base/dashboard_base.html' %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_title %}<i class="fas fa-question me-2"></i>{{ page_title }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="admin-card">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Category</label>
+                        <select name="category" class="form-select" required>
+                            <option value="">-- Select Category --</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat.id }}" {% if item and item.category.id == cat.id %}selected{% endif %}>
+                                {{ cat.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Question</label>
+                        <input type="text" name="question" class="form-control" value="{{ item.question|default:'' }}" required maxlength="300">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Answer</label>
+                        <textarea name="answer" class="form-control" rows="6" required>{{ item.answer|default:'' }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Display Order</label>
+                        <input type="number" name="display_order" class="form-control" value="{{ item.display_order|default:'0' }}">
+                    </div>
+                    {% if item %}
+                    <div class="mb-3 form-check form-switch">
+                        <input type="checkbox" name="is_active" class="form-check-input" id="isActive" {% if item.is_active %}checked{% endif %}>
+                        <label class="form-check-label fw-semibold" for="isActive">Active</label>
+                    </div>
+                    {% endif %}
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Save</button>
+                        <a href="{% url 'super_admin_faq_cms' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

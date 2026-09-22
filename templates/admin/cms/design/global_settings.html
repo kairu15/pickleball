@@ -1,0 +1,316 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+{% block title %}Global Design System CMS{% endblock %}
+{% block page_title %}<i class="fas fa-palette me-2"></i>Global Design System{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+.color-input-group { display: flex; align-items: center; gap: 0.5rem; }
+.color-input-group input[type="color"] { width: 40px; height: 40px; border: 2px solid #dee2e6; border-radius: 8px; cursor: pointer; padding: 2px; flex-shrink: 0; }
+.color-input-group input[type="text"] { flex: 1; }
+.live-color-swatch { width: 36px; height: 36px; border-radius: 8px; border: 2px solid #e9ecef; transition: all 0.3s ease; cursor: pointer; }
+.live-color-swatch:hover { transform: scale(1.15); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.preview-card-sample {
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+}
+</style>
+{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Typography Settings -->
+        <div class="admin-card mb-4">
+            <div class="admin-card-header"><h5 class="admin-card-title"><i class="fas fa-font me-2"></i>Typography</h5></div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Heading Font Family</label>
+                            <input type="text" name="heading_font_family" class="form-control" value="{{ settings.heading_font_family }}" placeholder="'Inter', sans-serif">
+                            <small class="text-muted">CSS font-family for headings</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Body Font Family</label>
+                            <input type="text" name="body_font_family" class="form-control" value="{{ settings.body_font_family }}" placeholder="'Inter', sans-serif">
+                            <small class="text-muted">CSS font-family for body text</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Base Font Size</label>
+                            <input type="text" name="base_font_size" class="form-control" value="{{ settings.base_font_size }}" placeholder="16px">
+                            <small class="text-muted">Base body font size</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Heading Font Weight</label>
+                            <input type="text" name="heading_font_weight" class="form-control" value="{{ settings.heading_font_weight }}" placeholder="700">
+                            <small class="text-muted">e.g. 400, 600, 700, 800</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <h6 class="fw-bold mb-3"><i class="fas fa-paint-brush me-2"></i>Color Scheme</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Primary Color</label>
+                            <div class="color-input-group">
+                                <input type="color" name="primary_color" value="{{ settings.primary_color }}" class="color-sync" data-target="primary_color_text">
+                                <input type="text" class="form-control color-sync-text" value="{{ settings.primary_color }}" id="primary_color_text" data-target="primary_color">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Primary Hover</label>
+                            <div class="color-input-group">
+                                <input type="color" name="primary_hover_color" value="{{ settings.primary_hover_color }}" class="color-sync" data-target="primary_hover_text">
+                                <input type="text" class="form-control color-sync-text" value="{{ settings.primary_hover_color }}" id="primary_hover_text" data-target="primary_hover_color">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Secondary Color</label>
+                            <div class="color-input-group">
+                                <input type="color" name="secondary_color" value="{{ settings.secondary_color }}" class="color-sync" data-target="secondary_color_text">
+                                <input type="text" class="form-control color-sync-text" value="{{ settings.secondary_color }}" id="secondary_color_text" data-target="secondary_color">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Accent Color</label>
+                            <div class="color-input-group">
+                                <input type="color" name="accent_color" value="{{ settings.accent_color }}" class="color-sync" data-target="accent_color_text">
+                                <input type="text" class="form-control color-sync-text" value="{{ settings.accent_color }}" id="accent_color_text" data-target="accent_color">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Success Color</label>
+                            <div class="color-input-group">
+                                <input type="color" name="success_color" value="{{ settings.success_color }}" class="color-sync" data-target="success_color_text">
+                                <input type="text" class="form-control color-sync-text" value="{{ settings.success_color }}" id="success_color_text" data-target="success_color">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Warning Color</label>
+                            <div class="color-input-group">
+                                <input type="color" name="warning_color" value="{{ settings.warning_color }}" class="color-sync" data-target="warning_color_text">
+                                <input type="text" class="form-control color-sync-text" value="{{ settings.warning_color }}" id="warning_color_text" data-target="warning_color">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Danger Color</label>
+                            <div class="color-input-group">
+                                <input type="color" name="danger_color" value="{{ settings.danger_color }}" class="color-sync" data-target="danger_color_text">
+                                <input type="text" class="form-control color-sync-text" value="{{ settings.danger_color }}" id="danger_color_text" data-target="danger_color">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Info Color</label>
+                            <div class="color-input-group">
+                                <input type="color" name="info_color" value="{{ settings.info_color }}" class="color-sync" data-target="info_color_text">
+                                <input type="text" class="form-control color-sync-text" value="{{ settings.info_color }}" id="info_color_text" data-target="info_color">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Primary Text Color</label>
+                            <div class="color-input-group">
+                                <input type="color" name="text_primary_color" value="{{ settings.text_primary_color }}" class="color-sync" data-target="text_primary_text">
+                                <input type="text" class="form-control color-sync-text" value="{{ settings.text_primary_color }}" id="text_primary_text" data-target="text_primary_color">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Muted Text Color</label>
+                            <div class="color-input-group">
+                                <input type="color" name="text_muted_color" value="{{ settings.text_muted_color }}" class="color-sync" data-target="text_muted_text">
+                                <input type="text" class="form-control color-sync-text" value="{{ settings.text_muted_color }}" id="text_muted_text" data-target="text_muted_color">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Light Background</label>
+                            <div class="color-input-group">
+                                <input type="color" name="background_light_color" value="{{ settings.background_light_color }}" class="color-sync" data-target="bg_light_text">
+                                <input type="text" class="form-control color-sync-text" value="{{ settings.background_light_color }}" id="bg_light_text" data-target="background_light_color">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Dark Background</label>
+                            <div class="color-input-group">
+                                <input type="color" name="background_dark_color" value="{{ settings.background_dark_color }}" class="color-sync" data-target="bg_dark_text">
+                                <input type="text" class="form-control color-sync-text" value="{{ settings.background_dark_color }}" id="bg_dark_text" data-target="background_dark_color">
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+                    <h6 class="fw-bold mb-3"><i class="fas fa-square me-2"></i>Border Radius</h6>
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Small</label>
+                            <input type="text" name="border_radius_sm" class="form-control" value="{{ settings.border_radius_sm }}" placeholder="6px">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Medium</label>
+                            <input type="text" name="border_radius_md" class="form-control" value="{{ settings.border_radius_md }}" placeholder="12px">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Large</label>
+                            <input type="text" name="border_radius_lg" class="form-control" value="{{ settings.border_radius_lg }}" placeholder="20px">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Full / Pill</label>
+                            <input type="text" name="border_radius_full" class="form-control" value="{{ settings.border_radius_full }}" placeholder="50px">
+                        </div>
+                    </div>
+                    <hr>
+                    <h6 class="fw-bold mb-3"><i class="fas fa-layer-group me-2"></i>Shadows</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Small Shadow</label>
+                            <input type="text" name="shadow_sm" class="form-control" value="{{ settings.shadow_sm }}" placeholder="0 2px 8px rgba(0,0,0,0.05)">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Medium Shadow</label>
+                            <input type="text" name="shadow_md" class="form-control" value="{{ settings.shadow_md }}" placeholder="0 4px 16px rgba(0,0,0,0.08)">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Large Shadow</label>
+                            <input type="text" name="shadow_lg" class="form-control" value="{{ settings.shadow_lg }}" placeholder="0 8px 30px rgba(0,0,0,0.12)">
+                        </div>
+                    </div>
+                    <hr>
+                    <h6 class="fw-bold mb-3"><i class="fas fa-arrows-alt me-2"></i>Spacing & Layout</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Spacing Unit</label>
+                            <input type="text" name="spacing_unit" class="form-control" value="{{ settings.spacing_unit }}" placeholder="8px">
+                            <small class="text-muted">Base spacing for margins/padding</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Section Padding</label>
+                            <input type="text" name="section_padding" class="form-control" value="{{ settings.section_padding }}" placeholder="5rem 0">
+                            <small class="text-muted">Default vertical padding for sections</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Container Max Width</label>
+                            <input type="text" name="container_max_width" class="form-control" value="{{ settings.container_max_width }}" placeholder="1200px">
+                            <small class="text-muted">Maximum content width</small>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="form-check form-switch mb-3">
+                            <input type="checkbox" name="is_active" class="form-check-input" id="isActive" {% if settings.is_active %}checked{% endif %}>
+                            <label class="form-check-label fw-semibold" for="isActive">Active</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-save me-2"></i>Save Design Settings</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="admin-card mb-4">
+            <div class="admin-card-header"><h5 class="admin-card-title"><i class="fas fa-info-circle me-2"></i>About These Settings</h5></div>
+            <div class="card-body">
+                <p class="mb-3">These settings define the global visual design of your website. Changes will be injected as CSS custom properties (<code>:root</code> variables) on every page.</p>
+                <div class="alert alert-info">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    <strong>Tip:</strong> Use hex color values (e.g. <code>#3B7A8C</code>) for consistent results across browsers.
+                </div>
+                <hr>
+                <h6 class="fw-bold"><i class="fas fa-palette me-2"></i>Live Color Preview</h6>
+                <p class="small text-muted mb-2">Colors update in real-time as you change values on the left.</p>
+                <div id="liveColorPreview" class="preview-card-sample mb-3" style="background:{{ settings.background_light_color }};border:1px solid #dee2e6;">
+                    <div class="preview-heading" style="font-size:0.85rem;font-weight:600;color:{{ settings.text_primary_color }};margin-bottom:0.5rem;">Sample Heading</div>
+                    <div class="preview-body" style="font-size:0.75rem;color:{{ settings.text_muted_color }};margin-bottom:1rem;">This is sample body text showing how your color scheme looks together.</div>
+                    <div class="d-flex gap-2">
+                        <span class="preview-badge" style="background:{{ settings.primary_color }};color:#fff;padding:0.25rem 0.75rem;border-radius:4px;font-size:0.7rem;">Primary</span>
+                        <span class="preview-badge" style="background:{{ settings.secondary_color }};color:#fff;padding:0.25rem 0.75rem;border-radius:4px;font-size:0.7rem;">Secondary</span>
+                        <span class="preview-badge" style="background:{{ settings.accent_color }};color:#fff;padding:0.25rem 0.75rem;border-radius:4px;font-size:0.7rem;">Accent</span>
+                    </div>
+                </div>
+                <p class="small fw-bold mb-1">Color Swatches</p>
+                <div class="d-flex gap-1 flex-wrap">
+                    <span class="live-color-swatch" style="background:{{ settings.primary_color }};" title="Primary: {{ settings.primary_color }}" onclick="navigator.clipboard.writeText('{{ settings.primary_color }}')"></span>
+                    <span class="live-color-swatch" style="background:{{ settings.secondary_color }};" title="Secondary: {{ settings.secondary_color }}" onclick="navigator.clipboard.writeText('{{ settings.secondary_color }}')"></span>
+                    <span class="live-color-swatch" style="background:{{ settings.accent_color }};" title="Accent: {{ settings.accent_color }}" onclick="navigator.clipboard.writeText('{{ settings.accent_color }}')"></span>
+                    <span class="live-color-swatch" style="background:{{ settings.success_color }};" title="Success: {{ settings.success_color }}" onclick="navigator.clipboard.writeText('{{ settings.success_color }}')"></span>
+                    <span class="live-color-swatch" style="background:{{ settings.warning_color }};" title="Warning: {{ settings.warning_color }}" onclick="navigator.clipboard.writeText('{{ settings.warning_color }}')"></span>
+                    <span class="live-color-swatch" style="background:{{ settings.danger_color }};" title="Danger: {{ settings.danger_color }}" onclick="navigator.clipboard.writeText('{{ settings.danger_color }}')"></span>
+                    <span class="live-color-swatch" style="background:{{ settings.info_color }};" title="Info: {{ settings.info_color }}" onclick="navigator.clipboard.writeText('{{ settings.info_color }}')"></span>
+                    <span class="live-color-swatch" style="background:{{ settings.background_dark_color }};" title="Dark BG: {{ settings.background_dark_color }}" onclick="navigator.clipboard.writeText('{{ settings.background_dark_color }}')"></span>
+                    <span class="live-color-swatch" style="background:{{ settings.background_light_color }};border:2px solid #dee2e6;" title="Light BG: {{ settings.background_light_color }}" onclick="navigator.clipboard.writeText('{{ settings.background_light_color }}')"></span>
+                </div>
+                <p class="small text-muted mt-2 mb-0"><i class="fas fa-info-circle me-1"></i>Click any swatch to copy its hex value.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function updateGlobalPreview() {
+        const preview = document.getElementById('liveColorPreview');
+        const primary = document.querySelector('[name="primary_color"]').value;
+        const secondary = document.querySelector('[name="secondary_color"]').value;
+        const accent = document.querySelector('[name="accent_color"]').value;
+        const success = document.querySelector('[name="success_color"]').value;
+        const warning = document.querySelector('[name="warning_color"]').value;
+        const danger = document.querySelector('[name="danger_color"]').value;
+        const info = document.querySelector('[name="info_color"]').value;
+        const textPrimary = document.querySelector('[name="text_primary_color"]').value;
+        const textMuted = document.querySelector('[name="text_muted_color"]').value;
+        const bgLight = document.querySelector('[name="background_light_color"]').value;
+        const bgDark = document.querySelector('[name="background_dark_color"]').value;
+        
+        if (preview) {
+            preview.style.background = bgLight;
+            preview.querySelector('.preview-heading').style.color = textPrimary;
+            preview.querySelector('.preview-body').style.color = textMuted;
+            const badges = preview.querySelectorAll('.preview-badge');
+            if (badges.length >= 3) {
+                badges[0].style.background = primary;
+                badges[1].style.background = secondary;
+                badges[2].style.background = accent;
+            }
+        }
+        
+        // Update swatches
+        const swatches = document.querySelectorAll('.live-color-swatch');
+        if (swatches.length >= 9) {
+            swatches[0].style.background = primary;
+            swatches[0].title = 'Primary: ' + primary;
+            swatches[1].style.background = secondary;
+            swatches[1].title = 'Secondary: ' + secondary;
+            swatches[2].style.background = accent;
+            swatches[2].title = 'Accent: ' + accent;
+            swatches[3].style.background = success;
+            swatches[3].title = 'Success: ' + success;
+            swatches[4].style.background = warning;
+            swatches[4].title = 'Warning: ' + warning;
+            swatches[5].style.background = danger;
+            swatches[5].title = 'Danger: ' + danger;
+            swatches[6].style.background = info;
+            swatches[6].title = 'Info: ' + info;
+            swatches[7].style.background = bgDark;
+            swatches[7].title = 'Dark BG: ' + bgDark;
+            swatches[8].style.background = bgLight;
+            swatches[8].title = 'Light BG: ' + bgLight;
+        }
+    }
+    
+    // Sync color pickers with text inputs
+    document.querySelectorAll('.color-sync').forEach(picker => {
+        picker.addEventListener('input', function() {
+            const target = document.getElementById(this.dataset.target);
+            if (target) target.value = this.value;
+            updateGlobalPreview();
+        });
+    });
+    document.querySelectorAll('.color-sync-text').forEach(text => {
+        text.addEventListener('input', function() {
+            const name = this.dataset.target;
+            const picker = document.querySelector('[name="' + name + '"]');
+            if (picker && /^#[0-9a-f]{6}$/i.test(this.value)) picker.value = this.value;
+            updateGlobalPreview();
+        });
+    });
+    
+    updateGlobalPreview();
+});
+</script>
+{% endblock %}

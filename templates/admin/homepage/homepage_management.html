@@ -1,0 +1,194 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Homepage Management{% endblock %}
+{% block page_title %}Homepage Management{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'super_admin_analytics' %}"><i class="fas fa-home me-1"></i>Dashboard</a></li>
+        <li class="breadcrumb-item active">Homepage Management</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <p class="text-muted mb-0">
+            <i class="fas fa-info-circle me-1 text-primary"></i>
+            Manage content displayed on the public homepage.
+        </p>
+    </div>
+    <div>
+        <form method="post" action="{% url 'super_admin_homepage_populate' %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-primary me-2">
+                <i class="fas fa-magic me-1"></i>Populate Default Content
+            </button>
+        </form>
+        <a href="/" target="_blank" class="btn btn-sm btn-outline-primary">
+            <i class="fas fa-external-link-alt me-1"></i>View Live Site
+        </a>
+    </div>
+</div>
+
+    <!-- Amenities Section -->
+    <div class="admin-card mb-4">
+        <div class="admin-card-header">
+            <h5 class="admin-card-title">
+                <i class="fas fa-concierge-bell text-success"></i>
+                Amenities
+                <span class="badge bg-light text-dark ms-2">{{ amenities.count }} items</span>
+            </h5>
+            <a href="{% url 'super_admin_homepage_amenity_add' %}" class="btn btn-sm btn-success">
+                <i class="fas fa-plus me-1"></i>Add Amenity
+            </a>
+        </div>
+        <div class="card-body p-3">
+            {% if amenities %}
+                <div class="row g-3">
+                    {% for item in amenities %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="d-flex align-items-center gap-3 p-3 border rounded-3 bg-light">
+                            <div class="avatar-icon bg-success rounded-2 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; flex-shrink: 0;">
+                                <i class="fas {{ item.icon }} text-white"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-0">{{ item.title }}</h6>
+                                <small class="text-muted">{{ item.description|truncatechars:40 }}</small>
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary border-0" data-bs-toggle="dropdown">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="{% url 'super_admin_homepage_amenity_edit' item.id %}">
+                                        <i class="fas fa-edit me-2"></i>Edit
+                                    </a></li>
+                                    <li><a class="dropdown-item text-danger" href="{% url 'super_admin_homepage_amenity_delete' item.id %}" data-confirm-message="Delete this amenity?" onclick="return customConfirm(this.dataset.confirmMessage, () => { window.location.href = this.href; })">
+                                        <i class="fas fa-trash me-2"></i>Delete
+                                    </a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-concierge-bell fa-2x text-muted"></i>
+                    </div>
+                    <h5 class="empty-state-title">No amenities yet</h5>
+                    <p class="empty-state-text">Add facility features to display on the homepage.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Gallery Section -->
+    <div class="admin-card mb-4">
+        <div class="admin-card-header">
+            <h5 class="admin-card-title">
+                <i class="fas fa-images text-info"></i>
+                Gallery Images
+                <span class="badge bg-light text-dark ms-2">{{ gallery_images.count }} items</span>
+            </h5>
+            <a href="{% url 'super_admin_homepage_gallery_add' %}" class="btn btn-sm btn-info text-white">
+                <i class="fas fa-plus me-1"></i>Add Image
+            </a>
+        </div>
+        <div class="card-body p-3">
+            {% if gallery_images %}
+                <div class="row g-3">
+                    {% for item in gallery_images %}
+                    <div class="col-md-4 col-lg-2">
+                        <div class="text-center p-3 border rounded-3 bg-light">
+                            {% if item.image %}
+                            <img src="{{ item.image.url }}" alt="{{ item.alt_text }}" class="rounded-2 mb-2" style="width: 100%; height: 80px; object-fit: cover;">
+                            {% endif %}
+                            <h6 class="mb-0 small">{{ item.title|default:"Untitled" }}</h6>
+                            <small class="text-muted d-block">{{ item.alt_text|truncatechars:20 }}</small>
+                            <div class="mt-2 d-flex justify-content-center gap-1">
+                                <a href="{% url 'super_admin_homepage_gallery_edit' item.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'super_admin_homepage_gallery_delete' item.id %}" class="btn btn-sm btn-outline-danger" data-confirm-message="Delete this gallery image?" onclick="return customConfirm(this.dataset.confirmMessage, () => { window.location.href = this.href; })">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-images fa-2x text-muted"></i>
+                    </div>
+                    <h5 class="empty-state-title">No gallery images yet</h5>
+                    <p class="empty-state-text">Add photos to showcase your facility!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Homepage Content Section -->
+    <div class="admin-card mb-4">
+        <div class="admin-card-header">
+            <h5 class="admin-card-title">
+                <i class="fas fa-file-alt text-primary"></i>
+                Homepage Text Content
+                <span class="badge bg-light text-dark ms-2">{{ homepage_content.count }} items</span>
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            {% if homepage_content %}
+            <div class="admin-table-container">
+                <table class="table admin-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Section</th>
+                            <th>Content Preview</th>
+                            <th>Last Updated</th>
+                            <th class="text-center" style="width: 100px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in homepage_content %}
+                        <tr>
+                            <td><span class="status-badge active">{{ item.get_section_display }}</span></td>
+                            <td class="text-muted">{{ item.content|truncatechars:80 }}</td>
+                            <td><small class="text-muted">{{ item.updated_at|date:"M d, Y H:i" }}</small></td>
+                            <td class="text-center">
+                                <a href="{% url 'super_admin_homepage_content_edit' item.id %}" class="btn btn-sm btn-outline-primary" title="Edit content">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-file-alt fa-2x text-muted"></i>
+                    </div>
+                    <h5 class="empty-state-title">No content configured</h5>
+                    <p class="empty-state-text">Use Populate Default Content to add the standard homepage text.</p>
+                    <form method="post" action="{% url 'super_admin_homepage_populate' %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary mt-2">
+                            <i class="fas fa-magic me-2"></i>Populate Default Content
+                        </button>
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</script>
+{% endblock %}

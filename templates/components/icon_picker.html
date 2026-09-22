@@ -1,0 +1,782 @@
+<!-- Icon Picker Modal Component -->
+{# Usage: {% include 'components/icon_picker.html' with input_id='id_icon' %} #}
+
+<!-- The Icon Picker Modal -->
+<div class="modal fade" id="iconPickerModal" tabindex="-1" aria-labelledby="iconPickerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content" style="border-radius: 16px; border: none; overflow: hidden;">
+            <!-- Modal Header -->
+            <div class="modal-header border-bottom-0 pb-2" style="background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);">
+                <h5 class="modal-title fw-bold text-white" id="iconPickerModalLabel">
+                    <i class="fas fa-icons me-2"></i>Select an Icon
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="modal-body p-4">
+                <!-- Search Bar -->
+                <div class="mb-4">
+                    <div class="input-group" style="border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                        <span class="input-group-text bg-white border-end-0">
+                            <i class="fas fa-search text-muted"></i>
+                        </span>
+                        <input type="text" id="iconPickerSearch" class="form-control border-start-0 ps-0" 
+                               placeholder="Search icons by name (e.g., users, calendar, settings)..."
+                               style="box-shadow: none; height: 46px;" oninput="filterIcons()">
+                        <button class="btn btn-outline-secondary border-start-0" type="button" onclick="document.getElementById('iconPickerSearch').value='';filterIcons();">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Category Tabs -->
+                <div class="mb-4" style="overflow-x: auto; white-space: nowrap; padding-bottom: 4px;">
+                    <div class="d-flex gap-2 icon-category-tabs">
+                        <button class="btn btn-sm px-3 py-2 icon-category-tab active" 
+                                style="border-radius: 8px; font-weight: 500; transition: all 0.2s ease;"
+                                data-category="all" onclick="filterByCategory('all', this)">
+                            <i class="fas fa-th me-1"></i>All
+                        </button>
+                        <button class="btn btn-sm px-3 py-2 icon-category-tab" 
+                                style="border-radius: 8px; font-weight: 500; transition: all 0.2s ease;"
+                                data-category="dashboard" onclick="filterByCategory('dashboard', this)">
+                            <i class="fas fa-chart-pie me-1"></i>Dashboard
+                        </button>
+                        <button class="btn btn-sm px-3 py-2 icon-category-tab" 
+                                style="border-radius: 8px; font-weight: 500; transition: all 0.2s ease;"
+                                data-category="users" onclick="filterByCategory('users', this)">
+                            <i class="fas fa-users me-1"></i>Users
+                        </button>
+                        <button class="btn btn-sm px-3 py-2 icon-category-tab" 
+                                style="border-radius: 8px; font-weight: 500; transition: all 0.2s ease;"
+                                data-category="organizations" onclick="filterByCategory('organizations', this)">
+                            <i class="fas fa-building me-1"></i>Orgs
+                        </button>
+                        <button class="btn btn-sm px-3 py-2 icon-category-tab" 
+                                style="border-radius: 8px; font-weight: 500; transition: all 0.2s ease;"
+                                data-category="courts" onclick="filterByCategory('courts', this)">
+                            <i class="fas fa-table-tennis me-1"></i>Courts
+                        </button>
+                        <button class="btn btn-sm px-3 py-2 icon-category-tab" 
+                                style="border-radius: 8px; font-weight: 500; transition: all 0.2s ease;"
+                                data-category="reservations" onclick="filterByCategory('reservations', this)">
+                            <i class="fas fa-calendar-check me-1"></i>Bookings
+                        </button>
+                        <button class="btn btn-sm px-3 py-2 icon-category-tab" 
+                                style="border-radius: 8px; font-weight: 500; transition: all 0.2s ease;"
+                                data-category="payments" onclick="filterByCategory('payments', this)">
+                            <i class="fas fa-credit-card me-1"></i>Payments
+                        </button>
+                        <button class="btn btn-sm px-3 py-2 icon-category-tab" 
+                                style="border-radius: 8px; font-weight: 500; transition: all 0.2s ease;"
+                                data-category="refunds" onclick="filterByCategory('refunds', this)">
+                            <i class="fas fa-rotate-left me-1"></i>Refunds
+                        </button>
+                        <button class="btn btn-sm px-3 py-2 icon-category-tab" 
+                                style="border-radius: 8px; font-weight: 500; transition: all 0.2s ease;"
+                                data-category="tournaments" onclick="filterByCategory('tournaments', this)">
+                            <i class="fas fa-trophy me-1"></i>Events
+                        </button>
+                        <button class="btn btn-sm px-3 py-2 icon-category-tab" 
+                                style="border-radius: 8px; font-weight: 500; transition: all 0.2s ease;"
+                                data-category="equipment" onclick="filterByCategory('equipment', this)">
+                            <i class="fas fa-tools me-1"></i>Equipment
+                        </button>
+                        <button class="btn btn-sm px-3 py-2 icon-category-tab" 
+                                style="border-radius: 8px; font-weight: 500; transition: all 0.2s ease;"
+                                data-category="communication" onclick="filterByCategory('communication', this)">
+                            <i class="fas fa-envelope me-1"></i>Comm
+                        </button>
+                        <button class="btn btn-sm px-3 py-2 icon-category-tab" 
+                                style="border-radius: 8px; font-weight: 500; transition: all 0.2s ease;"
+                                data-category="notifications" onclick="filterByCategory('notifications', this)">
+                            <i class="fas fa-bell me-1"></i>Alerts
+                        </button>
+                        <button class="btn btn-sm px-3 py-2 icon-category-tab" 
+                                style="border-radius: 8px; font-weight: 500; transition: all 0.2s ease;"
+                                data-category="security" onclick="filterByCategory('security', this)">
+                            <i class="fas fa-shield me-1"></i>Security
+                        </button>
+                        <button class="btn btn-sm px-3 py-2 icon-category-tab" 
+                                style="border-radius: 8px; font-weight: 500; transition: all 0.2s ease;"
+                                data-category="reports" onclick="filterByCategory('reports', this)">
+                            <i class="fas fa-file-lines me-1"></i>Reports
+                        </button>
+                        <button class="btn btn-sm px-3 py-2 icon-category-tab" 
+                                style="border-radius: 8px; font-weight: 500; transition: all 0.2s ease;"
+                                data-category="settings" onclick="filterByCategory('settings', this)">
+                            <i class="fas fa-cog me-1"></i>Settings
+                        </button>
+                        <button class="btn btn-sm px-3 py-2 icon-category-tab" 
+                                style="border-radius: 8px; font-weight: 500; transition: all 0.2s ease;"
+                                data-category="misc" onclick="filterByCategory('misc', this)">
+                            <i class="fas fa-ellipsis-h me-1"></i>More
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Icon Grid -->
+                <div id="iconPickerGrid" class="row g-2" style="min-height: 300px;">
+                    <!-- Icons will be rendered here by JavaScript -->
+                </div>
+
+                <!-- No Results Message -->
+                <div id="iconPickerNoResults" class="text-center py-5" style="display: none;">
+                    <div style="width: 64px; height: 64px; background: rgba(59,122,140,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                        <i class="fas fa-search fa-2x" style="color: #3B7A8C;"></i>
+                    </div>
+                    <h6 class="fw-bold mb-1">No icons found</h6>
+                    <p class="text-muted small mb-0">Try a different search term or category</p>
+                </div>
+
+                <!-- Loading State -->
+                <div id="iconPickerLoading" class="text-center py-5">
+                    <div class="spinner-border" style="color: #3B7A8C;" role="status">
+                        <span class="visually-hidden">Loading icons...</span>
+                    </div>
+                    <p class="text-muted mt-2 small">Loading icons...</p>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer border-top-0 pt-0 px-4 pb-4">
+                <div class="d-flex align-items-center gap-3 w-100">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted small">Selected:</span>
+                        <div id="iconPickerPreview" style="width: 40px; height: 40px; background: rgba(59,122,140,0.08); border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 2px dashed #3B7A8C;">
+                            <i id="iconPickerPreviewIcon" class="fas fa-check" style="color: #3B7A8C;"></i>
+                        </div>
+                        <code id="iconPickerSelectedClass" class="small text-muted ms-1">fa-check</code>
+                    </div>
+                    <div class="ms-auto d-flex gap-2">
+                        <button type="button" class="btn btn-outline-danger btn-sm px-3" style="border-radius: 8px;" onclick="clearSelectedIcon()">
+                            <i class="fas fa-times me-1"></i>Clear
+                        </button>
+                        <button type="button" class="btn btn-primary btn-sm px-4" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(59,122,140,0.25);" onclick="confirmIconSelection()" id="iconPickerConfirmBtn">
+                            <i class="fas fa-check me-1"></i>Select
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Icon Picker Styles */
+.icon-category-tab {
+    background: #f8f9fa;
+    color: #495057;
+    border: 1px solid #e9ecef;
+    white-space: nowrap;
+}
+.icon-category-tab:hover {
+    background: rgba(59,122,140,0.08);
+    border-color: rgba(59,122,140,0.2);
+    color: #3B7A8C;
+}
+.icon-category-tab.active {
+    background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);
+    border-color: transparent;
+    color: white;
+    box-shadow: 0 2px 8px rgba(59,122,140,0.2);
+}
+
+.icon-grid-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 4px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+    background: #fafafa;
+    min-height: 72px;
+    position: relative;
+}
+.icon-grid-item:hover {
+    background: rgba(59,122,140,0.06);
+    border-color: rgba(59,122,140,0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+.icon-grid-item.selected {
+    background: rgba(59,122,140,0.1);
+    border-color: #3B7A8C;
+    box-shadow: 0 4px 12px rgba(59,122,140,0.15);
+}
+.icon-grid-item i {
+    font-size: 1.25rem;
+    margin-bottom: 4px;
+    color: #495057;
+}
+.icon-grid-item.selected i {
+    color: #3B7A8C;
+}
+.icon-grid-item .icon-label {
+    font-size: 0.65rem;
+    color: #6c757d;
+    text-align: center;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.2;
+}
+
+/* Category tabs scrollbar */
+.icon-category-tabs::-webkit-scrollbar {
+    height: 3px;
+}
+.icon-category-tabs::-webkit-scrollbar-track {
+    background: transparent;
+}
+.icon-category-tabs::-webkit-scrollbar-thumb {
+    background: rgba(59,122,140,0.2);
+    border-radius: 10px;
+}
+
+/* Style for the icon picker trigger button */
+.icon-picker-trigger {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.icon-picker-trigger:hover {
+    transform: scale(1.1);
+}
+
+/* Preview in the form */
+.icon-preview-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.icon-preview-wrapper .icon-preview-container {
+    width: 40px;
+    height: 40px;
+    background: rgba(59,122,140,0.08);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+.icon-preview-wrapper .icon-preview-container i {
+    color: #3B7A8C;
+    font-size: 1.1rem;
+}
+</style>
+
+<script>
+// =============================
+// ICON PICKER DATA
+// =============================
+const ICON_PICKER = {
+    categories: {
+        dashboard: {
+            label: 'Dashboard',
+            icons: [
+                'fa-chart-pie', 'fa-chart-line', 'fa-chart-bar', 'fa-chart-area',
+                'fa-chart-simple', 'fa-chart-gantt', 'fa-chart-scatter',
+                'fa-gauge-high', 'fa-gauge', 'fa-gauge-simple',
+                'fa-table', 'fa-list', 'fa-border-all', 'fa-grid',
+                'fa-square-poll-vertical', 'fa-square-poll-horizontal',
+                'fa-chart-column', 'fa-circle-chart', 'fa-chart-network',
+                'fa-analytics', 'fa-dashboard', 'fa-home', 'fa-house',
+                'fa-th-large', 'fa-th', 'fa-th-list', 'fa-clipboard',
+                'fa-clipboard-list', 'fa-clipboard-check', 'fa-file-lines',
+                'fa-activity', 'fa-trend-up', 'fa-trend-down',
+            ]
+        },
+        users: {
+            label: 'Users',
+            icons: [
+                'fa-user', 'fa-users', 'fa-user-plus', 'fa-user-minus',
+                'fa-user-check', 'fa-user-xmark', 'fa-user-gear',
+                'fa-user-group', 'fa-user-large', 'fa-user-pen',
+                'fa-user-tie', 'fa-user-circle', 'fa-user-edit',
+                'fa-user-cog', 'fa-user-shield', 'fa-user-lock',
+                'fa-user-graduate', 'fa-user-nurse', 'fa-user-doctor',
+                'fa-people-group', 'fa-people-arrows', 'fa-people-line',
+                'fa-address-book', 'fa-address-card', 'fa-id-card',
+                'fa-id-badge', 'fa-profile', 'fa-account', 'fa-person',
+                'fa-person-circle-plus', 'fa-person-circle-minus',
+                'fa-person-circle-check', 'fa-person-circle-xmark',
+            ]
+        },
+        organizations: {
+            label: 'Organizations',
+            icons: [
+                'fa-building', 'fa-building-columns', 'fa-building-circle-check',
+                'fa-building-circle-arrow-right', 'fa-building-lock',
+                'fa-buildings', 'fa-city', 'fa-industry', 'fa-warehouse',
+                'fa-store', 'fa-shop', 'fa-briefcase', 'fa-briefcase-clock',
+                'fa-business-time', 'fa-handshake', 'fa-handshake-simple',
+                'fa-hand-holding-heart', 'fa-hand-holding-dollar',
+                'fa-company', 'fa-corporate', 'fa-enterprise',
+                'fa-network-wired', 'fa-sitemap', 'fa-diagram-project',
+                'fa-globe', 'fa-earth-americas', 'fa-location-dot',
+                'fa-map-pin', 'fa-map-location-dot', 'fa-map',
+                'fa-headquarters', 'fa-office', 'fa-partner',
+            ]
+        },
+        courts: {
+            label: 'Courts',
+            icons: [
+                'fa-table-tennis', 'fa-table-tennis-paddle-ball',
+                'fa-baseball', 'fa-basketball', 'fa-football',
+                'fa-volleyball', 'fa-tennis-ball', 'fa-golf-ball-tee',
+                'fa-medal', 'fa-medals', 'fa-award', 'fa-trophy',
+                'fa-whistle', 'fa-stopwatch', 'fa-clock',
+                'fa-sun', 'fa-cloud-sun', 'fa-cloud', 'fa-temperature-sun',
+                'fa-tree', 'fa-park', 'fa-benches',
+                'fa-chair', 'fa-couch', 'fa-fan',
+                'fa-water', 'fa-droplet', 'fa-swimming-pool',
+                'fa-location', 'fa-venue', 'fa-stadium',
+                'fa-floor', 'fa-floor-plan', 'fa-ruler-combined',
+                'fa-light', 'fa-lamp', 'fa-lightbulb',
+            ]
+        },
+        reservations: {
+            label: 'Reservations',
+            icons: [
+                'fa-calendar-check', 'fa-calendar', 'fa-calendar-plus',
+                'fa-calendar-minus', 'fa-calendar-xmark', 'fa-calendar-day',
+                'fa-calendar-week', 'fa-calendar-clock',
+                'fa-book', 'fa-bookmark', 'fa-ticket',
+                'fa-ticket-simple', 'fa-circle-check', 'fa-check-circle',
+                'fa-check', 'fa-check-double', 'fa-hourglass',
+                'fa-hourglass-half', 'fa-hourglass-start', 'fa-hourglass-end',
+                'fa-pen-to-square', 'fa-pencil', 'fa-edit',
+                'fa-list-check', 'fa-tasks', 'fa-clipboard-list',
+                'fa-note-sticky', 'fa-note', 'fa-notes',
+                'fa-schedule', 'fa-timeline', 'fa-time',
+                'fa-circle-check', 'fa-ban', 'fa-xmark-circle',
+                'fa-circle-exclamation', 'fa-circle-info',
+            ]
+        },
+        payments: {
+            label: 'Payments',
+            icons: [
+                'fa-credit-card', 'fa-credit-card-front', 'fa-credit-card-back',
+                'fa-money-bill', 'fa-money-bills', 'fa-money-bill-wave',
+                'fa-money-bill-transfer', 'fa-money-bill-trend-up',
+                'fa-cash-register', 'fa-sack-dollar', 'fa-sack',
+                'fa-coins', 'fa-coin', 'fa-circle-dollar',
+                'fa-dollar-sign', 'fa-peso-sign', 'fa-currency-exchange',
+                'fa-wallet', 'fa-wallet-open', 'fa-piggy-bank',
+                'fa-bank', 'fa-university', 'fa-building-columns',
+                'fa-receipt', 'fa-file-invoice', 'fa-file-invoice-dollar',
+                'fa-invoice', 'fa-bill', 'fa-calculator',
+                'fa-percentage', 'fa-badge-percent', 'fa-percent',
+                'fa-hand-holding-usd', 'fa-hand-holding-dollar',
+                'fa-scale-balanced', 'fa-check-to-slot',
+            ]
+        },
+        refunds: {
+            label: 'Refunds',
+            icons: [
+                'fa-rotate-left', 'fa-undo', 'fa-arrow-rotate-left',
+                'fa-reply', 'fa-reply-all', 'fa-backward',
+                'fa-backward-step', 'fa-backward-fast',
+                'fa-circle-arrow-left', 'fa-arrow-left',
+                'fa-chevron-left', 'fa-angle-left',
+                'fa-return', 'fa-exchange', 'fa-arrow-right-arrow-left',
+                'fa-rotate', 'fa-sync', 'fa-arrows-rotate',
+                'fa-clock-rotate-left', 'fa-history',
+                'fa-trash-can-arrow-up', 'fa-trash-undo',
+                'fa-file-exclamation', 'fa-file-circle-exclamation',
+                'fa-exclamation-triangle', 'fa-triangle-exclamation',
+                'fa-circle-exclamation', 'fa-exclamation',
+                'fa-message-exclamation', 'fa-bell-exclamation',
+                'fa-credit-card', 'fa-credit-card-blank',
+                'fa-money-bill-wave', 'fa-arrow-trend-down',
+            ]
+        },
+        tournaments: {
+            label: 'Tournaments',
+            icons: [
+                'fa-trophy', 'fa-trophy-star', 'fa-crown',
+                'fa-medal', 'fa-medals', 'fa-award', 'fa-certificate',
+                'fa-star', 'fa-star-half-stroke', 'fa-star-of-life',
+                'fa-ranking-star', 'fa-ranking', 'fa-chart-simple',
+                'fa-flag', 'fa-flag-checkered', 'fa-flag-pennant',
+                'fa-shield', 'fa-shield-halved', 'fa-shield-check',
+                'fa-sword', 'fa-crosshairs', 'fa-bullseye',
+                'fa-gamepad', 'fa-dice', 'fa-dice-d6',
+                'fa-bracket', 'fa-bracket-curly', 'fa-diagram-next',
+                'fa-people-arrows', 'fa-people-group',
+                'fa-play', 'fa-circle-play', 'fa-play-circle',
+                'fa-forward', 'fa-forward-step', 'fa-forward-fast',
+                'fa-champions', 'fa-competition', 'fa-leaderboard',
+                'fa-podium', 'fa-podium-star', 'fa-podium-location',
+            ]
+        },
+        equipment: {
+            label: 'Equipment',
+            icons: [
+                'fa-tools', 'fa-wrench', 'fa-screwdriver', 'fa-screwdriver-wrench',
+                'fa-hammer', 'fa-toolbox', 'fa-kitchen-set',
+                'fa-paddle', 'fa-table-tennis', 'fa-baseball-bat-ball',
+                'fa-tennis-ball', 'fa-basketball', 'fa-football',
+                'fa-volleyball', 'fa-golf-club', 'fa-hockey-puck',
+                'fa-helmet-safety', 'fa-hard-hat', 'fa-goggles',
+                'fa-camera', 'fa-binoculars', 'fa-scope',
+                'fa-box', 'fa-boxes', 'fa-boxes-stacked', 'fa-box-open',
+                'fa-cube', 'fa-cubes', 'fa-cubes-stacked',
+                'fa-bag-shopping', 'fa-cart-shopping', 'fa-basket-shopping',
+                'fa-store', 'fa-rack', 'fa-shelf',
+                'fa-weight-scale', 'fa-weight-hanging', 'fa-dumbbell',
+                'fa-gear', 'fa-gears', 'fa-cog', 'fa-cogs',
+                'fa-bolt', 'fa-battery-full', 'fa-charging-station',
+                'fa-rent', 'fa-rent-sign', 'fa-lease',
+            ]
+        },
+        communication: {
+            label: 'Communication',
+            icons: [
+                'fa-envelope', 'fa-envelope-open', 'fa-envelope-circle-check',
+                'fa-envelope-paper', 'fa-envelope-paper-heart',
+                'fa-message', 'fa-messages', 'fa-comment',
+                'fa-comments', 'fa-comment-dots', 'fa-comment-medical',
+                'fa-bell', 'fa-bell-on', 'fa-bell-slash', 'fa-bell-exclamation',
+                'fa-phone', 'fa-phone-flip', 'fa-phone-volume',
+                'fa-mobile', 'fa-mobile-button', 'fa-mobile-screen',
+                'fa-paper-plane', 'fa-share', 'fa-share-nodes',
+                'fa-bullhorn', 'fa-bullhorn-solid', 'fa-broadcast',
+                'fa-megaphone', 'fa-announcement', 'fa-loudspeaker',
+                'fa-at', 'fa-hashtag', 'fa-link', 'fa-chain',
+                'fa-fax', 'fa-fax-machine', 'fa-teletype',
+                'fa-mailchimp', 'fa-newsletter', 'fa-mail-bulk',
+                'fa-inbox', 'fa-inbox-in', 'fa-inbox-out',
+                'fa-reply', 'fa-reply-all', 'fa-forward',
+            ]
+        },
+        settings: {
+            label: 'Settings',
+            icons: [
+                'fa-cog', 'fa-cogs', 'fa-gear', 'fa-gears',
+                'fa-sliders', 'fa-sliders-h', 'fa-sliders-up',
+                'fa-wrench', 'fa-screwdriver-wrench', 'fa-hammer',
+                'fa-toolbox', 'fa-filter', 'fa-filters',
+                'fa-toggle-on', 'fa-toggle-off', 'fa-toggle-large-on',
+                'fa-switch', 'fa-dial', 'fa-dial-max',
+                'fa-equals', 'fa-not-equal', 'fa-plus-minus',
+                'fa-lock', 'fa-lock-open', 'fa-unlock', 'fa-unlock-keyhole',
+                'fa-key', 'fa-key-skeleton', 'fa-key-skeleton-left-right',
+                'fa-shield', 'fa-shield-halved', 'fa-shield-check',
+                'fa-shield-blank', 'fa-shield-keyhole',
+                'fa-palette', 'fa-paintbrush', 'fa-paint-roller',
+                'fa-eye', 'fa-eye-slash', 'fa-eye-low-vision',
+                'fa-brush', 'fa-eraser', 'fa-trash', 'fa-trash-can',
+                'fa-database', 'fa-server', 'fa-cloud',
+                'fa-power-off', 'fa-sun', 'fa-moon', 'fa-circle-half-stroke',
+            ]
+        },
+        notifications: {
+            label: 'Notifications',
+            icons: [
+                'fa-bell', 'fa-bell-on', 'fa-bell-slash', 'fa-bell-exclamation',
+                'fa-bell-concierge', 'fa-envelope', 'fa-envelope-open',
+                'fa-envelope-circle-check', 'fa-message', 'fa-messages',
+                'fa-comment', 'fa-comments', 'fa-comment-dots',
+                'fa-bullhorn', 'fa-broadcast-tower', 'fa-megaphone',
+                'fa-inbox', 'fa-inbox-in', 'fa-inbox-out',
+                'fa-alarm-clock', 'fa-clock', 'fa-stopwatch',
+                'fa-circle-exclamation', 'fa-triangle-exclamation',
+                'fa-exclamation', 'fa-info-circle', 'fa-question-circle',
+                'fa-mail-bulk', 'fa-mailchimp', 'fa-newsletter',
+                'fa-paper-plane', 'fa-share', 'fa-share-nodes',
+                'fa-badge', 'fa-badge-check', 'fa-tag',
+                'fa-flag', 'fa-circle', 'fa-dot-circle',
+            ]
+        },
+        security: {
+            label: 'Security',
+            icons: [
+                'fa-shield', 'fa-shield-halved', 'fa-shield-check',
+                'fa-shield-blank', 'fa-shield-keyhole',
+                'fa-lock', 'fa-lock-open', 'fa-unlock',
+                'fa-unlock-keyhole', 'fa-key', 'fa-key-skeleton',
+                'fa-key-skeleton-left-right', 'fa-user-lock',
+                'fa-user-shield', 'fa-user-secret',
+                'fa-fingerprint', 'fa-id-card', 'fa-id-badge',
+                'fa-ban', 'fa-block', 'fa-circle-exclamation',
+                'fa-triangle-exclamation', 'fa-exclamation',
+                'fa-eye', 'fa-eye-slash', 'fa-eye-low-vision',
+                'fa-mask', 'fa-robot', 'fa-microchip',
+                'fa-door-closed', 'fa-door-open',
+                'fa-fire-extinguisher', 'fa-bug', 'fa-virus',
+                'fa-check-double', 'fa-certificate', 'fa-passport',
+            ]
+        },
+        reports: {
+            label: 'Reports',
+            icons: [
+                'fa-file-lines', 'fa-file-pen', 'fa-file-edit',
+                'fa-file-circle-exclamation', 'fa-file-circle-check',
+                'fa-file-circle-plus', 'fa-file-circle-minus',
+                'fa-file-export', 'fa-file-import',
+                'fa-chart-bar', 'fa-chart-line', 'fa-chart-pie',
+                'fa-chart-area', 'fa-chart-simple', 'fa-chart-gantt',
+                'fa-chart-column', 'fa-chart-scatter',
+                'fa-clipboard', 'fa-clipboard-list', 'fa-clipboard-check',
+                'fa-clipboard-question', 'fa-clipboard-user',
+                'fa-scroll', 'fa-newspaper', 'fa-table',
+                'fa-spreadsheet', 'fa-memo', 'fa-note-sticky',
+                'fa-pen-to-square', 'fa-pencil', 'fa-edit',
+                'fa-magnifying-glass-chart', 'fa-magnifying-glass-dollar',
+                'fa-print', 'fa-download', 'fa-upload',
+                'fa-list-check', 'fa-tasks', 'fa-check-double',
+            ]
+        },
+        misc: {
+            label: 'Miscellaneous',
+            icons: [
+                'fa-star', 'fa-heart', 'fa-fire', 'fa-bolt',
+                'fa-cloud', 'fa-download', 'fa-upload', 'fa-print',
+                'fa-search', 'fa-search-plus', 'fa-search-minus',
+                'fa-plus', 'fa-minus', 'fa-times', 'fa-xmark',
+                'fa-check', 'fa-asterisk', 'fa-circle', 'fa-square',
+                'fa-arrow-up', 'fa-arrow-down', 'fa-arrow-left', 'fa-arrow-right',
+                'fa-angle-up', 'fa-angle-down', 'fa-angle-left', 'fa-angle-right',
+                'fa-chevron-up', 'fa-chevron-down', 'fa-chevron-left', 'fa-chevron-right',
+                'fa-expand', 'fa-compress', 'fa-maximize', 'fa-minimize',
+                'fa-info', 'fa-info-circle', 'fa-question', 'fa-question-circle',
+                'fa-exclamation', 'fa-exclamation-circle', 'fa-exclamation-triangle',
+                'fa-warning', 'fa-danger', 'fa-ban', 'fa-block',
+                'fa-hand', 'fa-hand-peace', 'fa-hand-point-up',
+                'fa-thumbs-up', 'fa-thumbs-down', 'fa-like', 'fa-dislike',
+                'fa-tag', 'fa-tags', 'fa-label', 'fa-badge',
+                'fa-bookmark', 'fa-bookmarks', 'fa-pin', 'fa-thumbtack',
+                'fa-link', 'fa-chain', 'fa-unlink', 'fa-chain-slash',
+                'fa-file', 'fa-files', 'fa-file-lines', 'fa-file-text',
+                'fa-folder', 'fa-folder-open', 'fa-folder-plus', 'fa-folder-minus',
+                'fa-map', 'fa-map-pin', 'fa-compass', 'fa-location-dot',
+                'fa-camera', 'fa-image', 'fa-images', 'fa-picture',
+                'fa-video', 'fa-film', 'fa-clapperboard',
+                'fa-music', 'fa-headphones', 'fa-microphone',
+                'fa-clock', 'fa-stopwatch', 'fa-hourglass', 'fa-timer',
+                'fa-gift', 'fa-magic', 'fa-wand-sparkles', 'fa-sparkles',
+                'fa-shield', 'fa-lock', 'fa-unlock', 'fa-key',
+                'fa-trash', 'fa-recycle', 'fa-broom', 'fa-soap',
+                'fa-asl', 'fa-sign-language', 'fa-braille',
+                'fa-cube', 'fa-dice', 'fa-puzzle-piece',
+                'fa-leaf', 'fa-seedling', 'fa-tree', 'fa-flower',
+                'fa-utensils', 'fa-mug-hot', 'fa-coffee', 'fa-cake',
+                'fa-plane', 'fa-truck', 'fa-car', 'fa-bicycle',
+                'fa-wallet', 'fa-credit-card', 'fa-calculator',
+                'fa-umbrella', 'fa-rainbow', 'fa-snowflake',
+                'fa-globe', 'fa-flag', 'fa-paper-plane', 'fa-rocket',
+                'fa-shapes', 'fa-share', 'fa-share-alt',
+                'fa-robot', 'fa-microchip', 'fa-cpu', 'fa-memory',
+            ]
+        }
+    }
+};
+
+// State
+let selectedIcon = 'fa-check';
+let targetInputId = '';
+let iconPickerInitialized = false;
+
+// Initialize icon picker
+function initIconPicker(inputId, currentIcon) {
+    targetInputId = inputId;
+    selectedIcon = (currentIcon || 'fa-check').replace(/^fas\s+/, '');
+    
+    if (!iconPickerInitialized) {
+        renderIcons('all', '');
+        iconPickerInitialized = true;
+    }
+    
+    // Update preview
+    updatePickerPreview();
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('iconPickerModal'));
+    modal.show();
+    
+    // Focus search after modal opens
+    document.getElementById('iconPickerModal').addEventListener('shown.bs.modal', function () {
+        document.getElementById('iconPickerSearch').focus();
+    }, { once: true });
+}
+
+// Render icons in the grid
+function renderIcons(category, search) {
+    const grid = document.getElementById('iconPickerGrid');
+    const noResults = document.getElementById('iconPickerNoResults');
+    const loading = document.getElementById('iconPickerLoading');
+    
+    loading.style.display = 'none';
+    
+    let items = [];
+    
+    if (search) {
+        // Search across all categories
+        const term = search.toLowerCase();
+        for (const catKey in ICON_PICKER.categories) {
+            const cat = ICON_PICKER.categories[catKey];
+            cat.icons.forEach(icon => {
+                const name = icon.replace('fa-', '').replace(/-/g, ' ');
+                if (name.includes(term) || icon.includes(term)) {
+                    items.push({ icon: icon, name: name });
+                }
+            });
+        }
+    } else if (category && category !== 'all') {
+        // Filter by category
+        const cat = ICON_PICKER.categories[category];
+        if (cat) {
+            cat.icons.forEach(icon => {
+                const name = icon.replace('fa-', '').replace(/-/g, ' ');
+                items.push({ icon: icon, name: name });
+            });
+        }
+    } else {
+        // Show all icons
+        for (const catKey in ICON_PICKER.categories) {
+            const cat = ICON_PICKER.categories[catKey];
+            cat.icons.forEach(icon => {
+                const name = icon.replace('fa-', '').replace(/-/g, ' ');
+                items.push({ icon: icon, name: name });
+            });
+        }
+    }
+    
+    // Deduplicate
+    const seen = new Set();
+    items = items.filter(item => {
+        if (seen.has(item.icon)) return false;
+        seen.add(item.icon);
+        return true;
+    });
+    
+    if (items.length === 0) {
+        grid.innerHTML = '';
+        noResults.style.display = 'block';
+        return;
+    }
+    
+    noResults.style.display = 'none';
+    
+    let html = '';
+    items.forEach(item => {
+        const isSelected = item.icon === selectedIcon;
+        html += '<div class="col-4 col-sm-3 col-md-3 col-lg-2">';
+        html += '<div class="icon-grid-item' + (isSelected ? ' selected' : '') + '" ';
+        html += 'data-icon="' + item.icon + '" ';
+        html += 'onclick="selectPickerIcon(\'' + item.icon + '\', this)" ';
+        html += 'title="' + item.name + ' (' + item.icon + ')">';
+        html += '<i class="fas ' + item.icon + '"></i>';
+        html += '<span class="icon-label">' + item.name.split(' ').slice(0, 2).join(' ') + '</span>';
+        html += '</div></div>';
+    });
+    
+    grid.innerHTML = html;
+}
+
+// Select an icon
+function selectPickerIcon(iconClass, element) {
+    // Deselect all
+    document.querySelectorAll('.icon-grid-item').forEach(el => {
+        el.classList.remove('selected');
+    });
+    
+    // Select this one
+    if (element) {
+        element.classList.add('selected');
+    }
+    
+    selectedIcon = iconClass;
+    updatePickerPreview();
+}
+
+// Update the preview in the modal footer
+function updatePickerPreview() {
+    const previewIcon = document.getElementById('iconPickerPreviewIcon');
+    const selectedClass = document.getElementById('iconPickerSelectedClass');
+    
+    previewIcon.className = 'fas ' + selectedIcon;
+    selectedClass.textContent = selectedIcon;
+}
+
+// Confirm selection and update the input field
+function confirmIconSelection() {
+    if (!targetInputId) return;
+    
+    const input = document.getElementById(targetInputId);
+    if (input) {
+        input.value = selectedIcon;
+        // Trigger change event
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        // Update preview next to the input
+        updateInputPreview(targetInputId, selectedIcon);
+    }
+    
+    // Close modal
+    const modalEl = document.getElementById('iconPickerModal');
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
+}
+
+// Clear selected icon
+function clearSelectedIcon() {
+    selectedIcon = '';
+    const previewIcon = document.getElementById('iconPickerPreviewIcon');
+    const selectedClass = document.getElementById('iconPickerSelectedClass');
+    previewIcon.className = 'fas fa-ban';
+    selectedClass.textContent = 'None';
+    document.querySelectorAll('.icon-grid-item').forEach(el => el.classList.remove('selected'));
+}
+
+// Filter by category
+function filterByCategory(category, btn) {
+    // Update tab active state
+    document.querySelectorAll('.icon-category-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    btn.classList.add('active');
+    
+    const search = document.getElementById('iconPickerSearch').value.trim();
+    renderIcons(category, search);
+}
+
+// Search filter
+function filterIcons() {
+    const search = document.getElementById('iconPickerSearch').value.trim();
+    const activeTab = document.querySelector('.icon-category-tab.active');
+    const category = activeTab ? activeTab.getAttribute('data-category') : 'all';
+    renderIcons(category, search);
+}
+
+// Update the preview next to the input field
+function updateInputPreview(inputId, iconClass) {
+    const wrapper = document.querySelector('[data-icon-preview-for="' + inputId + '"]');
+    if (wrapper) {
+        const icon = wrapper.querySelector('i');
+        if (icon) {
+            icon.className = 'fas ' + (iconClass || 'fa-check');
+        }
+        const label = wrapper.querySelector('.icon-class-label');
+        if (label) {
+            label.textContent = iconClass || 'None';
+        }
+    }
+}
+
+// When the modal is hidden, clean up
+document.addEventListener('DOMContentLoaded', function() {
+    const modalEl = document.getElementById('iconPickerModal');
+    if (modalEl) {
+        modalEl.addEventListener('hidden.bs.modal', function() {
+            targetInputId = '';
+        });
+    }
+});
+</script>

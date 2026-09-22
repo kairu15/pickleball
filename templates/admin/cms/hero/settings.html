@@ -1,0 +1,246 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+{% block title %}Hero Section CMS{% endblock %}
+{% block page_title %}<i class="fas fa-image me-2"></i>Hero Section CMS{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+.icon-picker-trigger-btn { cursor: pointer; transition: all 0.2s ease; border-radius: 8px; }
+.icon-picker-trigger-btn:hover { transform: scale(1.05); box-shadow: 0 4px 12px rgba(59,122,140,0.2); }
+.hero-preview {
+    border-radius: 12px;
+    overflow: hidden;
+    min-height: 300px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 3rem;
+    transition: all 0.3s ease;
+}
+.hero-preview-content { position: relative; z-index: 2; }
+.hero-preview-badge {
+    display: inline-block;
+    padding: 0.5rem 1.25rem;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 50px;
+    color: #fff;
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+}
+.hero-preview-title { font-size: 2.5rem; font-weight: 700; color: #fff; margin-bottom: 1rem; text-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+.hero-preview-subtitle { font-size: 1.1rem; color: rgba(255,255,255,0.9); max-width: 600px; margin: 0 auto; }
+.color-input-group { display: flex; align-items: center; gap: 0.5rem; }
+.color-input-group input[type="color"] { width: 40px; height: 40px; border: 2px solid #dee2e6; border-radius: 8px; cursor: pointer; padding: 2px; }
+.color-input-group input[type="text"] { flex: 1; }
+.form-range { width: 100%; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="admin-card mb-4">
+            <div class="admin-card-header"><h5 class="admin-card-title"><i class="fas fa-palette me-2"></i>Background Settings</h5></div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" id="heroForm">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Background Type</label>
+                            <select name="background_type" class="form-select" id="bgType">
+                                <option value="gradient" {% if settings.background_type == 'gradient' %}selected{% endif %}>Gradient Background</option>
+                                <option value="solid" {% if settings.background_type == 'solid' %}selected{% endif %}>Solid Color</option>
+                                <option value="image" {% if settings.background_type == 'image' %}selected{% endif %}>Background Image</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 bg-gradient-fields">
+                            <label class="form-label fw-semibold">Gradient Start Color</label>
+                            <div class="color-input-group">
+                                <input type="color" name="gradient_start" value="{{ settings.gradient_start }}" id="gradStart">
+                                <input type="text" class="form-control" value="{{ settings.gradient_start }}" id="gradStartText">
+                            </div>
+                        </div>
+                        <div class="col-md-6 bg-gradient-fields">
+                            <label class="form-label fw-semibold">Gradient End Color</label>
+                            <div class="color-input-group">
+                                <input type="color" name="gradient_end" value="{{ settings.gradient_end }}" id="gradEnd">
+                                <input type="text" class="form-control" value="{{ settings.gradient_end }}" id="gradEndText">
+                            </div>
+                        </div>
+                        <div class="col-md-6 bg-gradient-fields">
+                            <label class="form-label fw-semibold">Gradient Direction</label>
+                            <select name="gradient_direction" class="form-select">
+                                <option value="135deg" {% if settings.gradient_direction == '135deg' %}selected{% endif %}>Diagonal (135&deg;)</option>
+                                <option value="to right" {% if settings.gradient_direction == 'to right' %}selected{% endif %}>Left to Right</option>
+                                <option value="to bottom" {% if settings.gradient_direction == 'to bottom' %}selected{% endif %}>Top to Bottom</option>
+                                <option value="45deg" {% if settings.gradient_direction == '45deg' %}selected{% endif %}>Diagonal (45&deg;)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 bg-solid-fields">
+                            <label class="form-label fw-semibold">Solid Background Color</label>
+                            <div class="color-input-group">
+                                <input type="color" name="solid_color" value="{{ settings.solid_color }}" id="solidColor">
+                                <input type="text" class="form-control" value="{{ settings.solid_color }}" id="solidColorText">
+                            </div>
+                        </div>
+                        <div class="col-12 bg-image-fields">
+                            <label class="form-label fw-semibold">Background Image</label>
+                            <input type="file" name="background_image" class="form-control" accept="image/*">
+                            {% if settings.background_image_url %}
+                            <small class="text-muted">Current: <a href="{{ settings.background_image_url }}" target="_blank">{{ settings.background_image.name }}</a> (1920x1080 recommended)</small>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Overlay Color</label>
+                            <div class="color-input-group">
+                                <input type="color" name="overlay_color" value="{{ settings.overlay_color }}" id="overlayColor">
+                                <input type="text" class="form-control" value="{{ settings.overlay_color }}" id="overlayColorText">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Overlay Opacity: <span id="opacityVal">{{ settings.overlay_opacity }}</span></label>
+                            <input type="range" name="overlay_opacity" class="form-range" min="0" max="1" step="0.05" value="{{ settings.overlay_opacity }}" id="overlayOpacity">
+                        </div>
+                    </div>
+                    <hr>
+                    <h6 class="fw-bold mb-3"><i class="fas fa-font me-2"></i>Content Settings</h6>
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold">Badge Text</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <input type="text" name="badge_text" class="form-control" value="{{ settings.badge_text }}" placeholder="e.g. The Ultimate Pickleball Platform" id="badgeText">
+                                <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                                    <div class="icon-preview-wrapper" data-icon-preview-for="heroBadgeIcon">
+                                        <div class="icon-preview-container" style="width:36px;height:36px;">
+                                            <i class="fas fa-star"></i>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-primary icon-picker-trigger-btn btn-sm"
+                                            onclick="initIconPicker('heroBadgeIcon', 'fa-star')">
+                                        <i class="fas fa-icons me-1"></i>Icon
+                                    </button>
+                                </div>
+                            </div>
+                            <input type="hidden" name="hero_icon" id="heroBadgeIcon" value="fa-star">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Main Title</label>
+                            <input type="text" name="title" class="form-control" value="{{ settings.title }}" placeholder="e.g. Welcome to PickleSphere">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Subtitle</label>
+                            <textarea name="subtitle" class="form-control" rows="2" placeholder="Hero subtitle text">{{ settings.subtitle }}</textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Min Height</label>
+                            <input type="text" name="min_height" class="form-control" value="{{ settings.min_height }}" placeholder="e.g. 90vh">
+                        </div>
+                        <div class="col-md-6 d-flex align-items-end">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" name="show_search_widget" class="form-check-input" id="showSearch" {% if settings.show_search_widget %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold" for="showSearch">Show Search Widget</label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" name="is_active" class="form-check-input" id="isActive" {% if settings.is_active %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold" for="isActive">Settings Active</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Save &amp; Update Hero</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="admin-card mb-4">
+            <div class="admin-card-header"><h5 class="admin-card-title"><i class="fas fa-eye me-2"></i>Live Preview</h5></div>
+            <div class="card-body p-0">
+                <div class="hero-preview" id="heroPreview">
+                    <div class="hero-preview-content">
+                        <div class="hero-preview-badge" id="previewBadge">{{ settings.badge_text|default:"The Ultimate Pickleball Platform" }}</div>
+                        <h2 class="hero-preview-title" id="previewTitle">{{ settings.title|default:"Welcome to PickleSphere" }}</h2>
+                        <p class="hero-preview-subtitle" id="previewSubtitle">{{ settings.subtitle|truncatewords:20 }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function updateHeroPreview() {
+        const preview = document.getElementById('heroPreview');
+        const bgType = document.getElementById('bgType').value;
+        const overlayColor = document.getElementById('overlayColor').value;
+        const overlayOpacity = document.getElementById('overlayOpacity').value;
+        
+        document.getElementById('opacityVal').textContent = overlayOpacity;
+        
+        if (bgType === 'solid') {
+            const color = document.getElementById('solidColor').value;
+            preview.style.background = color;
+        } else if (bgType === 'gradient') {
+            const start = document.getElementById('gradStart').value;
+            const end = document.getElementById('gradEnd').value;
+            const dir = document.querySelector('[name="gradient_direction"]').value;
+            preview.style.background = `linear-gradient(${dir}, ${start}, ${end})`;
+        } else if (bgType === 'image') {
+            preview.style.background = `linear-gradient(rgba(${hexToRgb(overlayColor)},${overlayOpacity}), rgba(${hexToRgb(overlayColor)},${overlayOpacity})), url('{{ settings.background_image_url }}') center/cover`;
+        }
+        
+        document.getElementById('previewBadge').textContent = document.querySelector('[name="badge_text"]').value || 'The Ultimate Pickleball Platform';
+        document.getElementById('previewTitle').textContent = document.querySelector('[name="title"]').value || 'Welcome to PickleSphere';
+        document.getElementById('previewSubtitle').textContent = document.querySelector('[name="subtitle"]').value || '';
+    }
+    
+    function hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? `${parseInt(result[1],16)}, ${parseInt(result[2],16)}, ${parseInt(result[3],16)}` : '0,0,0';
+    }
+    
+    // Sync color pickers with text inputs
+    document.querySelectorAll('.color-input-group input[type="color"]').forEach(picker => {
+        picker.addEventListener('input', function() {
+            const textInput = this.parentElement.querySelector('input[type="text"]');
+            if (textInput) textInput.value = this.value;
+            updateHeroPreview();
+        });
+    });
+    document.querySelectorAll('.color-input-group input[type="text"]').forEach(text => {
+        text.addEventListener('input', function() {
+            const colorPicker = this.parentElement.querySelector('input[type="color"]');
+            if (colorPicker && /^#[0-9a-f]{6}$/i.test(this.value)) colorPicker.value = this.value;
+            updateHeroPreview();
+        });
+    });
+    
+    // Toggle field visibility
+    function toggleBgFields() {
+        const type = document.getElementById('bgType').value;
+        document.querySelectorAll('.bg-gradient-fields').forEach(el => el.style.display = type === 'gradient' ? '' : 'none');
+        document.querySelectorAll('.bg-solid-fields').forEach(el => el.style.display = type === 'solid' ? '' : 'none');
+        document.querySelectorAll('.bg-image-fields').forEach(el => el.style.display = type === 'image' ? '' : 'none');
+    }
+    
+    document.getElementById('bgType').addEventListener('change', toggleBgFields);
+    document.getElementById('overlayOpacity').addEventListener('input', updateHeroPreview);
+    document.querySelectorAll('#heroForm input, #heroForm select, #heroForm textarea').forEach(el => {
+        el.addEventListener('input', updateHeroPreview);
+    });
+    
+    toggleBgFields();
+    updateHeroPreview();
+});
+</script>
+
+{% include 'components/icon_picker.html' %}
+{% endblock %}

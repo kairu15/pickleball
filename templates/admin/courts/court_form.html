@@ -1,0 +1,125 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}{% if edit_mode %}Edit Court{% else %}Create Court{% endif %}{% endblock %}
+{% block page_title %}{% if edit_mode %}Edit Court{% else %}Create New Court{% endif %}{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        {% if user.is_super_admin %}
+            <li class="breadcrumb-item"><a href="{% url 'super_admin_analytics' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'admin_court_list' %}">Courts</a></li>
+        {% else %}
+            <li class="breadcrumb-item"><a href="{% url 'staff_dashboard' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'staff_dashboard' %}">Courts</a></li>
+        {% endif %}
+        <li class="breadcrumb-item active" aria-current="page">{% if edit_mode %}Edit{% else %}Create{% endif %}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="admin-card">
+    <div class="admin-card-header bg-gradient-light">
+        <h5 class="admin-card-title">
+            <i class="fas fa-map-marker-alt text-primary"></i>
+            {% if edit_mode %}Update Court Details{% else %}New Court Details{% endif %}
+        </h5>
+        <a href="{% url 'admin_court_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back
+        </a>
+    </div>
+    <div class="admin-card-body">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                {% for error in form.non_field_errors %}
+                    <div>{{ error }}</div>
+                {% endfor %}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endif %}
+
+            <!-- Court Information Section -->
+            <div class="admin-form-section">
+                <h6 class="admin-form-section-title">
+                    <i class="fas fa-info-circle text-primary"></i>
+                    Court Information
+                </h6>
+                <div class="row g-3">
+                    {% for field in form %}
+                        <div class="{% if field.name in 'description,amenities_text,image,is_active' %}col-12{% else %}col-md-6{% endif %}">
+                            {% if field.field.widget.input_type == 'checkbox' %}
+                                <div class="form-check form-switch mt-3">
+                                    {{ field }}
+                                    <label class="form-check-label fw-semibold" for="{{ field.id_for_label }}">
+                                        {{ field.label }}
+                                    </label>
+                                </div>
+                            {% else %}
+                                <label for="{{ field.id_for_label }}" class="admin-form-label">
+                                    {{ field.label }}
+                                    {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+                                </label>
+                                {{ field }}
+                            {% endif %}
+
+                            {% if field.help_text %}
+                                <div class="form-text text-muted small">{{ field.help_text }}</div>
+                            {% endif %}
+
+                            {% for error in field.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="d-flex justify-content-between align-items-center pt-4 border-top">
+                <a href="{% url 'admin_court_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    {% if edit_mode %}
+                        <i class="fas fa-save me-2"></i>Save Changes
+                    {% else %}
+                        <i class="fas fa-plus me-2"></i>Create Court
+                    {% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Apply admin form styling to all inputs
+document.querySelectorAll('input:not([type="checkbox"]), select, textarea').forEach(function(input) {
+    input.classList.add('form-control', 'admin-form-control');
+});
+
+document.querySelectorAll('select').forEach(function(select) {
+    select.classList.add('form-select');
+});
+
+// Add Bootstrap validation classes on form submission
+(function() {
+    'use strict';
+    var forms = document.querySelectorAll('form');
+    Array.prototype.slice.call(forms).forEach(function(form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+})();
+</script>
+{% endblock %}
+

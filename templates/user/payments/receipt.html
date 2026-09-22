@@ -1,0 +1,258 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Payment Receipt #{{ payment.id }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+@media print {
+    .no-print { display: none !important; }
+    .receipt-page { box-shadow: none !important; border: none !important; margin: 0 !important; padding: 0 !important; }
+    body { background: white !important; font-size: 12px; }
+    .receipt-header { border-bottom: 2px solid #000 !important; }
+}
+.receipt-page {
+    max-width: 800px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    padding: 2.5rem;
+}
+.receipt-header {
+    text-align: center;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid #e9ecef;
+    margin-bottom: 1.5rem;
+}
+.receipt-header h2 {
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 0.25rem;
+}
+.receipt-header .receipt-badge {
+    display: inline-block;
+    padding: 0.35rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+.receipt-meta {
+    display: flex;
+    justify-content: space-between;
+    background: #f8f9fa;
+    padding: 1rem 1.25rem;
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+}
+.receipt-meta-item {
+    text-align: center;
+}
+.receipt-meta-item .label {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+}
+.receipt-meta-item .value {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+.receipt-table {
+    width: 100%;
+    margin-bottom: 1.5rem;
+}
+.receipt-table th {
+    background: #f8f9fa;
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+}
+.receipt-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e9ecef;
+    font-size: 0.95rem;
+}
+.receipt-table tfoot td {
+    font-weight: 600;
+    border-bottom: none;
+    padding-top: 1rem;
+}
+.receipt-table .total-row {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1a1a2e;
+}
+.receipt-table .total-row td {
+    border-top: 2px solid #dee2e6;
+    padding-top: 1rem;
+}
+.receipt-footer {
+    text-align: center;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e9ecef;
+    margin-top: 1.5rem;
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+.receipt-footer p { margin-bottom: 0.25rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="text-end mb-3 no-print">
+        <button onclick="window.print()" class="btn btn-primary me-2">
+            <i class="fas fa-print me-1"></i> Print Receipt
+        </button>
+        <a href="{% if payment.reservation.user == request.user %}{% url 'payment_status' payment.id %}{% else %}{% url 'super_admin_payments' %}{% endif %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Back
+        </a>
+    </div>
+
+    <div class="receipt-page" id="receipt">
+        <!-- Header -->
+        <div class="receipt-header">
+            <h2><i class="fas fa-receipt me-2"></i>Official Receipt</h2>
+            <p class="text-muted mb-2">PickleSphere Court Reservation System</p>
+            {% if payment.status == 'paid' %}
+            <span class="receipt-badge bg-success text-white">
+                <i class="fas fa-check-circle me-1"></i> PAID
+            </span>
+            {% elif payment.status == 'refunded' %}
+            <span class="receipt-badge bg-warning text-dark">
+                <i class="fas fa-undo-alt me-1"></i> REFUNDED
+            </span>
+            {% endif %}
+        </div>
+
+        <!-- Meta Information -->
+        <div class="receipt-meta">
+            <div class="receipt-meta-item">
+                <div class="label">Receipt #</div>
+                <div class="value">{{ payment.id|stringformat:"06d" }}</div>
+            </div>
+            <div class="receipt-meta-item">
+                <div class="label">Date</div>
+                <div class="value">{{ payment.created_at|date:"M d, Y" }}</div>
+            </div>
+            <div class="receipt-meta-item">
+                <div class="label">Payment Method</div>
+                <div class="value">{{ payment.get_method_display|default:"—" }}</div>
+            </div>
+            <div class="receipt-meta-item">
+                <div class="label">Transaction ID</div>
+                <div class="value">{{ payment.transaction_id|default:"—" }}</div>
+            </div>
+        </div>
+
+        <!-- Customer & Booking Info -->
+        <div class="row mb-3">
+            <div class="col-6">
+                <strong>Customer:</strong>
+                <p class="mb-0">{{ payment.reservation.user.get_full_name|default:payment.reservation.user.username }}</p>
+                <small class="text-muted">{{ payment.reservation.user.email|default:"" }}</small>
+            </div>
+            <div class="col-6 text-end">
+                <strong>Booking Details:</strong>
+                <p class="mb-0">{{ payment.reservation.court.name }}</p>
+                <small class="text-muted">
+                    {{ payment.reservation.date|date:"l, F d, Y" }}
+                    {{ payment.reservation.start_time|date:"g:i A" }} - {{ payment.reservation.end_time|date:"g:i A" }}
+                </small>
+            </div>
+        </div>
+
+        <!-- Line Items -->
+        <table class="receipt-table">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th class="text-center">Qty</th>
+                    <th class="text-end">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        Court Rental: {{ payment.reservation.court.name }}
+                        <br><small class="text-muted">{{ payment.reservation.date|date:"M d" }} {{ payment.reservation.start_time|date:"g:i A" }} - {{ payment.reservation.end_time|date:"g:i A" }} ({{ payment.reservation.duration_hours }} hr{% if payment.reservation.duration_hours > 1 %}s{% endif %})</small>
+                    </td>
+                    <td class="text-center">1</td>
+                    <td class="text-end">₱{{ payment.reservation.subtotal|floatformat:2 }}</td>
+                </tr>
+                {% for rental in payment.reservation.rented_equipment.all %}
+                <tr>
+                    <td>
+                        Equipment: {{ rental.equipment.name }}
+                        <br><small class="text-muted">{{ rental.equipment.type }}</small>
+                    </td>
+                    <td class="text-center">{{ rental.quantity }}</td>
+                    <td class="text-end">₱{{ rental.rental_fee|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                {% if payment.reservation.equipment_fee and payment.reservation.equipment_fee > 0 %}
+                <tr>
+                    <td colspan="2" class="text-end">Subtotal:</td>
+                    <td class="text-end">₱{{ payment.reservation.subtotal|floatformat:2 }}</td>
+                </tr>
+                <tr>
+                    <td colspan="2" class="text-end">Equipment Fee:</td>
+                    <td class="text-end">₱{{ payment.reservation.equipment_fee|floatformat:2 }}</td>
+                </tr>
+                {% endif %}
+                <tr class="total-row">
+                    <td colspan="2" class="text-end">Total Amount:</td>
+                    <td class="text-end">₱{{ payment.amount|floatformat:2 }}</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <!-- Status Details -->
+        {% if payment.status == 'paid' and payment.cash_received_by %}
+        <div class="alert alert-success mb-3">
+            <i class="fas fa-check-circle me-1"></i>
+            Payment received by {{ payment.cash_received_by.get_full_name|default:payment.cash_received_by.username }}
+            on {{ payment.cash_received_at|date:"M d, Y h:i A" }}
+        </div>
+        {% elif payment.status == 'paid' and payment.stripe_receipt_url %}
+        <div class="alert alert-success mb-3">
+            <i class="fas fa-credit-card me-1"></i>
+            Payment processed via Stripe
+            {% if payment.stripe_payment_method %}
+            ({{ payment.stripe_payment_method|title }})
+            {% endif %}
+            {% if payment.stripe_receipt_url %}
+            — <a href="{{ payment.stripe_receipt_url }}" target="_blank" class="alert-link">View Stripe Receipt</a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Payment Timeline -->
+        {% if logs %}
+        <h6 class="fw-bold mt-4 mb-2">Payment Timeline</h6>
+        <ul class="list-unstyled">
+            {% for log in logs|slice:":5" %}
+            <li class="mb-1">
+                <small class="text-muted">{{ log.created_at|date:"M d, Y h:i A" }}</small>
+                <span class="ms-2">{{ log.action }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        <!-- Footer -->
+        <div class="receipt-footer">
+            <p><strong>PickleSphere</strong> — Citywide Pickleball Court Reservation System</p>
+            <p>This is a computer-generated receipt. No signature required.</p>
+            <p class="mt-1">Receipt #{{ payment.id|stringformat:"06d" }} | {{ payment.created_at|date:"Y-m-d H:i:s" }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

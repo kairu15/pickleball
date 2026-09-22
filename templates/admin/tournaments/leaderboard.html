@@ -1,0 +1,122 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Leaderboard - {{ tournament.name }} - PickleSphere{% endblock %}
+
+{% block page_title %}Leaderboard: {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a href="{% url 'admin_tournament_manage' tournament.pk %}" class="btn btn-sm btn-outline-secondary mb-2" style="border-radius: 8px;">
+                <i class="fas fa-arrow-left me-2"></i>Back to Management
+            </a>
+            <h5 class="fw-bold mb-0">Tournament Standings</h5>
+        </div>
+        <div>
+            <a href="{% url 'admin_match_list' tournament.pk %}" class="btn btn-primary" style="border-radius: 10px;">
+                <i class="fas fa-list me-2"></i>View Matches
+            </a>
+        </div>
+    </div>
+
+    {% if groups %}
+        {% for group_name, entries in groups.items %}
+        <div class="card border-0 shadow-lg mb-4" style="border-radius: 15px; overflow: hidden;">
+            <div class="card-header text-white py-3" style="background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);">
+                <h5 class="mb-0 fw-bold"><i class="fas fa-trophy me-2"></i>Group {{ group_name }}</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-center" style="width: 60px; padding: 15px;">Rank</th>
+                                <th style="padding: 15px;">Player/Team</th>
+                                <th class="text-center" style="padding: 15px;">P</th>
+                                <th class="text-center" style="padding: 15px;">W</th>
+                                <th class="text-center" style="padding: 15px;">L</th>
+                                <th class="text-center" style="padding: 15px;">D</th>
+                                <th class="text-center" style="padding: 15px;">PF</th>
+                                <th class="text-center" style="padding: 15px;">PA</th>
+                                <th class="text-center" style="padding: 15px;">+/-</th>
+                                <th class="text-center" style="padding: 15px;">Points</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in entries %}
+                            <tr class="hover-row {% if entry.rank == 1 %}table-warning{% elif entry.rank == 2 %}table-secondary{% elif entry.rank == 3 %}table-info{% endif %} align-middle" style="transition: all 0.3s ease;">
+                                <td class="text-center" style="padding: 15px;">
+                                    {% if entry.rank == 1 %}
+                                        <span class="badge bg-warning text-dark fs-6"><i class="fas fa-crown me-1"></i>1</span>
+                                    {% elif entry.rank == 2 %}
+                                        <span class="badge bg-secondary fs-6"><i class="fas fa-medal me-1"></i>2</span>
+                                    {% elif entry.rank == 3 %}
+                                        <span class="badge bg-info fs-6"><i class="fas fa-medal me-1"></i>3</span>
+                                    {% else %}
+                                        <span class="text-muted">{{ entry.rank }}</span>
+                                    {% endif %}
+                                </td>
+                                <td style="padding: 15px;">
+                                    {% if entry.player %}
+                                        <div class="d-flex align-items-center">
+                                            {% if entry.player.profile_picture %}
+                                                <img src="{{ entry.player.profile_picture.url }}" class="rounded-circle me-2" style="width: 35px; height: 35px; object-fit: cover;">
+                                            {% else %}
+                                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px; font-size: 0.75rem;">
+                                                    {{ entry.player.username|first|upper }}
+                                                </div>
+                                            {% endif %}
+                                            <span class="fw-bold">{{ entry.player.get_full_name|default:entry.player.username }}</span>
+                                        </div>
+                                    {% else %}
+                                        <span class="fw-bold">{{ entry.team.get_display_name }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center" style="padding: 15px;">{{ entry.matches_played }}</td>
+                                <td class="text-center" style="padding: 15px;"><span class="text-success fw-bold">{{ entry.wins }}</span></td>
+                                <td class="text-center" style="padding: 15px;"><span class="text-danger">{{ entry.losses }}</span></td>
+                                <td class="text-center" style="padding: 15px;">{{ entry.draws }}</td>
+                                <td class="text-center" style="padding: 15px;">{{ entry.points_for }}</td>
+                                <td class="text-center" style="padding: 15px;">{{ entry.points_against }}</td>
+                                <td class="text-center" style="padding: 15px;">
+                                    <span class="{% if entry.point_differential > 0 %}text-success{% elif entry.point_differential < 0 %}text-danger{% endif %} fw-bold">
+                                        {% if entry.point_differential > 0 %}+{% endif %}{{ entry.point_differential }}
+                                    </span>
+                                </td>
+                                <td class="text-center" style="padding: 15px;">
+                                    <span class="badge bg-primary fs-6 px-3 py-2">{{ entry.points }}</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="card border-0 shadow-lg" style="border-radius: 15px;">
+            <div class="card-body text-center py-5">
+                <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 15px;">
+                    <i class="fas fa-trophy fa-2x text-muted"></i>
+                </div>
+                <h5 class="text-muted">No leaderboard data yet</h5>
+                <p class="text-muted mb-3">The leaderboard will populate as matches are completed.</p>
+                <a href="{% url 'admin_match_list' tournament.pk %}" class="btn btn-primary" style="border-radius: 10px;">
+                    <i class="fas fa-edit me-2"></i>Update Match Scores
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.hover-row:hover {
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %}
+

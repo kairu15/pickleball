@@ -1,0 +1,71 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_title %}<i class="fas fa-share-alt me-2"></i>{{ page_title }}{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+.color-input-group { display: flex; align-items: center; gap: 0.5rem; }
+.color-input-group input[type="color"] { width: 40px; height: 40px; border: 2px solid #dee2e6; border-radius: 8px; cursor: pointer; padding: 2px; flex-shrink: 0; }
+.color-input-group input[type="text"] { flex: 1; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="admin-card">
+            <div class="admin-card-header"><h5 class="admin-card-title mb-0"><i class="fas fa-cog me-2"></i>{{ page_title }}</h5></div>
+            <div class="card-body">
+                <form method="post" id="socialForm">
+                    {% csrf_token %}
+                    <div class="text-center mb-4">
+                        <div style="width:80px;height:80px;background:linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+                            <i class="{{ platform.icon_class }}" style="font-size:2rem;color:#fff;"></i>
+                        </div>
+                        <h4 class="fw-bold mb-1">{{ platform.get_platform_display }}</h4>
+                        <p class="text-muted small mb-0">Configure this social platform's settings</p>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Profile URL</label>
+                            <input type="url" name="url" class="form-control form-control-lg" value="{{ platform.url }}" placeholder="https://{{ platform.platform }}.com/..." id="platformUrl">
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" name="is_active" class="form-check-input" id="isActive" {% if platform.is_active %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold" for="isActive">Enabled</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" name="show_in_topbar" class="form-check-input" id="showTop" {% if platform.show_in_topbar %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold" for="showTop">Show in Top Bar</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" name="show_in_footer" class="form-check-input" id="showFooter" {% if platform.show_in_footer %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold" for="showFooter">Show in Footer</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" name="open_in_new_tab" class="form-check-input" id="newTab" {% if platform.open_in_new_tab %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold" for="newTab">Open in New Tab</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Display Order</label>
+                            <input type="number" name="display_order" class="form-control" value="{{ platform.display_order }}" min="0">
+                        </div>
+                    </div>
+                    <div class="mt-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-save me-2"></i>Save Settings</button>
+                        <a href="{% url 'super_admin_social_cms' %}" class="btn btn-outline-secondary btn-lg">Back to List</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

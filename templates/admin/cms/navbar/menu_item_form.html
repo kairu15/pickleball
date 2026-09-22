@@ -1,0 +1,134 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_title %}<i class="fas fa-list me-2"></i>{{ page_title }}{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+.icon-picker-trigger-btn {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 8px;
+}
+.icon-picker-trigger-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(59,122,140,0.2);
+}
+</style>
+{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title mb-0"><i class="fas fa-cog me-2"></i>{{ page_title }}</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Title</label>
+                            <input type="text" name="title" class="form-control form-control-lg" value="{{ item.title|default:'' }}" required placeholder="e.g. Browse Courts">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Link Type</label>
+                            <select name="link_type" class="form-select">
+                                {% for key, val in link_type_choices %}
+                                <option value="{{ key }}" {% if item.link_type == key %}selected{% endif %}>{{ val }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Custom URL <small class="text-muted">(if type is Custom)</small></label>
+                            <input type="text" name="custom_url" class="form-control" value="{{ item.custom_url|default:'' }}" placeholder="https://example.com/page">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Menu Position</label>
+                            <select name="menu_position" class="form-select">
+                                <option value="left" {% if item.menu_position == 'left' %}selected{% endif %}>Left (Main Menu)</option>
+                                <option value="right" {% if item.menu_position == 'right' %}selected{% endif %}>Right (Actions)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+                    <h6 class="fw-bold mb-3"><i class="fas fa-icons me-2"></i>Display Settings</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Menu Icon</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="icon-preview-wrapper" data-icon-preview-for="menuItemIcon">
+                                    <div class="icon-preview-container">
+                                        <i class="{{ item.icon_class|default:'fas fa-link' }}"></i>
+                                    </div>
+                                    <span class="icon-class-label small text-muted ms-1">{{ item.icon_class|default:'fas fa-link' }}</span>
+                                </div>
+                                <button type="button" class="btn btn-outline-primary icon-picker-trigger-btn btn-sm px-3"
+                                        onclick="initIconPicker('menuItemIcon', '{{ item.icon_class|default:'fas fa-link' }}')">
+                                    <i class="fas fa-icons me-1"></i>Pick Icon
+                                </button>
+                            </div>
+                            <input type="hidden" name="icon_class" id="menuItemIcon" value="{{ item.icon_class|default:'fas fa-link' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Display Order</label>
+                            <input type="number" name="display_order" class="form-control" value="{{ item.display_order|default:0 }}" min="0">
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check form-switch mt-4">
+                                <input type="checkbox" name="requires_auth" class="form-check-input" id="reqAuth" {% if item.requires_auth %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold" for="reqAuth">Requires Login</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check form-switch mt-4">
+                                <input type="checkbox" name="hide_if_auth" class="form-check-input" id="hideAuth" {% if item.hide_if_auth %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold" for="hideAuth">Hide When Logged In</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check form-switch mt-4">
+                                <input type="checkbox" name="open_in_new_tab" class="form-check-input" id="newTab" {% if item.open_in_new_tab %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold" for="newTab">Open in New Tab</label>
+                            </div>
+                        </div>
+                        {% if item %}
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" name="is_active" class="form-check-input" id="isActive" {% if item.is_active %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold" for="isActive">Active</label>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="mt-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-save me-2"></i>Save Menu Item</button>
+                        <a href="{% url 'super_admin_navbar_cms' %}" class="btn btn-outline-secondary btn-lg">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Normalize icon_class to always include 'fas ' prefix
+    document.getElementById('menuItemIcon').addEventListener('change', function() {
+        const cleanIcon = this.value.replace(/^fas\s+/, '');
+        this.value = 'fas ' + cleanIcon;
+        // Update the preview wrapper
+        const wrapper = document.querySelector('[data-icon-preview-for="menuItemIcon"]');
+        if (wrapper) {
+            const icon = wrapper.querySelector('i');
+            if (icon) icon.className = 'fas ' + cleanIcon;
+            const label = wrapper.querySelector('.icon-class-label');
+            if (label) label.textContent = 'fas ' + cleanIcon;
+        }
+    });
+});
+</script>
+
+{% include 'components/icon_picker.html' %}
+{% endblock %}

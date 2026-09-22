@@ -1,0 +1,34 @@
+{% extends 'emails/base_email.html' %}
+
+{% block email_content %}
+    {% if status == 'approved' %}
+        <span class="notification-badge success">🏆 Approved</span>
+        <h2>Tournament Registration Approved!</h2>
+        <p>Congratulations <strong>{{ user.get_full_name|default:user.username }}</strong>! Your registration for <strong>{{ tournament_name }}</strong> has been approved. Get ready to compete!</p>
+    {% elif status == 'rejected' %}
+        <span class="notification-badge error">❌ Not Approved</span>
+        <h2>Tournament Registration Update</h2>
+        <p>Hi <strong>{{ user.get_full_name|default:user.username }}</strong>, unfortunately your registration for <strong>{{ tournament_name }}</strong> was not approved at this time.</p>
+    {% else %}
+        <span class="notification-badge">⏳ Pending</span>
+        <h2>Tournament Registration Submitted</h2>
+        <p>Hi <strong>{{ user.get_full_name|default:user.username }}</strong>, your registration for <strong>{{ tournament_name }}</strong> has been submitted and is pending approval.</p>
+    {% endif %}
+    
+    <div class="details-card">
+        <table cellpadding="0" cellspacing="0">
+            <tr>
+                <td class="label">Tournament</td>
+                <td class="value">{{ tournament_name }}</td>
+            </tr>
+            <tr>
+                <td class="label">Status</td>
+                <td class="value">{{ status|title }}</td>
+            </tr>
+        </table>
+    </div>
+    
+    <div style="text-align: center;">
+        <a href="{{ action_url }}" class="cta-button">{{ action_text }}</a>
+    </div>
+{% endblock %}

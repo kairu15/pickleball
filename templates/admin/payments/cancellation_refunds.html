@@ -1,0 +1,184 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Cancellation & Refund{% endblock %}
+{% block page_title %}Cancellation & Refund{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/admin.css' %}">
+<style>
+    .refund-breakdown {
+        max-width: 560px;
+    }
+    .refund-line {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    }
+    .refund-line:last-child {
+        border-bottom: 0;
+    }
+    .refund-label {
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+    .refund-value {
+        color: var(--text-primary);
+        font-weight: 700;
+        text-align: right;
+    }
+    .refund-amount {
+        color: #198754;
+        font-size: 1.1rem;
+    }
+    .refund-section-label {
+        color: var(--text-primary);
+        font-weight: 700;
+        margin-bottom: 0.35rem;
+    }
+    .refund-detail-block {
+        padding: 1rem;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        background: var(--card-bg-secondary);
+        height: 100%;
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'super_admin_analytics' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'super_admin_payments' %}">Manage Payments</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Cancellation & Refund</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="admin-card mb-4">
+    <div class="admin-card-header d-flex justify-content-between align-items-center">
+        <h5 class="admin-card-title">
+            <i class="fas fa-undo-alt text-primary"></i>
+            Cancellation & Refund Details
+        </h5>
+        <span class="badge bg-primary">{{ refund_rows|length }} records</span>
+    </div>
+</div>
+
+{% if refund_rows %}
+<div class="d-flex flex-column gap-4">
+    {% for row in refund_rows %}
+    {% with cancellation=row.cancellation payment=row.payment %}
+    <div class="admin-card refund-card">
+        <div class="admin-card-header">
+            <div>
+                <h5 class="admin-card-title">Reservation #{{ cancellation.reservation.id }}</h5>
+                <p class="text-muted small mb-0">
+                    {{ cancellation.reservation.user.get_full_name|default:cancellation.reservation.user.username }}
+                    &middot; {{ cancellation.reservation.court.name }}
+                    &middot; {{ cancellation.requested_at|date:"M d, Y g:i A" }}
+                </p>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                {% if payment %}
+                <span class="badge {% if payment.status == 'refunded' %}bg-secondary{% elif payment.status == 'paid' %}bg-success{% elif payment.status == 'pending' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                    {{ payment.get_status_display }}
+                </span>
+                {% else %}
+                <span class="badge bg-danger">No Payment</span>
+                {% endif %}
+                <form method="post" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="cancellation_id" value="{{ cancellation.id }}">
+                    <button type="submit" class="btn btn-success btn-sm" {% if not payment or payment.status == 'refunded' %}disabled{% endif %}>
+                        <i class="fas fa-check-circle me-2"></i>Update Status to Refunded
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card-body p-4">
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="refund-breakdown">
+                        <h5 class="fw-bold mb-3">Refund Breakdown</h5>
+                        <div class="refund-line">
+                            <span class="refund-label">Original Amount:</span>
+                            <span class="refund-value">₱{{ row.original_amount|floatformat:2 }}</span>
+                        </div>
+                        <div class="refund-line">
+                            <span class="refund-label">Cancellation Fee ({{ cancellation.deduction_percentage|floatformat:2 }}%):</span>
+                            <span class="refund-value text-danger">-₱{{ cancellation.deduction_amount|floatformat:2 }}</span>
+                        </div>
+                        <div class="refund-line">
+                            <span class="refund-label">Refund Amount:</span>
+                            <span class="refund-value refund-amount">₱{{ row.refund_amount|floatformat:2 }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <div class="refund-detail-block">
+                                <div class="refund-section-label">Reason for Cancellation:</div>
+                                <p class="mb-0">{{ cancellation.reason }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="refund-detail-block">
+                                <div class="refund-section-label">Select Refund Method:</div>
+                                <div class="fw-bold">{{ cancellation.get_refund_method_display|default:"Not provided" }}</div>
+                                {% if cancellation.refund_method == 'gcash' %}
+                                <p class="refund-muted">Refund to your GCash account</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if cancellation.refund_method == 'gcash' %}
+                        <div class="col-md-6">
+                            <div class="refund-detail-block">
+                                <div class="refund-section-label">GCash Mobile Number:</div>
+                                <p class="mb-0">{{ cancellation.gcash_number|default:"Not provided" }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="refund-detail-block">
+                                <div class="refund-section-label">Account Name:</div>
+                                <p class="mb-0">{{ cancellation.account_name|default:"Not provided" }}</p>
+                            </div>
+                        </div>
+                        {% elif cancellation.refund_method == 'paypal' %}
+                        <div class="col-md-12">
+                            <div class="refund-detail-block">
+                                <div class="refund-section-label">PayPal Email:</div>
+                                <p class="mb-0">{{ cancellation.paypal_email|default:"Not provided" }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endwith %}
+    {% endfor %}
+</div>
+{% else %}
+<div class="admin-card">
+    <div class="card-body">
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="fas fa-undo-alt fa-2x text-muted"></i>
+            </div>
+            <h5 class="empty-state-title">No cancellation refund records found</h5>
+            <p class="empty-state-text">Cancellation details will appear here once users cancel reservations.</p>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

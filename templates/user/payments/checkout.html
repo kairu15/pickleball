@@ -1,0 +1,1782 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Payment Checkout{% endblock %}
+{% block page_title %}Complete Your Payment{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'user_dashboard' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'reservation_list' %}">Reservations</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Checkout</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <!-- ===== RESERVATION SUMMARY + PRICE BREAKDOWN ===== -->
+        <div class="card border-0 checkout-summary-card mb-4">
+            <div class="card-header text-white p-4">
+                <div class="d-flex align-items-center">
+                    <div class="summary-header-icon">
+                        <i class="fas fa-shopping-cart fa-lg text-white"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h5 class="mb-0 fw-bold">Reservation Summary</h5>
+                        <p class="mb-0 opacity-75">Review your booking details before payment</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-4">
+                    <!-- Left: Booking Details -->
+                    <div class="col-lg-7">
+                        <div class="summary-list">
+
+                            <!-- Court -->
+                            <div class="summary-item">
+                                <div class="summary-item-icon" style="background: rgba(59,122,140,0.1); color: #3B7A8C;">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <small class="summary-item-label">Court</small>
+                                    {% if is_session_checkout %}
+                                    <div class="summary-value summary-highlight">{{ court.name }}</div>
+                                    {% if court.site %}<small class="summary-item-sub">{{ court.site.name }}</small>{% endif %}
+                                    {% else %}
+                                    <div class="summary-value summary-highlight">{{ reservation.court.name }}</div>
+                                    {% if reservation.court.site %}<small class="summary-item-sub">{{ reservation.court.site.name }}</small>{% endif %}
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Date -->
+                            <div class="summary-item">
+                                <div class="summary-item-icon" style="background: rgba(40,167,69,0.1); color: #28a745;">
+                                    <i class="fas fa-calendar-check"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <small class="summary-item-label">Reservation Date</small>
+                                    {% if is_session_checkout %}
+                                    <div class="summary-value summary-highlight" id="checkout-date-label">{{ checkout_data.date }}</div>
+                                    <script>document.getElementById('checkout-date-label').textContent = new Date('{{ checkout_data.date }}T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });</script>
+                                    {% else %}
+                                    <div class="summary-value summary-highlight">{{ reservation.date|date:"l, M d, Y" }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Time + Duration -->
+                            <div class="summary-item">
+                                <div class="summary-item-icon" style="background: rgba(255,152,0,0.12); color: #ff9800;">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <small class="summary-item-label">Reservation Time</small>
+                                    {% if is_session_checkout %}
+                                    <div class="summary-value summary-highlight" id="checkout-time-label">{{ checkout_data.start_time }} — {{ checkout_data.end_time }}</div>
+                                    <script>
+                                    (function() {
+                                        var lbl = document.getElementById('checkout-time-label');
+                                        if (lbl) {
+                                            function fmt(t) { var p = t.split(':'); var h = parseInt(p[0]), m = p[1]; var ampm = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return h + ':' + m + ' ' + ampm; }
+                                            var parts = lbl.textContent.split(' — ');
+                                            if (parts.length === 2) lbl.textContent = fmt(parts[0].trim()) + ' — ' + fmt(parts[1].trim());
+                                        }
+                                    })();
+                                    </script>
+                                    <small class="summary-item-sub">{{ checkout_data.duration_hours|floatformat:0 }} hour{{ checkout_data.duration_hours|floatformat:0|pluralize }}</small>
+                                    {% else %}
+                                    <div class="summary-value summary-highlight">{{ reservation.start_time|time:"g:i A" }} — {{ reservation.end_time|time:"g:i A" }}</div>
+                                    <small class="summary-item-sub">{{ reservation.duration_hours|floatformat:0 }} hour{{ reservation.duration_hours|floatformat:0|pluralize }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Match Format -->
+                            {% if is_session_checkout %}
+                            <div class="summary-item">
+                                <div class="summary-item-icon" style="background: rgba(102,51,153,0.1); color: #663399;">
+                                    <i class="fas fa-volleyball-ball"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <small class="summary-item-label">Match Format</small>
+                                    {% if checkout_data.match_name or checkout_data.match_format %}
+                                    <div class="summary-value">
+                                        {% if checkout_data.match_name %}{{ checkout_data.match_name }} — {% endif %}
+                                        {{ match_format_display }}
+                                        {% if checkout_data.game_type %} · {{ checkout_data.game_type|title }}{% endif %}
+                                    </div>
+                                    {% else %}
+                                    <div class="summary-value">—</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="summary-item">
+                                <div class="summary-item-icon" style="background: rgba(102,51,153,0.1); color: #663399;">
+                                    <i class="fas fa-volleyball-ball"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <small class="summary-item-label">Match Format</small>
+                                    {% if reservation.match_name or reservation.match_format %}
+                                    <div class="summary-value">
+                                        {% if reservation.match_name %}{{ reservation.match_name }} — {% endif %}
+                                        {{ match_format_display }}
+                                        {% if reservation.get_game_type_display %} · {{ reservation.get_game_type_display }}{% endif %}
+                                    </div>
+                                    {% else %}
+                                    <div class="summary-value">—</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Equipment -->
+                            <div class="summary-item">
+                                <div class="summary-item-icon" style="background: rgba(23,162,184,0.1); color: #17a2b8;">
+                                    <i class="fas fa-tools"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <small class="summary-item-label">Selected Equipment</small>
+                                    {% if is_session_checkout %}
+                                    {% if equipment_objects %}
+                                    <div class="summary-value">
+                                        {% for eq in equipment_objects %}
+                                        <span class="equipment-badge"><i class="fas fa-check-circle me-1"></i>{{ eq.name }}</span>
+                                        {% endfor %}
+                                    </div>
+                                    {% else %}
+                                    <div class="summary-value text-muted">None selected</div>
+                                    {% endif %}
+                                    {% else %}
+                                    {% with rented=reservation.rented_equipment.all %}
+                                    {% if rented %}
+                                    <div class="summary-value">
+                                        {% for item in rented %}
+                                        <span class="equipment-badge"><i class="fas fa-check-circle me-1"></i>{{ item.equipment.name }}</span>
+                                        {% endfor %}
+                                    </div>
+                                    {% else %}
+                                    <div class="summary-value text-muted">None selected</div>
+                                    {% endif %}
+                                    {% endwith %}
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Notes -->
+                            <div class="summary-item mb-0">
+                                <div class="summary-item-icon" style="background: rgba(108,117,125,0.1); color: #6c757d;">
+                                    <i class="fas fa-sticky-note"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <small class="summary-item-label">Additional Notes</small>
+                                    {% if is_session_checkout %}
+                                    {% if checkout_data.notes %}
+                                    <div class="summary-value">{{ checkout_data.notes }}</div>
+                                    {% else %}
+                                    <div class="summary-value text-muted">No additional notes</div>
+                                    {% endif %}
+                                    {% else %}
+                                    {% if reservation.notes %}
+                                    <div class="summary-value">{{ reservation.notes }}</div>
+                                    {% else %}
+                                    <div class="summary-value text-muted">No additional notes</div>
+                                    {% endif %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Price Breakdown -->
+                    <div class="col-lg-5">
+                        <div class="price-breakdown-card">
+                            <div class="price-card-header">
+                                <i class="fas fa-receipt"></i>
+                                <span>Price Breakdown</span>
+                            </div>
+                            <div class="price-list">
+
+                                <!-- Court Rate -->
+                                <div class="price-row">
+                                    <span class="price-label"><i class="fas fa-tag"></i>Court Rate</span>
+                                    <span class="price-value">
+                                        {% if is_session_checkout %}₱{{ checkout_data.hourly_rate|floatformat:0 }}/hr{% else %}₱{{ reservation.hourly_rate|floatformat:0 }}/hr{% endif %}
+                                    </span>
+                                </div>
+
+                                <!-- Duration -->
+                                <div class="price-row">
+                                    <span class="price-label"><i class="fas fa-hourglass-half"></i>Duration</span>
+                                    <span class="price-value">
+                                        {% if is_session_checkout %}{{ checkout_data.duration_hours|floatformat:0 }} hr{% else %}{{ reservation.duration_hours|floatformat:0 }} hr{% endif %}
+                                    </span>
+                                </div>
+
+                                <!-- Court Fee -->
+                                <div class="price-row">
+                                    <span class="price-label"><i class="fas fa-money-bill-wave"></i>Court Fee</span>
+                                    <span class="price-value">
+                                        {% if is_session_checkout %}₱{{ checkout_data.subtotal|floatformat:2 }}{% else %}₱{{ reservation.subtotal|floatformat:2 }}{% endif %}
+                                    </span>
+                                </div>
+
+                                <!-- Equipment Fee -->
+                                <div class="price-row">
+                                    <span class="price-label"><i class="fas fa-box-open"></i>Equipment Fee</span>
+                                    <span class="price-value">
+                                        {% if is_session_checkout %}₱{{ total_equipment_fee|floatformat:2 }}{% else %}₱{{ reservation.equipment_fee|floatformat:2 }}{% endif %}
+                                    </span>
+                                </div>
+
+                                {% if is_session_checkout %}
+                                {% if equipment_objects %}
+                                <div class="price-sub-rows">
+                                    {% for eq in equipment_objects %}
+                                    <div class="d-flex justify-content-between small text-muted py-1">
+                                        <span>{{ eq.name }} × 1</span>
+                                        <span>₱{{ eq.rental_price|floatformat:2 }}</span>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                {% else %}
+                                {% if reservation.rented_equipment.all %}
+                                <div class="price-sub-rows">
+                                    {% for item in reservation.rented_equipment.all %}
+                                    <div class="d-flex justify-content-between small text-muted py-1">
+                                        <span>{{ item.equipment.name }} × {{ item.quantity }}</span>
+                                        <span>₱{{ item.rental_fee|floatformat:2 }}</span>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                {% endif %}
+
+                                <!-- Taxes (only when applicable) -->
+                                {% if tax_amount %}
+                                <div class="price-row">
+                                    <span class="price-label"><i class="fas fa-percent"></i>Taxes</span>
+                                    <span class="price-value">₱{{ tax_amount|floatformat:2 }}</span>
+                                </div>
+                                {% endif %}
+
+                                <!-- Discounts (only when applicable) -->
+                                {% if discount_amount %}
+                                <div class="price-row">
+                                    <span class="price-label"><i class="fas fa-tags"></i>Discounts</span>
+                                    <span class="price-value text-success">− ₱{{ discount_amount|floatformat:2 }}</span>
+                                </div>
+                                {% endif %}
+
+                                <hr class="price-divider">
+
+                                <!-- Total -->
+                                <div class="price-total-row">
+                                    <span class="price-total-label"><i class="fas fa-wallet"></i>Total Amount</span>
+                                    {% if is_session_checkout %}
+                                    <span class="price-total" data-tax="{{ tax_amount|default:0 }}" data-discount="{{ discount_amount|default:0 }}">₱{{ total_amount|floatformat:2 }}</span>
+                                    {% else %}
+                                    <span class="price-total" data-tax="{{ tax_amount|default:0 }}" data-discount="{{ discount_amount|default:0 }}">₱{{ reservation.total_amount|floatformat:2 }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== PAYMENT METHOD CARD ===== -->
+        <div class="card border-0 checkout-summary-card">
+            <div class="card-header payment-card-header">
+                <div class="d-flex align-items-center">
+                    <div class="summary-header-icon" style="background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%); box-shadow: 0 4px 12px rgba(40,167,69,0.25);">
+                        <i class="fas fa-credit-card text-white"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h5 class="mb-0 fw-bold">Select Payment Method</h5>
+                        <p class="mb-0 text-muted">Choose how you'd like to pay for this reservation</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" enctype="multipart/form-data" id="payment-form" novalidate>
+                    {% csrf_token %}
+
+                    {% if gcash_form.non_field_errors or gcash_form.gcash_reference.errors or gcash_form.gcash_proof_image.errors %}
+                    <div class="alert alert-danger py-2" style="border-radius: 10px; font-size: 0.85rem;">
+                        {% for err in gcash_form.non_field_errors %}<div>{{ err }}</div>{% endfor %}
+                        {% for err in gcash_form.gcash_reference.errors %}<div><i class="fas fa-hashtag me-1"></i>{{ err }}</div>{% endfor %}
+                        {% for err in gcash_form.gcash_proof_image.errors %}<div><i class="fas fa-image me-1"></i>{{ err }}</div>{% endfor %}
+                    </div>
+                    {% endif %}
+
+                    {% if not payment_configured %}
+                    <div class="alert alert-warning py-3" style="border-radius: 12px; font-size: 0.85rem; border: 1px dashed #d39e00;">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="payment-icon-wrapper" style="width: 42px; height: 42px; margin: 0; background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%); flex-shrink: 0;">
+                                <i class="fas fa-exclamation-circle text-white"></i>
+                            </div>
+                            <div>
+                                {% if payment_settings and not payment_settings.is_active %}
+                                <h6 class="fw-bold mb-1" style="color: #856404;">Online payments are currently disabled</h6>
+                                <p class="mb-0 text-muted">
+                                    {{ org_name|default:"This organization" }} has temporarily turned off online payments.
+                                    You can still pay at the counter or by card. For other options, please contact the organization directly.
+                                </p>
+                                {% else %}
+                                <h6 class="fw-bold mb-1" style="color: #856404;">Payment details not yet available</h6>
+                                <p class="mb-0 text-muted">
+                                    {{ org_name|default:"This organization" }} has not configured online payment details yet.
+                                    You can still pay at the counter or by card. For other options, please contact the organization directly.
+                                </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- ===== Payment Method Cards ===== -->
+                    <div class="row g-3 mb-4">
+                        <!-- GCash -->
+                        {% if 'gcash' in enabled_payment_methods %}
+                        <div class="col-6 col-md-4">
+                            <div class="payment-option" data-method="gcash">
+                                <input type="radio" name="method" value="gcash" id="method-gcash" class="payment-radio" required>
+                                <label class="payment-label" for="method-gcash">
+                                    <div class="payment-icon-wrapper gcash-bg">
+                                        <i class="fas fa-mobile-alt text-white fa-lg"></i>
+                                    </div>
+                                    <h6 class="mb-1 fw-bold">GCash</h6>
+                                    <small class="text-muted">Mobile Wallet</small>
+                                    <div class="payment-check"><i class="fas fa-check-circle"></i></div>
+                                </label>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Maya -->
+                        {% if 'maya' in enabled_payment_methods %}
+                        <div class="col-6 col-md-4">
+                            <div class="payment-option" data-method="maya">
+                                <input type="radio" name="method" value="maya" id="method-maya" class="payment-radio" required>
+                                <label class="payment-label" for="method-maya">
+                                    <div class="payment-icon-wrapper maya-bg">
+                                        <i class="fas fa-wallet text-white fa-lg"></i>
+                                    </div>
+                                    <h6 class="mb-1 fw-bold">Maya</h6>
+                                    <small class="text-muted">Mobile Wallet</small>
+                                    <div class="payment-check"><i class="fas fa-check-circle"></i></div>
+                                </label>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Bank Transfer -->
+                        {% if 'bank_transfer' in enabled_payment_methods %}
+                        <div class="col-6 col-md-4">
+                            <div class="payment-option" data-method="bank_transfer">
+                                <input type="radio" name="method" value="bank_transfer" id="method-bank" class="payment-radio" required>
+                                <label class="payment-label" for="method-bank">
+                                    <div class="payment-icon-wrapper bank-bg">
+                                        <i class="fas fa-university text-white fa-lg"></i>
+                                    </div>
+                                    <h6 class="mb-1 fw-bold">Bank Transfer</h6>
+                                    <small class="text-muted">Direct to Bank</small>
+                                    <div class="payment-check"><i class="fas fa-check-circle"></i></div>
+                                </label>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Cash -->
+                        <div class="col-6 col-md-4">
+                            <div class="payment-option" data-method="cash">
+                                <input type="radio" name="method" value="cash" id="method-cash" class="payment-radio" required>
+                                <label class="payment-label" for="method-cash">
+                                    <div class="payment-icon-wrapper cash-bg">
+                                        <i class="fas fa-money-bill-wave text-white fa-lg"></i>
+                                    </div>
+                                    <h6 class="mb-1 fw-bold">Cash</h6>
+                                    <small class="text-muted">Pay at the Counter</small>
+                                    <div class="payment-check"><i class="fas fa-check-circle"></i></div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Card -->
+                        <div class="col-6 col-md-4">
+                            <div class="payment-option" data-method="card">
+                                <input type="radio" name="method" value="card" id="method-card" class="payment-radio" required>
+                                <label class="payment-label" for="method-card">
+                                    <div class="payment-icon-wrapper card-bg">
+                                        <i class="fas fa-credit-card text-white fa-lg"></i>
+                                    </div>
+                                    <h6 class="mb-1 fw-bold">Card</h6>
+                                    <small class="text-muted">Visa, Mastercard, etc.</small>
+                                    <div class="payment-check"><i class="fas fa-check-circle"></i></div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== GCash Details ===== -->
+                    <div id="gcash-details" class="payment-details d-none">
+                        <div class="detail-panel" style="background: linear-gradient(135deg, #e7f3ff 0%, #f0f9ff 100%);">
+                            <div class="detail-panel-body p-4">
+                                <div class="row g-4">
+                                    <div class="col-lg-6">
+                                        <div class="gcash-pay-to">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="gcash-number-chip">
+                                                    <i class="fas fa-mobile-alt text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <small class="text-muted d-block">Send payment to</small>
+                                                    <span class="fw-bold gcash-number">{{ gcash_number }}</span>
+                                                    {% if gcash_account_name %}
+                                                    <small class="text-muted d-block mt-1"><i class="fas fa-user me-1"></i>{{ gcash_account_name }}</small>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {% if gcash_qr_code_url %}
+                                        <div class="gcash-qr-block">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <img src="{{ gcash_qr_code_url }}" alt="GCash QR Code" class="gcash-qr-img">
+                                                <div>
+                                                    <small class="text-muted d-block">Or scan the QR code</small>
+                                                    <span class="fw-bold small">Scan to pay</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+
+                                        {% if payment_instructions %}
+                                        <div class="mt-3 payment-instructions">
+                                            <small class="text-muted d-block mb-1"><i class="fas fa-list-ol me-1"></i>Payment Instructions</small>
+                                            <div class="small">{{ payment_instructions|linebreaksbr }}</div>
+                                        </div>
+                                        {% endif %}
+
+                                        <div class="mt-3 d-flex align-items-center gap-2">
+                                            <i class="fas fa-shield-alt" style="color: #3B7A8C; font-size: 0.85rem;"></i>
+                                            <small class="text-muted">Your payment will be verified by our staff before the reservation is confirmed.</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="row g-3">
+                                            <div class="col-12">
+                                                <label class="form-label fw-bold" for="{{ gcash_form.gcash_reference.id_for_label }}"><i class="fas fa-hashtag me-2 text-primary"></i>Reference Number <span class="text-danger">*</span></label>
+                                                {{ gcash_form.gcash_reference }}
+                                                <div class="invalid-feedback gcash-error-msg" id="gcash-ref-error">Please enter your GCash Reference Number</div>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label fw-bold"><i class="fas fa-image me-2 text-primary"></i>Upload Proof of Payment <span class="text-danger">*</span></label>
+
+                                                <!-- ===== Drag & Drop Upload Component ===== -->
+                                                <div class="upload-zone" id="gcash-upload-zone">
+                                                    <input type="file" name="gcash_proof_image" id="gcash-proof-input" accept="image/*" class="upload-input" hidden>
+                                                    <div class="upload-dropzone" id="gcash-dropzone" role="button" tabindex="0" aria-label="Upload proof of payment">
+                                                        <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                                                        <p class="upload-title mb-1">Drag &amp; drop your proof here</p>
+                                                        <p class="upload-sub mb-2">or <span class="upload-browse">browse files</span></p>
+                                                        <small class="upload-hint">PNG, JPG, GIF or WEBP · Max 5MB</small>
+                                                    </div>
+                                                    <div class="upload-preview d-none" id="gcash-upload-preview">
+                                                        <img src="" alt="Proof preview" class="upload-preview-img" id="gcash-preview-image">
+                                                        <div class="upload-preview-info">
+                                                            <span class="upload-file-name" id="gcash-file-name"></span>
+                                                            <span class="upload-file-size" id="gcash-file-size"></span>
+                                                        </div>
+                                                        <button type="button" class="upload-remove" id="gcash-remove-file" title="Remove file" aria-label="Remove file">
+                                                            <i class="fas fa-times"></i>
+                                                        </button>
+                                                    </div>
+                                                    <div class="invalid-feedback gcash-error-msg" id="gcash-proof-error">Please upload proof of payment</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== Maya Details ===== -->
+                    <div id="maya-details" class="payment-details d-none">
+                        <div class="detail-panel" style="background: linear-gradient(135deg, #f3e9ff 0%, #f9f0ff 100%);">
+                            <div class="detail-panel-body p-4">
+                                <div class="row g-4">
+                                    <div class="col-lg-6">
+                                        <div class="gcash-pay-to">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="gcash-number-chip" style="background: linear-gradient(135deg, #722ed1 0%, #4a148c 100%); box-shadow: 0 4px 12px rgba(114,46,209,0.25);">
+                                                    <i class="fas fa-wallet text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <small class="text-muted d-block">Send payment to</small>
+                                                    <span class="fw-bold gcash-number">{{ maya_number }}</span>
+                                                    {% if maya_account_name %}
+                                                    <small class="text-muted d-block mt-1"><i class="fas fa-user me-1"></i>{{ maya_account_name }}</small>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {% if gcash_qr_code_url %}
+                                        <div class="gcash-qr-block">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <img src="{{ gcash_qr_code_url }}" alt="Payment QR Code" class="gcash-qr-img">
+                                                <div>
+                                                    <small class="text-muted d-block">Or scan the QR code</small>
+                                                    <span class="fw-bold small">Scan to pay</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+
+                                        {% if payment_instructions %}
+                                        <div class="mt-3 payment-instructions">
+                                            <small class="text-muted d-block mb-1"><i class="fas fa-list-ol me-1"></i>Payment Instructions</small>
+                                            <div class="small">{{ payment_instructions|linebreaksbr }}</div>
+                                        </div>
+                                        {% endif %}
+
+                                        <div class="mt-3 d-flex align-items-center gap-2">
+                                            <i class="fas fa-shield-alt" style="color: #3B7A8C; font-size: 0.85rem;"></i>
+                                            <small class="text-muted">Your payment will be verified by our staff before the reservation is confirmed.</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="row g-3">
+                                            <div class="col-12">
+                                                <label class="form-label fw-bold" for="{{ gcash_form.gcash_reference.id_for_label }}"><i class="fas fa-hashtag me-2 text-primary"></i>Reference Number <span class="text-danger">*</span></label>
+                                                {{ gcash_form.gcash_reference }}
+                                                <div class="invalid-feedback gcash-error-msg" id="maya-ref-error">Please enter your payment reference number</div>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label fw-bold"><i class="fas fa-image me-2 text-primary"></i>Upload Proof of Payment <span class="text-danger">*</span></label>
+
+                                                <!-- ===== Drag & Drop Upload Component ===== -->
+                                                <div class="upload-zone" id="maya-upload-zone">
+                                                    <input type="file" name="gcash_proof_image" id="maya-proof-input" accept="image/*" class="upload-input" hidden>
+                                                    <div class="upload-dropzone" id="maya-dropzone" role="button" tabindex="0" aria-label="Upload proof of payment">
+                                                        <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                                                        <p class="upload-title mb-1">Drag &amp; drop your proof here</p>
+                                                        <p class="upload-sub mb-2">or <span class="upload-browse">browse files</span></p>
+                                                        <small class="upload-hint">PNG, JPG, GIF or WEBP · Max 5MB</small>
+                                                    </div>
+                                                    <div class="upload-preview d-none" id="maya-upload-preview">
+                                                        <img src="" alt="Proof preview" class="upload-preview-img" id="maya-preview-image">
+                                                        <div class="upload-preview-info">
+                                                            <span class="upload-file-name" id="maya-file-name"></span>
+                                                            <span class="upload-file-size" id="maya-file-size"></span>
+                                                        </div>
+                                                        <button type="button" class="upload-remove" id="maya-remove-file" title="Remove file" aria-label="Remove file">
+                                                            <i class="fas fa-times"></i>
+                                                        </button>
+                                                    </div>
+                                                    <div class="invalid-feedback gcash-error-msg" id="maya-proof-error">Please upload proof of payment</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== Bank Transfer Details ===== -->
+                    <div id="bank-details" class="payment-details d-none">
+                        <div class="detail-panel" style="background: linear-gradient(135deg, #eafaf1 0%, #f0fbf5 100%);">
+                            <div class="detail-panel-body p-4">
+                                <div class="row g-4">
+                                    <div class="col-lg-6">
+                                        <div class="gcash-pay-to">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="gcash-number-chip" style="background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%); box-shadow: 0 4px 12px rgba(40,167,69,0.25);">
+                                                    <i class="fas fa-university text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <small class="text-muted d-block">Bank Transfer to</small>
+                                                    <span class="fw-bold gcash-number">{{ bank_name|default:"Bank Account" }}</span>
+                                                    <small class="text-muted d-block mt-1"><i class="fas fa-user me-1"></i>{{ bank_account_name|default:"—" }}</small>
+                                                    <small class="text-muted d-block mt-1"><i class="fas fa-hashtag me-1"></i>Account No: <span class="fw-bold text-dark">{{ bank_account_number|default:"—" }}</span></small>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {% if payment_instructions %}
+                                        <div class="mt-3 payment-instructions">
+                                            <small class="text-muted d-block mb-1"><i class="fas fa-list-ol me-1"></i>Payment Instructions</small>
+                                            <div class="small">{{ payment_instructions|linebreaksbr }}</div>
+                                        </div>
+                                        {% endif %}
+
+                                        <div class="mt-3 d-flex align-items-center gap-2">
+                                            <i class="fas fa-shield-alt" style="color: #3B7A8C; font-size: 0.85rem;"></i>
+                                            <small class="text-muted">Your payment will be verified by our staff before the reservation is confirmed.</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="row g-3">
+                                            <div class="col-12">
+                                                <label class="form-label fw-bold" for="{{ gcash_form.gcash_reference.id_for_label }}"><i class="fas fa-hashtag me-2 text-primary"></i>Reference Number <span class="text-danger">*</span></label>
+                                                {{ gcash_form.gcash_reference }}
+                                                <div class="invalid-feedback gcash-error-msg" id="bank-ref-error">Please enter your payment reference number</div>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label fw-bold"><i class="fas fa-image me-2 text-primary"></i>Upload Proof of Payment <span class="text-danger">*</span></label>
+
+                                                <!-- ===== Drag & Drop Upload Component ===== -->
+                                                <div class="upload-zone" id="bank-upload-zone">
+                                                    <input type="file" name="gcash_proof_image" id="bank-proof-input" accept="image/*" class="upload-input" hidden>
+                                                    <div class="upload-dropzone" id="bank-dropzone" role="button" tabindex="0" aria-label="Upload proof of payment">
+                                                        <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                                                        <p class="upload-title mb-1">Drag &amp; drop your proof here</p>
+                                                        <p class="upload-sub mb-2">or <span class="upload-browse">browse files</span></p>
+                                                        <small class="upload-hint">PNG, JPG, GIF or WEBP · Max 5MB</small>
+                                                    </div>
+                                                    <div class="upload-preview d-none" id="bank-upload-preview">
+                                                        <img src="" alt="Proof preview" class="upload-preview-img" id="bank-preview-image">
+                                                        <div class="upload-preview-info">
+                                                            <span class="upload-file-name" id="bank-file-name"></span>
+                                                            <span class="upload-file-size" id="bank-file-size"></span>
+                                                        </div>
+                                                        <button type="button" class="upload-remove" id="bank-remove-file" title="Remove file" aria-label="Remove file">
+                                                            <i class="fas fa-times"></i>
+                                                        </button>
+                                                    </div>
+                                                    <div class="invalid-feedback gcash-error-msg" id="bank-proof-error">Please upload proof of payment</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== Cash Details ===== -->
+                    <div id="cash-details" class="payment-details d-none">
+                        <div class="detail-panel" style="background: linear-gradient(135deg, #fff3e0 0%, #fff8e1 100%);">
+                            <div class="detail-panel-body p-4 text-center">
+                                <div class="cash-icon-circle">
+                                    <i class="fas fa-money-bill-wave text-white fa-2x"></i>
+                                </div>
+                                <h6 class="fw-bold mb-2">Pay at the Counter</h6>
+                                <p class="text-muted mb-3" style="max-width: 420px; margin: 0 auto;">
+                                    Please proceed to the venue's front desk to complete your cash payment.
+                                    Our staff will assist you and confirm your reservation on the spot.
+                                </p>
+                                <div class="d-inline-flex align-items-center gap-2 px-4 py-2 rounded-pill" style="background: rgba(255,152,0,0.1);">
+                                    <i class="fas fa-clock text-warning"></i>
+                                    <span class="small fw-medium text-warning">Payment must be completed within 1 hour</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== Card Details ===== -->
+                    <div id="card-details" class="payment-details d-none">
+                        <div class="detail-panel" style="background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);">
+                            <div class="detail-panel-body p-4">
+                                <div class="d-flex align-items-center gap-2 mb-3">
+                                    <div class="summary-item-icon" style="width: 30px; height: 30px; background: rgba(40,167,69,0.1); color: #1e7e34;">
+                                        <i class="fas fa-lock" style="font-size: 0.75rem;"></i>
+                                    </div>
+                                    <span class="fw-bold" style="color: #1e7e34;">Secure Card Payment — <span style="font-weight: 400;">Your payment will be processed automatically</span></span>
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-8">
+                                        <label class="form-label fw-bold">Card Number</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">
+                                                <i class="fas fa-credit-card text-muted"></i>
+                                            </span>
+                                            <input type="text" class="form-control" id="card-number" placeholder="•••• •••• •••• ••••" maxlength="19" style="font-family: 'Courier New', monospace; letter-spacing: 1px;">
+                                        </div>
+                                        <div class="invalid-feedback card-error-msg" id="card-number-error">Invalid card number</div>
+                                    </div>
+                                    <div class="col-6 col-md-2">
+                                        <label class="form-label fw-bold">MM/YY</label>
+                                        <input type="text" class="form-control" id="card-expiry" placeholder="MM/YY" maxlength="5" style="font-family: 'Courier New', monospace; text-align: center;">
+                                        <div class="invalid-feedback card-error-msg" id="card-expiry-error">Invalid expiry</div>
+                                    </div>
+                                    <div class="col-6 col-md-2">
+                                        <label class="form-label fw-bold">CVC</label>
+                                        <input type="text" class="form-control" id="card-cvc" placeholder="•••" maxlength="4" style="font-family: 'Courier New', monospace; text-align: center;">
+                                        <div class="invalid-feedback card-error-msg" id="card-cvc-error">Invalid CVC</div>
+                                    </div>
+                                </div>
+                                <div class="mt-3 d-flex align-items-center gap-2">
+                                    <i class="fas fa-shield-alt" style="color: #28a745; font-size: 0.85rem;"></i>
+                                    <small class="text-muted">Your card details are encrypted and processed securely. For demo, payment is auto-approved.</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== Actions ===== -->
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 pt-4 border-top mt-4">
+                        <a href="{% url 'reservation_list' %}" class="btn btn-outline-secondary px-4 py-2 checkout-btn">
+                            <i class="fas fa-arrow-left me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-success px-5 py-2 checkout-btn" id="submit-btn">
+                            <span class="btn-text"><i class="fas fa-lock me-2"></i>Complete Payment</span>
+                            <span class="btn-loading d-none"><span class="spinner-border spinner-border-sm me-2" role="status"></span>Processing...</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Loading Overlay ===== -->
+<div class="submit-overlay" id="submit-overlay">
+    <div class="submit-overlay-card">
+        <div class="submit-overlay-spinner"></div>
+        <h6 class="submit-overlay-title">Processing Your Payment</h6>
+        <p class="submit-overlay-sub">Please wait while we process your transaction…</p>
+        <div class="submit-overlay-progress">
+            <div class="submit-overlay-progress-bar"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Success Toast ===== -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999;">
+    <div id="success-toast" class="toast align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true" style="border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.15);">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-check-circle text-success me-2"></i>
+                <span id="toast-message">Payment submitted successfully!</span>
+            </div>
+            <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+/* ===== BREADCRUMB ===== */
+.breadcrumb {
+    background: transparent;
+    padding: 0;
+    font-size: 0.9rem;
+}
+.breadcrumb-item a {
+    color: #3B7A8C;
+    transition: color 0.2s ease;
+    text-decoration: none;
+}
+.breadcrumb-item a:hover {
+    color: #1a3a42;
+    text-decoration: underline;
+}
+
+/* ===== SUMMARY & PRICE CARDS ===== */
+.checkout-summary-card {
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+}
+.checkout-summary-card .card-header {
+    background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);
+}
+.payment-card-header {
+    background: #fff !important;
+    border-bottom: 1px solid #e9ecef;
+}
+.summary-header-icon {
+    width: 50px;
+    height: 50px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+    flex-shrink: 0;
+}
+
+.summary-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+}
+.summary-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.9rem;
+}
+.summary-item-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.9rem;
+}
+.summary-item-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #6c757d;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.15rem;
+}
+.summary-value {
+    font-weight: 600;
+    color: #1a3a42;
+    font-size: 0.95rem;
+}
+.summary-highlight {
+    color: #3B7A8C;
+    font-weight: 700;
+}
+.summary-item-sub {
+    color: #6c757d;
+    font-size: 0.82rem;
+    display: block;
+}
+.equipment-badge {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(59,122,140,0.08);
+    color: #2c5f6e;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.28rem 0.7rem;
+    border-radius: 20px;
+    margin-right: 0.35rem;
+    margin-bottom: 0.3rem;
+}
+
+/* ===== PRICE BREAKDOWN ===== */
+.price-breakdown-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%);
+    border: 1px solid #e9ecef;
+    border-radius: 14px;
+    height: 100%;
+    overflow: hidden;
+}
+.price-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 1rem 1.4rem;
+    background: rgba(59,122,140,0.08);
+    border-bottom: 1px dashed #d3dee1;
+    font-weight: 700;
+    color: #1a3a42;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.price-card-header i {
+    color: #3B7A8C;
+}
+.price-list {
+    padding: 0.5rem 1.4rem 1.4rem;
+}
+.price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.55rem 0;
+    gap: 1rem;
+}
+.price-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    color: #6c757d;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+.price-label i {
+    width: 15px;
+    color: #3B7A8C;
+    text-align: center;
+    font-size: 0.8rem;
+}
+.price-value {
+    font-weight: 600;
+    color: #1a3a42;
+    font-size: 0.9rem;
+    text-align: right;
+    min-width: 0;
+    word-break: break-word;
+}
+.price-sub-rows {
+    border-left: 2px solid rgba(59,122,140,0.15);
+    margin: 0.25rem 0 0.25rem 0.9rem;
+    padding-left: 0.9rem;
+}
+.price-divider {
+    border: none;
+    border-top: 1px dashed #c8d5d8;
+    margin: 0.9rem 0;
+}
+.price-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+.price-total-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-weight: 700;
+    color: #1a3a42;
+}
+.price-total-label i {
+    color: #3B7A8C;
+}
+.price-total {
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: #3B7A8C;
+    line-height: 1;
+}
+
+/* ===== PAYMENT OPTIONS ===== */
+.payment-option {
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 12px;
+    overflow: hidden;
+}
+.payment-option .payment-radio {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+.payment-option .payment-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem 1rem;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: #fff;
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+.payment-option:hover .payment-label {
+    border-color: #3B7A8C;
+    box-shadow: 0 4px 15px rgba(59,122,140,0.1);
+    transform: translateY(-2px);
+}
+.payment-option .payment-radio:checked + .payment-label {
+    border-color: #3B7A8C;
+    background: linear-gradient(135deg, rgba(59,122,140,0.04) 0%, rgba(59,122,140,0.02) 100%);
+    box-shadow: 0 4px 20px rgba(59,122,140,0.2);
+    transform: translateY(-2px);
+}
+
+.payment-icon-wrapper {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.75rem;
+    transition: transform 0.3s ease;
+}
+.payment-option:hover .payment-icon-wrapper {
+    transform: scale(1.1);
+}
+.payment-option .payment-radio:checked + .payment-label .payment-icon-wrapper {
+    transform: scale(1.1);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+.gcash-bg {
+    background: linear-gradient(135deg, #007dfe 0%, #004d8f 100%);
+}
+.maya-bg {
+    background: linear-gradient(135deg, #722ed1 0%, #4a148c 100%);
+}
+.bank-bg {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+}
+.cash-bg {
+    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+}
+.card-bg {
+    background: linear-gradient(135deg, #20c997 0%, #0f9b7a 100%);
+}
+.payment-instructions {
+    background: rgba(255,255,255,0.75);
+    border: 1px solid rgba(59,122,140,0.15);
+    border-radius: 12px;
+    padding: 0.9rem 1.1rem;
+    color: #5c6f7a;
+}
+
+.payment-check {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: scale(0.5);
+    transition: all 0.3s ease;
+}
+.payment-check i {
+    font-size: 1.1rem;
+    color: #28a745;
+}
+.payment-option .payment-radio:checked + .payment-label .payment-check {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* ===== PAYMENT DETAILS ===== */
+.payment-details {
+    animation: fadeSlideIn 0.4s ease forwards;
+}
+@keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.detail-panel {
+    border-radius: 14px;
+}
+.detail-panel-body {
+    border-radius: 14px;
+}
+.gcash-pay-to {
+    background: rgba(255,255,255,0.75);
+    border: 1px solid rgba(0,125,254,0.15);
+    border-radius: 12px;
+    padding: 1rem 1.1rem;
+}
+.gcash-number-chip {
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, #007dfe 0%, #004d8f 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(0,125,254,0.25);
+}
+.gcash-number {
+    font-size: 1.05rem;
+    letter-spacing: 0.5px;
+}
+.gcash-qr-block {
+    margin-top: 0.9rem;
+    background: rgba(255,255,255,0.75);
+    border: 1px solid rgba(0,125,254,0.15);
+    border-radius: 12px;
+    padding: 0.9rem 1.1rem;
+}
+.gcash-qr-img {
+    width: 70px;
+    height: 70px;
+    object-fit: contain;
+    border-radius: 8px;
+    background: #fff;
+    padding: 4px;
+    border: 1px solid #e9ecef;
+}
+.cash-icon-circle {
+    width: 72px;
+    height: 72px;
+    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    box-shadow: 0 4px 15px rgba(255,152,0,0.3);
+}
+
+/* ===== DRAG & DROP UPLOAD ===== */
+.upload-zone {
+    position: relative;
+}
+.upload-dropzone {
+    border: 2px dashed #c8d5d8;
+    border-radius: 12px;
+    padding: 1.6rem 1.2rem;
+    text-align: center;
+    cursor: pointer;
+    background: rgba(255,255,255,0.6);
+    transition: all 0.25s ease;
+}
+.upload-dropzone:hover {
+    border-color: #3B7A8C;
+    background: rgba(59,122,140,0.04);
+}
+.upload-dropzone.dragover {
+    border-color: #3B7A8C;
+    background: rgba(59,122,140,0.08);
+    transform: scale(1.01);
+}
+.upload-dropzone.is-invalid {
+    border-color: #dc3545;
+    background: rgba(220,53,69,0.05);
+}
+.upload-icon {
+    width: 52px;
+    height: 52px;
+    margin: 0 auto 0.6rem;
+    background: rgba(59,122,140,0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    color: #3B7A8C;
+    transition: transform 0.25s ease;
+}
+.upload-dropzone:hover .upload-icon {
+    transform: translateY(-3px);
+}
+.upload-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #1a3a42;
+}
+.upload-sub {
+    font-size: 0.82rem;
+    color: #6c757d;
+}
+.upload-browse {
+    color: #3B7A8C;
+    font-weight: 700;
+    text-decoration: underline;
+}
+.upload-hint {
+    color: #adb5bd;
+    font-size: 0.72rem;
+}
+.upload-preview {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    border: 2px solid #28a745;
+    border-radius: 12px;
+    padding: 0.7rem 0.9rem;
+    background: rgba(40,167,69,0.05);
+    animation: fadeSlideIn 0.3s ease;
+}
+.upload-preview-img {
+    width: 46px;
+    height: 46px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    flex-shrink: 0;
+}
+.upload-preview-info {
+    flex-grow: 1;
+    min-width: 0;
+}
+.upload-file-name {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #1a3a42;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.upload-file-size {
+    font-size: 0.72rem;
+    color: #28a745;
+    font-weight: 500;
+}
+.upload-remove {
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(220,53,69,0.1);
+    color: #dc3545;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+.upload-remove:hover {
+    background: #dc3545;
+    color: #fff;
+}
+
+/* ===== FORM CONTROLS ===== */
+.form-control, .form-control:focus {
+    border-radius: 10px;
+    border: 2px solid #dee2e6;
+    padding: 0.55rem 0.9rem;
+    box-shadow: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.form-control:focus {
+    border-color: #3B7A8C;
+    box-shadow: 0 0 0 3px rgba(59,122,140,0.1);
+}
+.form-control.is-invalid {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 3px rgba(220,53,69,0.1);
+}
+.form-label {
+    font-size: 0.85rem;
+    margin-bottom: 0.4rem;
+}
+.input-group-text {
+    border-radius: 10px 0 0 10px;
+    background: #fff;
+    border: 2px solid #dee2e6;
+    border-right: none;
+}
+.input-group > .form-control {
+    border-radius: 0 10px 10px 0 !important;
+    border-left: none;
+}
+.input-group-text + .form-control {
+    border-radius: 0 10px 10px 0;
+}
+
+/* ===== BUTTONS ===== */
+.checkout-btn {
+    border-radius: 10px;
+    font-weight: 500;
+}
+#submit-btn {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+    border: none;
+    box-shadow: 0 4px 15px rgba(40,167,69,0.35);
+}
+#submit-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(40,167,69,0.45);
+}
+
+/* ===== SUBMIT OVERLAY ===== */
+.submit-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    align-items: center;
+    justify-content: center;
+}
+.submit-overlay.active {
+    display: flex;
+    cursor: wait;
+    animation: overlayFadeIn 0.25s ease forwards;
+}
+@keyframes overlayFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+.submit-overlay-card {
+    background: white;
+    border-radius: 20px;
+    padding: 2.5rem 3rem;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    animation: overlayCardIn 0.35s ease forwards;
+    max-width: 90vw;
+}
+@keyframes overlayCardIn {
+    from { opacity: 0; transform: scale(0.9) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.submit-overlay-spinner {
+    width: 56px;
+    height: 56px;
+    border: 4px solid #e8f5e9;
+    border-top-color: #28a745;
+    border-radius: 50%;
+    animation: spinner 0.8s linear infinite;
+    margin: 0 auto 1.25rem;
+}
+@keyframes spinner {
+    to { transform: rotate(360deg); }
+}
+.submit-overlay-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1a3a42;
+    margin-bottom: 0.35rem;
+}
+.submit-overlay-sub {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-bottom: 0;
+}
+.submit-overlay-progress {
+    margin-top: 1.25rem;
+    height: 4px;
+    background: #e9ecef;
+    border-radius: 2px;
+    overflow: hidden;
+    max-width: 200px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.submit-overlay-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #28a745, #20c997);
+    border-radius: 2px;
+    animation: progressAnim 2s ease-in-out infinite;
+}
+@keyframes progressAnim {
+    0% { width: 0%; margin-left: 0; }
+    50% { width: 70%; margin-left: 0; }
+    100% { width: 0%; margin-left: 100%; }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .payment-icon-wrapper {
+        width: 50px;
+        height: 50px;
+    }
+    .payment-option .payment-label {
+        padding: 1rem 0.75rem;
+    }
+    .submit-overlay-card {
+        padding: 1.5rem 2rem;
+    }
+    .price-total {
+        font-size: 1.4rem;
+    }
+}
+@media (max-width: 576px) {
+    .payment-option .payment-label {
+        padding: 1rem 0.5rem;
+    }
+    .payment-icon-wrapper {
+        width: 44px;
+        height: 44px;
+    }
+    .payment-option .payment-label h6 {
+        font-size: 0.85rem;
+    }
+    .payment-option .payment-label small {
+        font-size: 0.7rem;
+    }
+}
+@media (max-width: 480px) {
+    .submit-overlay-card {
+        padding: 1.5rem 1.5rem;
+    }
+    .submit-overlay-spinner {
+        width: 44px;
+        height: 44px;
+        border-width: 3px;
+        margin-bottom: 1rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    'use strict';
+
+    const paymentRadios = document.querySelectorAll('.payment-radio');
+    const detailsPanels = {
+        gcash: document.getElementById('gcash-details'),
+        maya: document.getElementById('maya-details'),
+        bank_transfer: document.getElementById('bank-details'),
+        cash: document.getElementById('cash-details'),
+        card: document.getElementById('card-details'),
+    };
+    const paymentForm = document.getElementById('payment-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const overlay = document.getElementById('submit-overlay');
+
+    // ===== Payment Method Selection =====
+    function showPaymentDetails(method) {
+        Object.values(detailsPanels).forEach(el => { if (el) el.classList.add('d-none'); });
+        const panel = detailsPanels[method];
+        if (panel) panel.classList.remove('d-none');
+    }
+
+    paymentRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.checked) showPaymentDetails(this.value);
+        });
+    });
+
+    document.querySelectorAll('.payment-option').forEach(option => {
+        option.addEventListener('click', function(e) {
+            if (e.target.closest('label') || e.target.tagName === 'INPUT') return;
+            const radio = this.querySelector('.payment-radio');
+            if (radio) {
+                radio.checked = true;
+                radio.dispatchEvent(new Event('change'));
+            }
+        });
+    });
+
+    // ===== Drag & Drop Upload Component (shared by GCash / Maya / Bank) =====
+    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+    const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+
+    function formatSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
+    // Each upload zone is keyed by its panel prefix (gcash, maya, bank)
+    const uploadZones = {};
+
+    function setupUploadZone(prefix) {
+        const uploadZone = document.getElementById(prefix + '-upload-zone');
+        if (!uploadZone) return null;
+        const zone = {
+            dropzone: document.getElementById(prefix + '-dropzone'),
+            fileInput: document.getElementById(prefix + '-proof-input'),
+            uploadPreview: document.getElementById(prefix + '-upload-preview'),
+            previewImg: document.getElementById(prefix + '-preview-image'),
+            fileNameEl: document.getElementById(prefix + '-file-name'),
+            fileSizeEl: document.getElementById(prefix + '-file-size'),
+            removeBtn: document.getElementById(prefix + '-remove-file'),
+            proofError: document.getElementById(prefix + '-proof-error'),
+        };
+
+        function showUploadError(msg) {
+            zone.proofError.textContent = msg;
+            zone.proofError.style.display = 'block';
+            zone.dropzone.classList.add('is-invalid');
+        }
+
+        function hideUploadError() {
+            zone.proofError.style.display = 'none';
+            zone.dropzone.classList.remove('is-invalid');
+        }
+
+        function isValidFile(file) {
+            if (!ALLOWED_TYPES.includes(file.type)) {
+                showUploadError('Please upload an image file (PNG, JPG, or WEBP).');
+                return false;
+            }
+            if (file.size > MAX_FILE_SIZE) {
+                showUploadError('File is too large. Maximum size is 5MB.');
+                return false;
+            }
+            hideUploadError();
+            return true;
+        }
+
+        function showFile(file) {
+            if (!isValidFile(file)) {
+                zone.fileInput.value = '';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                zone.previewImg.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            zone.fileNameEl.textContent = file.name;
+            zone.fileSizeEl.textContent = formatSize(file.size);
+            zone.dropzone.classList.add('d-none');
+            zone.uploadPreview.classList.remove('d-none');
+        }
+
+        function resetUpload() {
+            zone.fileInput.value = '';
+            zone.previewImg.removeAttribute('src');
+            zone.uploadPreview.classList.add('d-none');
+            zone.dropzone.classList.remove('d-none');
+            hideUploadError();
+        }
+
+        // Click / keyboard to open file picker
+        zone.dropzone.addEventListener('click', function() { zone.fileInput.click(); });
+        zone.dropzone.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                zone.fileInput.click();
+            }
+        });
+
+        // Drag & drop
+        ['dragover', 'dragenter'].forEach(evt => {
+            zone.dropzone.addEventListener(evt, function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.classList.add('dragover');
+            });
+        });
+        ['dragleave', 'dragend'].forEach(evt => {
+            zone.dropzone.addEventListener(evt, function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.classList.remove('dragover');
+            });
+        });
+        zone.dropzone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.remove('dragover');
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                const file = e.dataTransfer.files[0];
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                zone.fileInput.files = dt.files;
+                showFile(file);
+            }
+        });
+
+        // Native file picker
+        zone.fileInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                showFile(this.files[0]);
+            } else {
+                resetUpload();
+            }
+        });
+
+        // Remove / replace
+        zone.removeBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            resetUpload();
+        });
+
+        return Object.assign(zone, { isValidFile: isValidFile });
+    }
+
+    uploadZones.gcash = setupUploadZone('gcash');
+    uploadZones.maya = setupUploadZone('maya');
+    uploadZones.bank = setupUploadZone('bank');
+
+    // ===== Card Input Formatting =====
+    const cardNumber = document.getElementById('card-number');
+    const cardExpiry = document.getElementById('card-expiry');
+    const cardCvc = document.getElementById('card-cvc');
+
+    if (cardNumber) {
+        cardNumber.addEventListener('input', function() {
+            let val = this.value.replace(/[^\d]/g, '');
+            let formatted = '';
+            for (let i = 0; i < val.length; i++) {
+                if (i > 0 && i % 4 === 0) formatted += ' ';
+                formatted += val[i];
+            }
+            this.value = formatted;
+            this.classList.remove('is-invalid');
+            const err = document.getElementById('card-number-error');
+            if (err) err.style.display = 'none';
+        });
+    }
+
+    [cardExpiry, cardCvc].forEach(input => {
+        if (input) {
+            input.addEventListener('input', function() {
+                this.classList.remove('is-invalid');
+                const errId = this.id === 'card-expiry' ? 'card-expiry-error' : 'card-cvc-error';
+                const err = document.getElementById(errId);
+                if (err) err.style.display = 'none';
+            });
+        }
+    });
+
+    if (cardExpiry) {
+        cardExpiry.addEventListener('input', function() {
+            let val = this.value.replace(/[^\d]/g, '');
+            if (val.length >= 2) {
+                this.value = val.slice(0, 2) + '/' + val.slice(2, 4);
+            } else {
+                this.value = val;
+            }
+        });
+    }
+
+    if (cardCvc) {
+        cardCvc.addEventListener('input', function() {
+            this.value = this.value.replace(/[^\d]/g, '');
+        });
+    }
+
+    // ===== Form Validation =====
+    paymentForm.addEventListener('submit', function(e) {
+        const selectedMethod = document.querySelector('.payment-radio:checked');
+        if (!selectedMethod) {
+            e.preventDefault();
+            showToast('Please select a payment method.');
+            return;
+        }
+
+        if (['gcash', 'maya', 'bank_transfer'].includes(selectedMethod.value)) {
+            const zone = selectedMethod.value === 'maya' ? uploadZones.maya
+                        : selectedMethod.value === 'bank_transfer' ? uploadZones.bank
+                        : uploadZones.gcash;
+            const refErrorId = selectedMethod.value === 'maya' ? 'maya-ref-error'
+                             : selectedMethod.value === 'bank_transfer' ? 'bank-ref-error'
+                             : 'gcash-ref-error';
+            let valid = true;
+            document.querySelectorAll('.gcash-error-msg').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+
+            const refInput = document.querySelector('input[name="gcash_reference"]');
+
+            if (!refInput || !refInput.value.trim()) {
+                valid = false;
+                if (refInput) {
+                    refInput.classList.add('is-invalid');
+                    const refErr = document.getElementById(refErrorId);
+                    if (refErr) refErr.style.display = 'block';
+                }
+            }
+
+            if (!zone || !zone.fileInput || !zone.fileInput.files || zone.fileInput.files.length === 0) {
+                valid = false;
+                if (zone && zone.isValidFile) {
+                    zone.proofError.textContent = 'Please upload proof of payment';
+                    zone.proofError.style.display = 'block';
+                    zone.dropzone.classList.add('is-invalid');
+                }
+            }
+
+            if (!valid) {
+                e.preventDefault();
+                scrollToError();
+                return;
+            }
+        }
+
+        if (selectedMethod.value === 'card') {
+            let valid = true;
+            const digits = (cardNumber ? cardNumber.value.replace(/\s/g, '') : '');
+            const exp = cardExpiry ? cardExpiry.value : '';
+            const cvc = cardCvc ? cardCvc.value : '';
+
+            document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+            document.querySelectorAll('.card-error-msg').forEach(el => el.style.display = 'none');
+
+            if (digits.length < 13 || digits.length > 19) {
+                valid = false;
+                if (cardNumber) {
+                    cardNumber.classList.add('is-invalid');
+                    document.getElementById('card-number-error').style.display = 'block';
+                }
+            }
+            if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(exp)) {
+                valid = false;
+                if (cardExpiry) {
+                    cardExpiry.classList.add('is-invalid');
+                    document.getElementById('card-expiry-error').style.display = 'block';
+                }
+            }
+            if (!/^\d{3,4}$/.test(cvc)) {
+                valid = false;
+                if (cardCvc) {
+                    cardCvc.classList.add('is-invalid');
+                    document.getElementById('card-cvc-error').style.display = 'block';
+                }
+            }
+
+            if (!valid) {
+                e.preventDefault();
+                scrollToError();
+                showToast('Please complete the card details correctly.');
+                return;
+            }
+        }
+
+        // Show loading overlay
+        overlay.classList.add('active');
+        submitBtn.querySelector('.btn-text').classList.add('d-none');
+        submitBtn.querySelector('.btn-loading').classList.remove('d-none');
+        submitBtn.disabled = true;
+    });
+
+    // ===== Scroll to first visible error =====
+    function scrollToError() {
+        const firstError = document.querySelector('.is-invalid');
+        if (firstError) {
+            firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+
+    // ===== Toast Notification =====
+    function showToast(message) {
+        const toastEl = document.getElementById('success-toast');
+        const msgEl = document.getElementById('toast-message');
+        if (msgEl) msgEl.textContent = message;
+        if (toastEl) {
+            const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+            toast.show();
+        }
+    }
+
+    // ===== Card input focus styling =====
+    document.querySelectorAll('#card-number, #card-expiry, #card-cvc').forEach(input => {
+        input.addEventListener('focus', function() {
+            const inputGroup = this.closest('.input-group');
+            if (inputGroup) {
+                inputGroup.querySelector('.input-group-text')?.style.setProperty('border-color', '#28a745');
+            }
+        });
+        input.addEventListener('blur', function() {
+            if (!this.value) {
+                const inputGroup = this.closest('.input-group');
+                if (inputGroup) {
+                    inputGroup.querySelector('.input-group-text')?.style.setProperty('border-color', '#dee2e6');
+                }
+            }
+        });
+    });
+
+    // ===== Adjust total for taxes/discounts (placeholders) =====
+    (function() {
+        const totalEl = document.querySelector('.price-total');
+        if (!totalEl) return;
+        const tax = parseFloat(totalEl.getAttribute('data-tax')) || 0;
+        const discount = parseFloat(totalEl.getAttribute('data-discount')) || 0;
+        if (tax > 0 || discount > 0) {
+            const base = parseFloat(totalEl.textContent.replace(/[^\d.-]/g, '')) || 0;
+            totalEl.textContent = '₱' + Math.max(0, base + tax - discount).toFixed(2);
+        }
+    })();
+
+})();
+</script>
+{% endblock %}

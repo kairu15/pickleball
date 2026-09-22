@@ -1,0 +1,204 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+{% block page_title %}Customer Ratings{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'super_admin_analytics' %}"><i class="fas fa-home me-1"></i>Dashboard</a></li>
+        <li class="breadcrumb-item active">Customer Ratings</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <p class="text-muted mb-0">
+            <i class="fas fa-info-circle me-1 text-primary"></i>
+            View and manage customer ratings and feedback across all organizations.
+        </p>
+    </div>
+</div>
+
+<!-- Ratings Overview Card -->
+<div class="admin-card mb-4">
+    <div class="admin-card-header" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; border: none;">
+        <h5 class="admin-card-title" style="color: white;">
+            <i class="fas fa-star text-white"></i>
+            Customer Ratings Overview
+        </h5>
+        <span class="badge bg-white text-success rounded-pill">{{ total_ratings }} total</span>
+    </div>
+    <div class="card-body p-4" style="background: #f8f9fa;">
+        <div class="row align-items-center">
+            <div class="col-md-4 text-center border-end">
+                <div class="display-4 fw-bold" style="color: #28a745;">{{ average_rating|floatformat:1 }}</div>
+                <div class="mb-2">
+                    {% for i in "12345" %}
+                        {% if forloop.counter <= average_rating|floatformat:0|add:0 %}
+                            <i class="fas fa-star" style="color: #ffc107; font-size: 1.5rem;"></i>
+                        {% else %}
+                            <i class="far fa-star" style="color: #ddd; font-size: 1.5rem;"></i>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                <p class="text-muted mb-0">Average Rating out of 5</p>
+            </div>
+            <div class="col-md-8 ps-md-4">
+                <h6 class="mb-3 fw-bold">Rating Distribution</h6>
+                {% for item in distribution_list %}
+                <div class="d-flex align-items-center mb-2">
+                    <span class="text-muted me-3" style="min-width: 50px; font-size: 0.875rem;">{{ item.stars }} star{% if item.stars != 1 %}s{% endif %}</span>
+                    <div class="flex-grow-1 me-3">
+                        <div class="progress" style="height: 8px; background: #e9ecef; border-radius: 4px;">
+                            <div class="progress-bar" role="progressbar"
+                                 style="width: {{ item.percentage }}%; background: #3B7A8C; border-radius: 4px;"
+                                 aria-valuenow="{{ item.count }}" aria-valuemin="0" aria-valuemax="{{ total_ratings }}"></div>
+                        </div>
+                    </div>
+                    <span class="text-muted fw-semibold" style="min-width: 25px; text-align: right;">{{ item.count }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="filter-card">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="admin-form-label">
+                    <i class="fas fa-star me-2 text-primary"></i>Filter by Rating
+                </label>
+                <select name="rating" class="form-select admin-form-control">
+                    <option value="">All Ratings</option>
+                    <option value="5" {% if rating_filter == "5" %}selected{% endif %}>5 Stars</option>
+                    <option value="4" {% if rating_filter == "4" %}selected{% endif %}>4 Stars</option>
+                    <option value="3" {% if rating_filter == "3" %}selected{% endif %}>3 Stars</option>
+                    <option value="2" {% if rating_filter == "2" %}selected{% endif %}>2 Stars</option>
+                    <option value="1" {% if rating_filter == "1" %}selected{% endif %}>1 Star</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="admin-form-label">
+                    <i class="fas fa-flag me-2 text-primary"></i>Featured Status
+                </label>
+                <select name="featured" class="form-select admin-form-control">
+                    <option value="">All</option>
+                    <option value="true" {% if featured_filter == "true" %}selected{% endif %}>Featured Only</option>
+                    <option value="false" {% if featured_filter == "false" %}selected{% endif %}>Not Featured</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search me-2"></i>Search
+                </button>
+                <a href="{% url 'super_admin_rating_list' %}" class="btn btn-outline-secondary ms-2">
+                    <i class="fas fa-undo me-1"></i>Reset
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Ratings List -->
+<div class="admin-card mt-4">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-list text-primary"></i>
+            All Ratings
+        </h5>
+        <span class="badge bg-primary">{{ ratings|length }} entries</span>
+    </div>
+    <div class="card-body p-0">
+        {% if ratings %}
+        <div class="admin-table-container">
+            <table class="table admin-table mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Customer</th>
+                        <th>Rating</th>
+                        <th>Comment</th>
+                        <th>Court</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rating in ratings %}
+                    <tr>
+                        <td data-label="Customer" class="ps-4">
+                            <div class="d-flex align-items-center">
+                                {% if rating.user.profile_picture %}
+                                    <img src="{{ rating.user.profile_picture.url }}" alt="" class="avatar avatar-sm me-2" style="object-fit: cover;">
+                                {% else %}
+                                    <div class="avatar avatar-sm avatar-placeholder me-2">
+                                        {{ rating.user.username|first|upper }}
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <div class="fw-semibold">{{ rating.user.get_full_name|default:rating.user.username }}</div>
+                                    <small class="text-muted">{{ rating.user.email }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td data-label="Rating">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="fw-bold" style="color: #ffc107;">{{ rating.rating }}.0</span>
+                                <div>
+                                    {% for i in "12345" %}
+                                        {% if forloop.counter <= rating.rating %}
+                                            <i class="fas fa-star" style="color: #ffc107; font-size: 0.75rem;"></i>
+                                        {% else %}
+                                            <i class="far fa-star" style="color: #ddd; font-size: 0.75rem;"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </td>
+                        <td data-label="Comment">
+                            <span class="text-muted" style="max-width: 250px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                {{ rating.comment|default:"No comment" }}
+                            </span>
+                        </td>
+                        <td data-label="Court">
+                            <span class="badge bg-light text-dark border">{{ rating.reservation.court.name|default:"N/A" }}</span>
+                        </td>
+                        <td data-label="Date"><small class="text-muted">{{ rating.created_at|date:"M d, Y" }}</small></td>
+                        <td data-label="Status">
+                            {% if rating.is_featured %}
+                            <span class="status-badge active">Featured</span>
+                            {% else %}
+                            <span class="status-badge inactive">Standard</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Actions" class="text-end pe-4">
+                            <form method="post" action="{% url 'super_admin_toggle_featured_rating' rating.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm {% if rating.is_featured %}btn-warning{% else %}btn-outline-success{% endif %}">
+                                    <i class="fas fa-star me-1"></i>{% if rating.is_featured %}Unfeature{% else %}Feature{% endif %}
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="fas fa-star fa-2x text-muted"></i>
+            </div>
+            <h5 class="empty-state-title">No ratings found</h5>
+            <p class="empty-state-text">Ratings will appear here once customers submit feedback.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

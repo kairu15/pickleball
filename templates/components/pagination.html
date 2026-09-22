@@ -1,0 +1,57 @@
+{% comment %}
+===== Reusable Pagination Component =====
+
+Usage:
+  {% include 'components/pagination.html' with page_obj=page_obj %}
+
+The component automatically preserves all current GET parameters from the
+request (e.g. ?search=foo&site=1&page=2) so filters and sorts persist
+across pages.
+
+Parameters:
+  - page_obj (required): Django Paginator page object
+  - extra_params: optional dict of additional query params to append
+{% endcomment %}
+{% if page_obj.has_other_pages %}
+<nav class="mt-4" aria-label="Pagination">
+    <ul class="pagination justify-content-center pagination-sm">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page=1{{ query_string }}" title="First">
+                <i class="fas fa-angle-double-left"></i>
+            </a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{{ query_string }}" title="Previous">
+                <i class="fas fa-angle-left"></i>
+            </a>
+        </li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if num == page_obj.number %}
+            <li class="page-item active">
+                <span class="page-link">{{ num }}</span>
+            </li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ num }}{{ query_string }}">{{ num }}</a>
+            </li>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{{ query_string }}" title="Next">
+                <i class="fas fa-angle-right"></i>
+            </a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{{ query_string }}" title="Last">
+                <i class="fas fa-angle-double-right"></i>
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}

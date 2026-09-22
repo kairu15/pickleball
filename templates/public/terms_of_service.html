@@ -1,0 +1,215 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Terms of Service - PickleSphere{% endblock %}
+
+{% block body %}
+{% include 'components/header.html' %}
+
+<!-- Hero Section -->
+<section class="hero-section" style="background: linear-gradient(rgba(26, 58, 66, 0.85), rgba(59, 122, 140, 0.9)), url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920') center/cover; padding: 100px 0 80px; position: relative;">
+    <div class="container">
+        <div class="row justify-content-center text-center">
+            <div class="col-lg-8">
+                <span class="badge mb-3 px-4 py-2" style="background: var(--bg-white); color: var(--primary-color); font-size: 0.875rem; letter-spacing: 1px; text-transform: uppercase; font-weight: 600;">
+                    <i class="fas fa-file-contract me-2"></i>{{ hero_badge|default:"Legal" }}
+                </span>
+                <h1 class="display-3 fw-bold mb-4 text-white" style="text-shadow: 2px 4px 8px rgba(0,0,0,0.4); letter-spacing: -1px;">
+                    {{ hero_title|default:"Terms of Service" }}
+                </h1>
+                <p class="lead mb-0" style="color: rgba(255,255,255,0.85); text-shadow: 1px 2px 4px rgba(0,0,0,0.3); max-width: 600px; margin: 0 auto;">
+                    {{ last_updated_text|default:"Last Updated:" }} {% now "F j, Y" %}
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-5" style="background: var(--bg-light);">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="card border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+                
+                <div class="card-body p-5">
+                    <div class="content-section">
+                        {% if sections %}
+                            {% for sec in sections %}
+                            <div class="mb-5">
+                                <h4 class="fw-bold mb-3 d-flex align-items-center">
+                                    <span style="width: 35px; height: 35px; background: linear-gradient(135deg, {% cycle '#3B7A8C' '#17a2b8' '#28a745' '#ffc107' '#dc3545' '#6f42c1' '#fd7e14' '#6c757d' '#e74c3c' '#f39c12' '#9b59b6' '#34495e' '#16a085' '#7f8c8d' %} 0%, {% cycle '#1a3a42' '#138496' '#1e7e34' '#e0a800' '#c82333' '#5a32a3' '#e56b0a' '#545b62' '#c0392b' '#d68910' '#8e44ad' '#2c3e50' '#138d75' '#707b7c' %} 100%); border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px;">
+                                        <i class="fas {{ sec.icon|default:'fa-file-contract' }} text-white" style="font-size: 0.875rem;"></i>
+                                    </span>
+                                    {{ sec.section_number }}. {{ sec.title }}
+                                </h4>
+                                <p class="text-muted mb-0" style="line-height: 1.8; padding-left: 47px;">
+                                    {{ sec.content }}
+                                </p>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <!-- Fallback default terms when no CMS sections exist -->
+                            <!-- Acceptance of Terms -->
+                            <div class="mb-5">
+                                <h4 class="fw-bold mb-3 d-flex align-items-center">
+                                    <span style="width: 35px; height: 35px; background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%); border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px;">
+                                        <i class="fas fa-handshake text-white" style="font-size: 0.875rem;"></i>
+                                    </span>
+                                    1. Acceptance of Terms
+                                </h4>
+                                <p class="text-muted mb-0" style="line-height: 1.8; padding-left: 47px;">
+                                    By accessing or using PickleSphere's services, website, and facilities (collectively, the "Services"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, please do not use our Services. These Terms constitute a legally binding agreement between you and PickleSphere.
+                                </p>
+                            </div>
+
+                            <!-- Eligibility -->
+                            <div class="mb-5">
+                                <h4 class="fw-bold mb-3 d-flex align-items-center">
+                                    <span style="width: 35px; height: 35px; background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px;">
+                                        <i class="fas fa-user-check text-white" style="font-size: 0.875rem;"></i>
+                                    </span>
+                                    2. Eligibility
+                                </h4>
+                                <p class="text-muted mb-0" style="line-height: 1.8; padding-left: 47px;">
+                                    You must be at least 13 years of age to use our Services. By using our Services, you represent and warrant that: (a) you are of legal age to form a binding contract; (b) you have not been previously suspended or removed from our Services; and (c) your registration and use of our Services comply with all applicable laws and regulations.
+                                </p>
+                            </div>
+
+                            <!-- Account Registration -->
+                            <div class="mb-5">
+                                <h4 class="fw-bold mb-3 d-flex align-items-center">
+                                    <span style="width: 35px; height: 35px; background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%); border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px;">
+                                        <i class="fas fa-user-plus text-white" style="font-size: 0.875rem;"></i>
+                                    </span>
+                                    3. Account Registration
+                                </h4>
+                                <p class="text-muted mb-3" style="line-height: 1.8; padding-left: 47px;">To access certain features of our Services, you must register for an account. You agree to:</p>
+                                <ul class="text-muted mb-0" style="line-height: 1.8; padding-left: 67px;">
+                                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Provide accurate, current, and complete information during registration</li>
+                                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Maintain and promptly update your account information</li>
+                                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Keep your password secure and confidential</li>
+                                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Notify us immediately of any unauthorized use of your account</li>
+                                    <li class="mb-0"><i class="fas fa-check-circle text-success me-2"></i>Be responsible for all activities that occur under your account</li>
+                                </ul>
+                            </div>
+
+                            <!-- Reservation and Cancellation Policy -->
+                            <div class="mb-5">
+                                <h4 class="fw-bold mb-3 d-flex align-items-center">
+                                    <span style="width: 35px; height: 35px; background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%); border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px;">
+                                        <i class="fas fa-calendar-alt text-dark" style="font-size: 0.875rem;"></i>
+                                    </span>
+                                    4. Reservation and Cancellation Policy
+                                </h4>
+                                <p class="text-muted mb-3" style="line-height: 1.8; padding-left: 47px;">When making court reservations through our Services:</p>
+                                <ul class="text-muted mb-0" style="line-height: 1.8; padding-left: 67px;">
+                                    <li class="mb-2"><span class="badge bg-primary me-2">Required</span>Reservations must be paid in full to be confirmed</li>
+                                    <li class="mb-2"><span class="badge bg-success me-2">24h+</span>Cancellations made 24+ hours before reservation time receive full refund</li>
+                                    <li class="mb-2"><span class="badge bg-warning text-dark me-2">&lt;24h</span>Cancellations made less than 24 hours may be subject to fees</li>
+                                    <li class="mb-2"><span class="badge bg-danger me-2">No-show</span>No-shows will be charged the full reservation amount</li>
+                                </ul>
+                            </div>
+
+                            <!-- Payment Terms -->
+                            <div class="mb-5">
+                                <h4 class="fw-bold mb-3 d-flex align-items-center">
+                                    <span style="width: 35px; height: 35px; background: linear-gradient(135deg, #20c997 0%, #1ba87e 100%); border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px;">
+                                        <i class="fas fa-credit-card text-white" style="font-size: 0.875rem;"></i>
+                                    </span>
+                                    5. Payment Terms
+                                </h4>
+                                <p class="text-muted mb-0" style="line-height: 1.8; padding-left: 47px;">
+                                    All fees are exclusive of taxes unless otherwise stated. You agree to pay all fees and charges associated with your account on a timely basis. We reserve the right to modify our pricing with notice. Failed payments may result in account suspension.
+                                </p>
+                            </div>
+
+                            <!-- Facility Rules and Conduct -->
+                            <div class="mb-5">
+                                <h4 class="fw-bold mb-3 d-flex align-items-center">
+                                    <span style="width: 35px; height: 35px; background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px;">
+                                        <i class="fas fa-clipboard-list text-white" style="font-size: 0.875rem;"></i>
+                                    </span>
+                                    6. Facility Rules and Conduct
+                                </h4>
+                                <p class="text-muted mb-3" style="line-height: 1.8; padding-left: 47px;">All users must adhere to our facility rules.</p>
+                                <ul class="text-muted mb-0" style="line-height: 1.8; padding-left: 67px;">
+                                    <li class="mb-2"><i class="fas fa-shoe-prints text-primary me-2"></i>Wearing appropriate non-marking court shoes</li>
+                                    <li class="mb-2"><i class="fas fa-tshirt text-info me-2"></i>Following dress code requirements</li>
+                                    <li class="mb-2"><i class="fas fa-hourglass-half text-warning me-2"></i>Respecting court time limits and reservation schedules</li>
+                                    <li class="mb-0"><i class="fas fa-handshake text-success me-2"></i>Maintaining sportsmanlike conduct at all times</li>
+                                </ul>
+                            </div>
+
+                            <!-- Limitation of Liability -->
+                            <div class="mb-5">
+                                <h4 class="fw-bold mb-3 d-flex align-items-center">
+                                    <span style="width: 35px; height: 35px; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px;">
+                                        <i class="fas fa-exclamation-triangle text-white" style="font-size: 0.875rem;"></i>
+                                    </span>
+                                    7. Limitation of Liability
+                                </h4>
+                                <p class="text-muted mb-0" style="line-height: 1.8; padding-left: 47px;">
+                                    To the maximum extent permitted by law, PickleSphere shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising out of or relating to your use of our Services.
+                                </p>
+                            </div>
+
+                            <!-- Governing Law -->
+                            <div class="mb-5">
+                                <h4 class="fw-bold mb-3 d-flex align-items-center">
+                                    <span style="width: 35px; height: 35px; background: linear-gradient(135deg, #16a085 0%, #138d75 100%); border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px;">
+                                        <i class="fas fa-gavel text-white" style="font-size: 0.875rem;"></i>
+                                    </span>
+                                    8. Governing Law
+                                </h4>
+                                <p class="text-muted mb-0" style="line-height: 1.8; padding-left: 47px;">
+                                    These Terms shall be governed by and construed in accordance with the laws of the Republic of the Philippines.
+                                </p>
+                            </div>
+                        {% endif %}
+
+                        <!-- Contact Information -->
+                        <div class="mb-0">
+                            <h4 class="fw-bold mb-3 d-flex align-items-center">
+                                <span style="width: 35px; height: 35px; background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%); border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px;">
+                                    <i class="fas fa-envelope text-white" style="font-size: 0.875rem;"></i>
+                                </span>
+                                Contact Information
+                            </h4>
+                            <p class="text-muted mb-4" style="line-height: 1.8; padding-left: 47px;">
+                                If you have any questions about these Terms, please contact us at:
+                            </p>
+                            <div class="p-4" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 15px; margin-left: 47px;">
+                                <div class="d-flex align-items-center mb-3 pb-3" style="border-bottom: 1px solid #dee2e6;">
+                                    <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+                                        <i class="fas fa-building text-white"></i>
+                                    </div>
+                                    <div>
+                                        <p class="mb-0 fw-bold" style="font-size: 1.125rem;">PickleSphere</p>
+                                    </div>
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <p class="mb-1 text-muted small"><i class="fas fa-envelope text-primary me-2"></i>Email</p>
+                                        <p class="mb-0 fw-semibold">{{ contact_email|default:"legal@picklesphere.com" }}</p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p class="mb-1 text-muted small"><i class="fas fa-phone text-primary me-2"></i>Phone</p>
+                                        <p class="mb-0 fw-semibold">{{ contact_phone|default:"09455470173" }}</p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p class="mb-1 text-muted small"><i class="fas fa-map-marker-alt text-primary me-2"></i>Address</p>
+                                        <p class="mb-0 fw-semibold">{{ contact_address|default:"123 Sports Complex Ave, Metro City" }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</section>
+
+{% include 'components/footer.html' %}
+{% endblock body %}

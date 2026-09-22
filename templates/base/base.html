@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}PickleSphere{% endblock %} - Pickleball Facility Management</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{% if site_branding and site_branding.favicon %}{{ site_branding.favicon.url }}?_v={{ site_branding.cache_buster }}{% else %}{% static 'PickleSphereLogo.png' %}{% endif %}">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+
+    {% block extra_meta %}{% endblock %}
+
+    <style>
+        /* ===== CMS Design System Overrides =====
+         * These CSS custom properties come from the Admin CMS settings.
+         * They override the main.css defaults when the settings are active.
+         */
+        {% if global_design_settings and global_design_settings.is_active %}
+        {{ global_design_settings.get_css_variables|safe }}
+        {% endif %}
+
+        /* ===== Brand Button Colors (ALWAYS follow Global Design System) =====
+         * .btn-primary and .btn-outline-primary always use the global brand color
+         * so they stay in sync with the rest of the design system.
+         */
+        .btn-primary {
+            background: {% if global_design_settings and global_design_settings.is_active %}{{ global_design_settings.primary_color }}{% else %}var(--primary-color, #3B7A8C){% endif %} !important;
+            border-color: {% if global_design_settings and global_design_settings.is_active %}{{ global_design_settings.primary_color }}{% else %}var(--primary-color, #3B7A8C){% endif %} !important;
+            color: {% if button_style_settings and button_style_settings.is_active %}{{ button_style_settings.primary_text_color|default:'#ffffff' }}{% else %}#ffffff{% endif %} !important;
+        }
+        .btn-primary:hover, .btn-primary:focus, .btn-primary:active {
+            background: {% if global_design_settings and global_design_settings.is_active %}{{ global_design_settings.primary_hover_color }}{% else %}var(--primary-hover, #2d5f6e){% endif %} !important;
+            border-color: {% if global_design_settings and global_design_settings.is_active %}{{ global_design_settings.primary_hover_color }}{% else %}var(--primary-hover, #2d5f6e){% endif %} !important;
+        }
+        .btn-outline-primary {
+            border-color: {% if global_design_settings and global_design_settings.is_active %}{{ global_design_settings.primary_color }}{% else %}var(--primary-color, #3B7A8C){% endif %} !important;
+            color: {% if global_design_settings and global_design_settings.is_active %}{{ global_design_settings.primary_color }}{% else %}var(--primary-color, #3B7A8C){% endif %} !important;
+        }
+        .btn-outline-primary:hover, .btn-outline-primary:focus, .btn-outline-primary:active {
+            background: {% if global_design_settings and global_design_settings.is_active %}{{ global_design_settings.primary_color }}{% else %}var(--primary-color, #3B7A8C){% endif %} !important;
+            border-color: {% if global_design_settings and global_design_settings.is_active %}{{ global_design_settings.primary_color }}{% else %}var(--primary-color, #3B7A8C){% endif %} !important;
+            color: #ffffff !important;
+        }
+
+        /* ===== Button Structure & Non-Brand Colors (Button Style Settings) ===== */
+        {% if button_style_settings and button_style_settings.is_active %}
+        .btn {
+            border-radius: {{ button_style_settings.button_border_radius|default:'8px' }} !important;
+            padding: {{ button_style_settings.button_padding_y|default:'0.625rem' }} {{ button_style_settings.button_padding_x|default:'1.5rem' }} !important;
+            font-weight: {{ button_style_settings.button_font_weight|default:'600' }} !important;
+            font-size: {{ button_style_settings.button_font_size|default:'0.875rem' }} !important;
+            text-transform: {{ button_style_settings.button_text_transform|default:'none' }} !important;
+            letter-spacing: {{ button_style_settings.button_letter_spacing|default:'0.3px' }} !important;
+        }
+        .btn-secondary {
+            background: {{ button_style_settings.secondary_bg|default:'#6c757d' }} !important;
+            border-color: {{ button_style_settings.secondary_bg|default:'#6c757d' }} !important;
+            color: {{ button_style_settings.secondary_text_color|default:'#ffffff' }} !important;
+        }
+        .btn-secondary:hover, .btn-secondary:focus, .btn-secondary:active {
+            background: {{ button_style_settings.secondary_hover_bg|default:'#5a6268' }} !important;
+            border-color: {{ button_style_settings.secondary_hover_bg|default:'#5a6268' }} !important;
+        }
+        .btn-success { background: {{ button_style_settings.success_bg|default:'#28a745' }} !important; border-color: {{ button_style_settings.success_bg|default:'#28a745' }} !important; }
+        .btn-danger { background: {{ button_style_settings.danger_bg|default:'#dc3545' }} !important; border-color: {{ button_style_settings.danger_bg|default:'#dc3545' }} !important; }
+        .btn-warning { background: {{ button_style_settings.warning_bg|default:'#ffc107' }} !important; border-color: {{ button_style_settings.warning_bg|default:'#ffc107' }} !important; }
+        .btn-info { background: {{ button_style_settings.info_bg|default:'#17a2b8' }} !important; border-color: {{ button_style_settings.info_bg|default:'#17a2b8' }} !important; }
+        .btn-lg {
+            padding: {{ button_style_settings.btn_lg_padding_y|default:'0.75rem' }} {{ button_style_settings.btn_lg_padding_x|default:'2rem' }} !important;
+            font-size: {{ button_style_settings.btn_lg_font_size|default:'1rem' }} !important;
+        }
+        .btn-sm {
+            padding: {{ button_style_settings.btn_sm_padding_y|default:'0.375rem' }} {{ button_style_settings.btn_sm_padding_x|default:'1rem' }} !important;
+            font-size: {{ button_style_settings.btn_sm_font_size|default:'0.8rem' }} !important;
+        }
+        {% endif %}
+
+        /* ===== Card Style Overrides ===== */
+        {% if card_style_settings and card_style_settings.is_active %}
+        .card {
+            background: {{ card_style_settings.card_background|default:'#ffffff' }} !important;
+            border-radius: {{ card_style_settings.card_border_radius|default:'12px' }} !important;
+            box-shadow: {{ card_style_settings.card_shadow|default:'0 2px 8px rgba(0,0,0,0.05)' }} !important;
+            border: {{ card_style_settings.card_border|default:'1px solid #e9ecef' }} !important;
+        }
+        .card:hover {
+            box-shadow: {{ card_style_settings.card_hover_shadow|default:'0 8px 30px rgba(0,0,0,0.12)' }} !important;
+        }
+        .card-body {
+            padding: {{ card_style_settings.card_body_padding|default:'1.5rem' }} !important;
+        }
+        .card-header {
+            background: {{ card_style_settings.card_header_bg|default:'#f8f9fa' }} !important;
+            color: {{ card_style_settings.card_header_text_color|default:'#212529' }} !important;
+            padding: {{ card_style_settings.card_header_padding|default:'1rem 1.5rem' }} !important;
+            border-bottom: {{ card_style_settings.card_header_border|default:'1px solid #e9ecef' }} !important;
+        }
+        .admin-card-header {
+            background: {{ card_style_settings.admin_card_header_bg|default:'#f8f9fa' }} !important;
+        }
+        .admin-card {
+            border-radius: {{ card_style_settings.admin_card_border_radius|default:'12px' }} !important;
+            box-shadow: {{ card_style_settings.admin_card_shadow|default:'0 2px 8px rgba(0,0,0,0.05)' }} !important;
+        }
+        section.marketing-section {
+            padding: {{ card_style_settings.section_padding|default:'4rem 0' }} !important;
+        }
+        @media (max-width: 767.98px) {
+            section.marketing-section {
+                padding: 2rem 0 !important;
+            }
+        }
+        {% endif %}
+
+        /* ===== Standardized Filter Bar =====
+         * Shared across all admin, staff, user, and public interfaces.
+         * Defined here so public pages (base/base.html) can use them too.
+         * dashboard_base.html also includes an identical block.
+         */
+        .filter-bar-standard {
+            background: #fff;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            padding: 1.25rem;
+        }
+        .filter-label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 0.35rem;
+            letter-spacing: 0.3px;
+        }
+        .filter-label i {
+            color: var(--primary-color, #3B7A8C);
+            width: 16px;
+            margin-right: 4px;
+        }
+        .filter-input,
+        .filter-select {
+            height: 40px;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 0 14px;
+            font-size: 0.875rem;
+            color: #495057;
+            background: #fff;
+            width: 100%;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .filter-select {
+            appearance: auto;
+            cursor: pointer;
+        }
+        .filter-input:focus,
+        .filter-select:focus {
+            border-color: var(--primary-color, #3B7A8C);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(var(--primary-rgb, 59,122,140), 0.12);
+        }
+        .filter-btn-row {
+            display: flex;
+            gap: 0.5rem;
+            align-items: flex-end;
+        }
+        .filter-btn-row .btn {
+            height: 40px;
+            border-radius: 10px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            padding: 0 1.25rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        .filter-btn-row .btn:hover {
+            transform: translateY(-1px);
+        }
+        @media (max-width: 767.98px) {
+            .filter-bar-standard .row {
+                --bs-gutter-y: 0.75rem;
+            }
+        }
+        @media (max-width: 575.98px) {
+            .filter-bar-standard {
+                padding: 1rem;
+            }
+            .filter-btn-row {
+                flex-wrap: wrap;
+            }
+            .filter-btn-row .btn {
+                flex: 1;
+            }
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% block body %}
+    {% endblock %}
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- WebSocket Client for Real-time Features -->
+    {% if user.is_authenticated %}
+    <script src="{% static 'js/websocket.js' %}"></script>
+    {% endif %}
+
+    <!-- Floating Toast Notification Script -->
+    <script>
+        function dismissToast(closeBtn) {
+            const toast = closeBtn.closest('.floating-toast');
+            toast.classList.add('hiding');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const toasts = document.querySelectorAll('.floating-toast[data-auto-dismiss]');
+            toasts.forEach(toast => {
+                const delay = parseInt(toast.dataset.autoDismiss) || 5000;
+                setTimeout(() => {
+                    if (toast.parentElement) {
+                        toast.classList.add('hiding');
+                        setTimeout(() => {
+                            toast.remove();
+                        }, 300);
+                    }
+                }, delay);
+            });
+        });
+    </script>
+
+    <!-- Lightbox Modal -->
+    <!-- Global Floating Toast Messages -->
+    <div class="floating-toast-container" id="toastContainer">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="floating-toast {{ message.tags }}" role="alert" data-auto-dismiss="5000">
+                    <div class="floating-toast-icon">
+                        {% if message.tags == 'success' %}
+                            <i class="fas fa-check-circle"></i>
+                        {% elif message.tags == 'error' %}
+                            <i class="fas fa-exclamation-circle"></i>
+                        {% elif message.tags == 'warning' %}
+                            <i class="fas fa-exclamation-triangle"></i>
+                        {% else %}
+                            <i class="fas fa-info-circle"></i>
+                        {% endif %}
+                    </div>
+                    <div class="floating-toast-content">{{ message }}</div>
+                    <button type="button" class="floating-toast-close" onclick="dismissToast(this)">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- Lightbox Modal -->
+    <div id="lightboxModal" class="lightbox-modal" onclick="closeLightbox(event)">
+        <div class="lightbox-content" onclick="event.stopPropagation()">
+            <button class="lightbox-close" onclick="closeLightbox()" title="Close (Esc)">
+                <i class="fas fa-times"></i>
+            </button>
+            <img id="lightboxImage" src="" alt="Full size image">
+            <div id="lightboxCaption" class="lightbox-caption"></div>
+        </div>
+    </div>
+
+    <!-- Lightbox Script -->
+    <script>
+        // Lightbox functionality
+        function openLightbox(src, caption = '') {
+            const modal = document.getElementById('lightboxModal');
+            const img = document.getElementById('lightboxImage');
+            const cap = document.getElementById('lightboxCaption');
+
+            img.src = src;
+            cap.textContent = caption;
+            modal.classList.add('active');
+
+            // Prevent body scroll
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLightbox(event) {
+            // If event is provided, only close if clicking the modal background
+            if (event && event.target !== event.currentTarget) return;
+
+            const modal = document.getElementById('lightboxModal');
+            modal.classList.remove('active');
+
+            // Restore body scroll
+            document.body.style.overflow = '';
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            const modal = document.getElementById('lightboxModal');
+            if (!modal.classList.contains('active')) return;
+
+            if (e.key === 'Escape') {
+                closeLightbox();
+            }
+        });
+
+        // Initialize lightbox on images with data-lightbox attribute
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('[data-lightbox]').forEach(img => {
+                img.addEventListener('click', function() {
+                    const src = this.getAttribute('data-full-src') || this.src;
+                    const caption = this.getAttribute('data-caption') || this.alt || '';
+                    openLightbox(src, caption);
+                });
+            });
+        });
+    </script>
+
+    <!-- Global Custom Confirm Modal -->
+    <div id="customConfirmModal" class="custom-confirm-modal">
+        <div class="custom-confirm-content">
+            <div class="custom-confirm-header">
+                <div class="custom-confirm-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h5 class="custom-confirm-title" id="confirmTitle">Confirm Action</h5>
+            </div>
+            <div class="custom-confirm-body">
+                <p id="confirmMessage">Are you sure you want to proceed?</p>
+            </div>
+            <div class="custom-confirm-footer">
+                <button type="button" class="btn btn-outline-secondary" id="confirmCancelBtn">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmActionBtn">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== PASSWORD TOGGLE SYSTEM ===== -->
+    <style>
+        /* Password visibility toggle — global styles */
+        .password-wrapper {
+            position: relative;
+        }
+        .password-wrapper input[type="password"],
+        .password-wrapper input[type="text"] {
+            padding-right: 44px !important;
+        }
+        .password-toggle {
+            position: absolute;
+            right: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 38px;
+            height: 38px;
+            border: none;
+            background: transparent;
+            border-radius: 9px;
+            color: #adb5bd;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+        .password-toggle:hover {
+            background: #f0f0f0;
+            color: var(--primary-color, #3B7A8C);
+        }
+        .password-toggle:focus-visible {
+            outline: 2px solid var(--primary-color, #3B7A8C);
+            outline-offset: 2px;
+        }
+    </style>
+
+    <script>
+    // ===== CENTRALIZED PASSWORD TOGGLE =====
+    // Single reusable function for show/hide password on any field
+    window.togglePasswordVisibility = function(fieldId, btn) {
+        var field = document.getElementById(fieldId);
+        if (!field) return;
+        var icon = btn && btn.querySelector ? btn.querySelector('i') : null;
+        if (field.type === 'password') {
+            field.type = 'text';
+            if (icon) icon.className = 'fas fa-eye-slash';
+            if (btn) {
+                btn.classList.add('active');
+                btn.setAttribute('aria-label', 'Hide password');
+            }
+        } else {
+            field.type = 'password';
+            if (icon) icon.className = 'fas fa-eye';
+            if (btn) {
+                btn.classList.remove('active');
+                btn.setAttribute('aria-label', 'Show password');
+            }
+        }
+    };
+
+    // Auto-initialize: find all password fields and add toggle buttons if missing
+    function initPasswordToggles() {
+        document.querySelectorAll('input[type="password"]').forEach(function(field) {
+            // Skip if already inside a password-wrapper
+            if (field.closest('.password-wrapper')) return;
+            // Skip if field has no id (need id to toggle)
+            if (!field.id) return;
+            // Skip hidden fields
+            if (field.type === 'hidden') return;
+
+            // Wrap in password-wrapper
+            var wrapper = document.createElement('div');
+            wrapper.className = 'password-wrapper';
+            field.parentNode.insertBefore(wrapper, field);
+            wrapper.appendChild(field);
+
+            // Create toggle button
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'password-toggle';
+            btn.setAttribute('tabindex', '-1');
+            btn.setAttribute('aria-label', 'Show password');
+            btn.setAttribute('onclick', "togglePasswordVisibility('" + field.id + "', this)");
+            btn.innerHTML = '<i class="fas fa-eye"></i>';
+            wrapper.appendChild(btn);
+        });
+    }
+
+    // Run on page load and after any dynamic content changes
+    document.addEventListener('DOMContentLoaded', initPasswordToggles);
+
+    // Re-init after Bootstrap modal shows (for dynamic forms in modals)
+    document.addEventListener('shown.bs.modal', function() {
+        setTimeout(initPasswordToggles, 100);
+    });
+    </script>
+
+    <style>
+        /* Global Custom Confirm Modal Styles */
+        .custom-confirm-modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            -webkit-backdrop-filter: blur(4px);
+            backdrop-filter: blur(4px);
+            animation: confirmFadeIn 0.2s ease-out;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .custom-confirm-modal.show {
+            display: flex;
+        }
+
+        .custom-confirm-content {
+            background-color: #fff;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 420px;
+            width: 90%;
+            animation: confirmSlideUp 0.25s ease-out;
+            overflow: hidden;
+        }
+
+        .custom-confirm-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.75rem 1.5rem 1rem;
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            text-align: center;
+        }
+
+        .custom-confirm-icon {
+            width: 56px;
+            height: 56px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.75rem;
+            font-size: 1.5rem;
+        }
+
+        .custom-confirm-title {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .custom-confirm-body {
+            padding: 1.5rem;
+            color: #495057;
+            font-size: 0.95rem;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .custom-confirm-footer {
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 0 1.5rem 1.5rem;
+        }
+
+        .custom-confirm-footer .btn {
+            padding: 0.625rem 1.5rem;
+            font-weight: 500;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .custom-confirm-footer .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        @keyframes confirmFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes confirmSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+    </style>
+
+    <script>
+        // Global Custom Confirm Modal Functions
+        let confirmCallback = null;
+        let confirmModal = null;
+        let confirmActionBtn = null;
+        let confirmCancelBtn = null;
+        let confirmTitle = null;
+        let confirmMessage = null;
+
+        function initConfirmModal() {
+            confirmModal = document.getElementById('customConfirmModal');
+            confirmActionBtn = document.getElementById('confirmActionBtn');
+            confirmCancelBtn = document.getElementById('confirmCancelBtn');
+            confirmTitle = document.getElementById('confirmTitle');
+            confirmMessage = document.getElementById('confirmMessage');
+
+            // Close on backdrop click
+            confirmModal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeConfirmModal();
+                }
+            });
+
+            // Close on Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && confirmModal.classList.contains('show')) {
+                    closeConfirmModal();
+                }
+            });
+
+            // Cancel button
+            confirmCancelBtn.addEventListener('click', closeConfirmModal);
+
+            // Action button
+            confirmActionBtn.addEventListener('click', function() {
+                if (confirmCallback) {
+                    confirmCallback();
+                }
+                closeConfirmModal();
+            });
+        }
+
+        function showConfirmModal(options) {
+            if (!confirmModal) initConfirmModal();
+
+            // Set content
+            confirmTitle.textContent = options.title || 'Confirm Action';
+            confirmMessage.textContent = options.message || 'Are you sure you want to proceed?';
+            confirmActionBtn.textContent = options.actionText || 'Delete';
+            confirmActionBtn.className = 'btn ' + (options.actionClass || 'btn-danger');
+
+            // Store callback
+            confirmCallback = options.onConfirm || null;
+
+            // Show modal
+            confirmModal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeConfirmModal() {
+            if (confirmModal) {
+                confirmModal.classList.remove('show');
+                document.body.style.overflow = '';
+            }
+            confirmCallback = null;
+        }
+
+        // Legacy confirm replacement function
+        function customConfirm(message, callback) {
+            showConfirmModal({
+                title: 'Confirm Action',
+                message: message,
+                actionText: 'OK',
+                actionClass: 'btn-primary',
+                onConfirm: callback
+            });
+            return false; // Always return false to prevent default
+        }
+
+        // Initialize on DOM ready
+        document.addEventListener('DOMContentLoaded', initConfirmModal);
+    </script>
+
+    {% block extra_js %}{% endblock %}
+
+    <!-- ===== SCROLL TO TOP BUTTON (CMS Managed) ===== -->
+    {% if scroll_to_top_settings and scroll_to_top_settings.is_visible and scroll_to_top_settings.is_active %}
+    <style>
+        #cmsScrollToTop {
+            position: fixed;
+            right: {{ scroll_to_top_settings.position_right|default:'2rem' }};
+            bottom: {{ scroll_to_top_settings.position_bottom|default:'2rem' }};
+            width: {{ scroll_to_top_settings.size_px|default:'44px' }};
+            height: {{ scroll_to_top_settings.size_px|default:'44px' }};
+            background: {{ scroll_to_top_settings.background_color|default:'#3B7A8C' }};
+            color: {{ scroll_to_top_settings.icon_color|default:'#ffffff' }};
+            border: none;
+            border-radius: {{ scroll_to_top_settings.border_radius|default:'50%' }};
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            box-shadow: {{ scroll_to_top_settings.shadow|default:'0 4px 16px rgba(0,0,0,0.2)' }};
+            transition: all 0.3s ease;
+            font-size: {{ scroll_to_top_settings.icon_size|default:'18px' }};
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(20px);
+        }
+        #cmsScrollToTop:hover {
+            background: {{ scroll_to_top_settings.hover_background_color|default:'#2d5f6e' }} !important;
+            color: {{ scroll_to_top_settings.hover_icon_color|default:'#ffffff' }} !important;
+            box-shadow: {{ scroll_to_top_settings.hover_shadow|default:'0 6px 24px rgba(0,0,0,0.3)' }} !important;
+            transform: translateY(-3px);
+        }
+        #cmsScrollToTop.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+            display: flex;
+        }
+        #cmsScrollToTop i {
+            pointer-events: none;
+        }
+    </style>
+    <button id="cmsScrollToTop" aria-label="Scroll to top" title="Scroll to top">
+        <i class="{{ scroll_to_top_settings.icon_class|default:'fas fa-arrow-up' }}"></i>
+    </button>
+    <script>
+        (function() {
+            var btn = document.getElementById('cmsScrollToTop');
+            if (!btn) return;
+            var showAfter = {{ scroll_to_top_settings.show_after_scroll|default:'300' }};
+            var duration = {{ scroll_to_top_settings.scroll_duration|default:'500' }};
+            function toggleBtn() {
+                if (window.scrollY > showAfter) {
+                    btn.classList.add('visible');
+                } else {
+                    btn.classList.remove('visible');
+                }
+            }
+            window.addEventListener('scroll', toggleBtn, { passive: true });
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+            toggleBtn();
+        })();
+    </script>
+    {% endif %}
+
+    {% if user.is_authenticated %}
+    <!-- Session Timeout Warning Modal -->
+    <div id="sessionWarningModal" class="modal fade" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content session-modal-content">
+                <div class="modal-header session-modal-header warning">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fas fa-clock me-2"></i>Session Expiring Soon
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-hourglass-half fa-3x text-warning"></i>
+                    </div>
+                    <p class="mb-2">Your session will expire in:</p>
+                    <h3 id="sessionCountdown" class="text-warning fw-bold mb-3">5:00</h3>
+                    <p class="text-muted small">Due to inactivity, you'll be automatically logged out.</p>
+                </div>
+                <div class="modal-footer justify-content-center p-4 session-modal-footer">
+                    <button type="button" class="btn btn-outline-secondary me-2" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Logout Now
+                    </button>
+                    <button type="button" class="btn btn-primary session-primary-btn" id="extendSessionBtn">
+                        <i class="fas fa-sync me-1"></i>Stay Logged In
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Session Expired Modal -->
+    <div id="sessionExpiredModal" class="modal fade" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content session-modal-content">
+                <div class="modal-header session-modal-header expired">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fas fa-lock me-2"></i>Session Expired
+                    </h5>
+                </div>
+                <div class="modal-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-lock fa-3x text-danger"></i>
+                    </div>
+                    <p class="mb-2">Your session has expired due to inactivity.</p>
+                    <p class="text-muted small">Please log in again to continue.</p>
+                </div>
+                <div class="modal-footer justify-content-center p-4 session-modal-footer">
+                    <a href="{% url 'login' %}" class="btn btn-primary session-primary-btn">
+                        <i class="fas fa-sign-in-alt me-1"></i>Log In Again
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Session Activity Indicator (Bottom Right) -->
+    <div id="sessionIndicator" class="position-fixed bottom-0 end-0 m-3 p-2 rounded shadow-sm session-indicator">
+        <small class="text-muted">
+            <i class="fas fa-circle text-success me-1"></i>
+            <span id="sessionTimeRemaining">30:00</span> remaining
+        </small>
+    </div>
+
+    <script>
+    (function() {
+        // Session management configuration - use defaults if context vars not available
+        const SESSION_TIMEOUT = parseInt('{{ session_timeout_seconds|default:1800 }}') || 1800;
+        const WARNING_THRESHOLD = parseInt('{{ session_warning_seconds|default:300 }}') || 300;
+        const HEARTBEAT_INTERVAL = 60000; // 1 minute
+        const COUNTDOWN_INTERVAL = 1000; // 1 second
+        
+        let timeRemaining = SESSION_TIMEOUT;
+        let warningShown = false;
+        let expiredShown = false;
+        let heartbeatTimer = null;
+        let countdownTimer = null;
+        
+        const warningModalEl = document.getElementById('sessionWarningModal');
+        const expiredModalEl = document.getElementById('sessionExpiredModal');
+        const warningModal = warningModalEl ? new bootstrap.Modal(warningModalEl) : null;
+        const expiredModal = expiredModalEl ? new bootstrap.Modal(expiredModalEl) : null;
+        const countdownEl = document.getElementById('sessionCountdown');
+        const indicatorEl = document.getElementById('sessionIndicator');
+        const indicatorTimeEl = document.getElementById('sessionTimeRemaining');
+        
+        // Format seconds to MM:SS
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return mins + ':' + secs.toString().padStart(2, '0');
+        }
+        
+        // Update session indicator
+        function updateIndicator() {
+            if (!indicatorEl || !indicatorTimeEl) return;
+            indicatorEl.style.display = 'block';
+            indicatorTimeEl.textContent = formatTime(timeRemaining);
+            
+            // Change color based on time remaining
+            const indicatorIcon = indicatorEl.querySelector('i');
+            if (indicatorIcon) {
+                if (timeRemaining <= 60) {
+                    indicatorIcon.className = 'fas fa-circle text-danger me-1';
+                } else if (timeRemaining <= WARNING_THRESHOLD) {
+                    indicatorIcon.className = 'fas fa-circle text-warning me-1';
+                } else {
+                    indicatorIcon.className = 'fas fa-circle text-success me-1';
+                }
+            }
+        }
+        
+        // Show warning modal
+        function showWarning() {
+            if (!warningModal || !countdownEl) return;
+            if (!warningShown) {
+                warningShown = true;
+                warningModal.show();
+            }
+            countdownEl.textContent = formatTime(timeRemaining);
+        }
+        
+        // Show expired modal
+        function showExpired() {
+            if (!expiredModal) return;
+            if (!expiredShown) {
+                expiredShown = true;
+                if (warningModal) warningModal.hide();
+                expiredModal.show();
+            }
+        }
+        
+        // Send heartbeat to server
+        async function sendHeartbeat() {
+            try {
+                const response = await fetch('/api/session/heartbeat/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    timeRemaining = data.time_remaining || SESSION_TIMEOUT;
+                    
+                    if (data.show_warning && !warningShown) {
+                        showWarning();
+                    }
+                } else if (response.status === 401) {
+                    // Session expired on server
+                    showExpired();
+                }
+            } catch (error) {
+                console.error('Heartbeat error:', error);
+            }
+        }
+        
+        // Extend session
+        async function extendSession() {
+            try {
+                const response = await fetch('/api/session/extend/', {
+                    method: 'GET',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    timeRemaining = data.time_remaining || SESSION_TIMEOUT;
+                    warningShown = false;
+                    if (warningModal) warningModal.hide();
+                    updateIndicator();
+                }
+            } catch (error) {
+                console.error('Extend session error:', error);
+            }
+        }
+        
+        // Get CSRF cookie
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        // Countdown timer
+        function startCountdown() {
+            countdownTimer = setInterval(function() {
+                timeRemaining--;
+                
+                if (timeRemaining <= WARNING_THRESHOLD && !warningShown) {
+                    showWarning();
+                }
+                
+                if (timeRemaining <= 0) {
+                    showExpired();
+                    clearInterval(countdownTimer);
+                }
+                
+                if (warningShown && countdownEl) {
+                    countdownEl.textContent = formatTime(Math.max(0, timeRemaining));
+                }
+                
+                updateIndicator();
+            }, COUNTDOWN_INTERVAL);
+        }
+        
+        // Start heartbeat
+        function startHeartbeat() {
+            heartbeatTimer = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
+        }
+        
+        // Handle user activity to reset timer
+        function handleUserActivity() {
+            // Only reset if not already in warning state
+            if (!warningShown && timeRemaining < SESSION_TIMEOUT - 60) {
+                sendHeartbeat();
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize with server-provided data
+            var initialTime = parseInt('{{ session_info.time_remaining|default:1800 }}');
+            if (!isNaN(initialTime) && initialTime > 0) {
+                timeRemaining = initialTime;
+            }
+            
+            // Start timers
+            startCountdown();
+            startHeartbeat();
+            updateIndicator();
+            
+            // Bind extend button
+            var extendBtn = document.getElementById('extendSessionBtn');
+            if (extendBtn) {
+                extendBtn.addEventListener('click', extendSession);
+            }
+            
+            // Bind logout button in warning modal
+            var logoutBtn = document.querySelector('#sessionWarningModal .btn-outline-secondary');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function() {
+                    window.location.href = '/accounts/logout/';
+                });
+            }
+            
+            // Track user activity
+            var events = ['mousedown', 'keydown', 'scroll', 'touchstart'];
+            var activityTimeout;
+            events.forEach(function(event) {
+                document.addEventListener(event, function() {
+                    clearTimeout(activityTimeout);
+                    activityTimeout = setTimeout(handleUserActivity, 1000);
+                }, true);
+            });
+        });
+    })();
+    </script>
+    {% endif %}
+</body>
+</html>

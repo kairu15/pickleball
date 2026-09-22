@@ -1,0 +1,1479 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}My Profile{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+/* ============================================================
+   PROFILE PAGE — Design System
+   ============================================================ */
+
+/* ----- Profile Header ----- */
+.profile-cover-wrap {
+    height: 220px;
+    background: linear-gradient(135deg, #1a3a42 0%, #3B7A8C 50%, #2a5a66 100%);
+    position: relative;
+    overflow: hidden;
+}
+.profile-cover-wrap::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 90px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.5));
+}
+.profile-cover-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-avatar-section {
+    margin-top: -55px;
+    position: relative;
+    z-index: 2;
+    padding: 0 28px 18px;
+}
+
+.profile-avatar-wrap {
+    position: relative;
+    display: inline-block;
+}
+.profile-avatar {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    border: 4px solid #fff;
+    object-fit: cover;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+}
+.profile-avatar-placeholder {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    border: 4px solid #fff;
+    background: linear-gradient(135deg, #3B7A8C, #1a3a42);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 2.5rem;
+    font-weight: 700;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+}
+.profile-avatar-overlay {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    cursor: pointer;
+}
+.profile-avatar-wrap:hover .profile-avatar-overlay {
+    opacity: 1;
+}
+.profile-avatar-overlay i {
+    color: #fff;
+    font-size: 1.3rem;
+}
+
+.skill-badge-dot {
+    position: absolute;
+    bottom: 6px;
+    right: 6px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 3px solid #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.profile-name {
+    font-size: 1.55rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 2px;
+}
+.profile-username {
+    font-size: 0.88rem;
+    color: #6c757d;
+    margin-bottom: 6px;
+}
+.profile-bio {
+    color: #6c757d;
+    font-size: 0.9rem;
+    max-width: 520px;
+    margin-bottom: 0;
+}
+
+/* ----- Header Quick Stats ----- */
+.profile-stats-bar {
+    display: flex;
+    border-top: 1px solid #e9ecef;
+    background: #f8f9fa;
+    flex-wrap: wrap;
+}
+.profile-stat-cell {
+    flex: 1;
+    min-width: 80px;
+    text-align: center;
+    padding: 13px 8px;
+    border-right: 1px solid #e9ecef;
+}
+.profile-stat-cell:last-child { border-right: none; }
+.profile-stat-num {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #3B7A8C;
+    line-height: 1.2;
+}
+.profile-stat-cell .label {
+    font-size: 0.68rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    font-weight: 600;
+}
+
+/* ----- Stat Cards (light variant - uses base .stat-card system) ----- */
+
+/* ----- Section Header (reusable) ----- */
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 24px;
+    border-bottom: 1px solid #e9ecef;
+}
+.section-header h5 {
+    margin: 0;
+    font-weight: 600;
+    font-size: 1rem;
+    color: #1a1a2e;
+}
+.section-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+.section-icon.primary { background: rgba(59,122,140,0.1); color: #3B7A8C; }
+.section-icon.warning { background: rgba(255,193,7,0.12); color: #856404; }
+.section-icon.success { background: rgba(40,167,69,0.1); color: #28a745; }
+.section-icon.danger { background: rgba(220,53,69,0.1); color: #dc3545; }
+.section-icon.purple { background: rgba(111,66,193,0.1); color: #6f42c1; }
+.section-icon.info { background: rgba(23,162,184,0.1); color: #17a2b8; }
+
+/* ----- Form Styles ----- */
+.form-section-title {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.profile-form .form-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 4px;
+}
+.profile-form .form-control,
+.profile-form .form-select {
+    border-radius: 8px;
+    border: 1.5px solid #e9ecef;
+    padding: 9px 14px;
+    font-size: 0.88rem;
+    transition: all 0.2s ease;
+}
+.profile-form .form-control:focus,
+.profile-form .form-select:focus {
+    border-color: #3B7A8C;
+    box-shadow: 0 0 0 3px rgba(59,122,140,0.1);
+}
+.profile-form textarea.form-control {
+    padding: 9px 14px;
+    line-height: 1.5;
+}
+.profile-form .form-control.is-invalid {
+    border-color: #dc3545;
+}
+
+/* Upload preview */
+.upload-preview-box {
+    width: 100%;
+    height: 140px;
+    border-radius: 10px;
+    border: 2px dashed #d0d5dd;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f9fafb;
+    transition: border-color 0.2s ease;
+    position: relative;
+}
+.upload-preview-box.has-image {
+    border-style: solid;
+    border-color: #e9ecef;
+    background: #fff;
+}
+.upload-preview-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.upload-preview-cover { height: 110px; }
+.upload-preview-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    color: #98a2b3;
+}
+.upload-preview-placeholder i { font-size: 1.4rem; }
+.upload-preview-placeholder span { font-size: 0.78rem; font-weight: 500; }
+.upload-input-wrap input[type="file"] {
+    font-size: 0.82rem;
+    padding: 6px 0;
+    color: #6c757d;
+}
+.upload-input-wrap input[type="file"]::file-selector-button {
+    border-radius: 6px;
+    border: 1px solid #d0d5dd;
+    background: #f9fafb;
+    padding: 5px 12px;
+    margin-right: 10px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: #344054;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.upload-input-wrap input[type="file"]::file-selector-button:hover {
+    background: #e9ecef;
+    border-color: #98a2b3;
+}
+
+/* ----- Timeline ----- */
+.timeline { position: relative; padding: 0; }
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 28px;
+    top: 16px;
+    bottom: 16px;
+    width: 2px;
+    background: #e9ecef;
+}
+.timeline-item {
+    display: flex;
+    gap: 14px;
+    padding: 12px 20px;
+    position: relative;
+}
+.timeline-item:hover { background: #f8f9fa; }
+.timeline-dot {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+    background: #f0f4f3;
+    color: #3B7A8C;
+}
+.timeline-body { flex: 1; min-width: 0; }
+.timeline-body .tl-title {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #1a1a2e;
+    margin-bottom: 1px;
+}
+.timeline-body .tl-sub {
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+
+/* ----- Activity list item ----- */
+.activity-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 20px;
+    transition: background 0.15s ease;
+}
+.activity-item:hover { background: #f8f9fa; }
+.activity-item + .activity-item { border-top: 1px solid #f0f0f0; }
+.activity-icon-box {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    background: #f0f4f3;
+    color: #3B7A8C;
+}
+.activity-icon-box.tournament { background: rgba(255,193,7,0.1); color: #856404; }
+.activity-body { flex: 1; min-width: 0; }
+.activity-body .a-title {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #1a1a2e;
+    margin-bottom: 1px;
+}
+.activity-body .a-sub {
+    font-size: 0.78rem;
+    color: #6c757d;
+}
+.activity-meta { text-align: right; flex-shrink: 0; }
+
+/* ----- Reservation card ----- */
+.res-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 20px;
+    transition: background 0.15s ease;
+    border-left: 4px solid transparent;
+    border-radius: 0;
+}
+.res-card:hover { background: #f8f9fa; }
+.res-card + .res-card { border-top: 1px solid #f0f0f0; }
+.res-card .rc-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    background: #f0f4f3;
+    color: #3B7A8C;
+}
+.res-card .rc-body { flex: 1; min-width: 0; }
+.res-card .rc-title {
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: #1a1a2e;
+    margin-bottom: 1px;
+}
+.res-card .rc-sub {
+    font-size: 0.78rem;
+    color: #6c757d;
+}
+
+/* ----- Password strength meter ----- */
+.pw-meter { margin-top: 8px; }
+.pw-meter-bar {
+    height: 4px;
+    border-radius: 2px;
+    background: #e9ecef;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+.pw-meter-fill {
+    height: 100%;
+    width: 0;
+    border-radius: 2px;
+    transition: width 0.3s ease, background 0.3s ease;
+}
+.pw-meter-text {
+    font-size: 0.72rem;
+    font-weight: 500;
+}
+.pw-requirements {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    margin-top: 6px;
+}
+.pw-req {
+    font-size: 0.7rem;
+    color: #adb5bd;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: color 0.2s ease;
+}
+.pw-req.met { color: #28a745; }
+.pw-req i { font-size: 0.55rem; }
+
+
+
+/* ----- Empty state ----- */
+.empty-state { text-align: center; padding: 36px 20px; }
+.empty-state-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #f0f4f3;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+    font-size: 1.3rem;
+    color: #adb5bd;
+}
+.empty-state h6 { font-weight: 600; color: #1a1a2e; margin-bottom: 4px; }
+.empty-state p { font-size: 0.82rem; color: #6c757d; margin-bottom: 12px; }
+
+/* ----- Animations ----- */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes previewFadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+.upload-preview-box img { animation: previewFadeIn 0.25s ease; }
+
+/* ----- Responsive ----- */
+@media (max-width: 991.98px) {
+    .profile-cover-wrap { height: 180px; }
+}
+@media (max-width: 767.98px) {
+    .profile-cover-wrap { height: 150px; }
+    .profile-avatar,
+    .profile-avatar-placeholder { width: 80px; height: 80px; }
+    .profile-avatar-placeholder { font-size: 1.8rem; }
+    .profile-avatar-section { margin-top: -42px; padding: 0 16px 14px; }
+    .profile-name { font-size: 1.25rem; }
+    .profile-stat-num { font-size: 1rem; }
+    .profile-stat-cell { padding: 10px 6px; min-width: 60px; }
+    .stat-card .stat-value { font-size: calc(var(--stat-value-size, 1.5rem) * 0.85); }
+    .section-header { padding: 12px 16px; }
+    .timeline-item, .activity-item, .res-card { padding: 12px 16px; }
+    .skill-badge-dot { width: 24px; height: 24px; font-size: 0.55rem; bottom: 4px; right: 4px; }
+}
+@media (max-width: 575.98px) {
+    .profile-stats-bar { gap: 0; }
+    .profile-stat-cell { padding: 8px 4px; min-width: 54px; }
+    .profile-stat-num { font-size: 0.9rem; }
+    .profile-stat-cell .label { font-size: 0.6rem; }
+}
+
+/* ----- Location Map ----- */
+.location-map-wrap {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid #e9ecef;
+    transition: border-color 0.2s ease;
+    position: relative;
+}
+.location-map-wrap:focus-within { border-color: #3B7A8C; }
+.location-map {
+    width: 100%;
+    height: 280px;
+    z-index: 1;
+}
+.location-map .leaflet-control-zoom a {
+    width: 34px;
+    height: 34px;
+    line-height: 34px;
+    font-size: 1rem;
+    color: #495057;
+}
+.location-map-controls {
+    display: flex;
+    gap: 8px;
+    padding: 10px 12px;
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+    flex-wrap: wrap;
+}
+.location-map-controls .btn {
+    font-size: 0.78rem;
+    border-radius: 8px;
+    padding: 5px 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.location-map-controls .btn:hover { transform: translateY(-1px); }
+.location-map-controls .btn i { font-size: 0.85rem; }
+.location-coords-row {
+    display: flex;
+    gap: 12px;
+    padding: 8px 12px;
+    background: #fff;
+    border-top: 1px solid #e9ecef;
+    align-items: center;
+}
+.location-coords-row .coord-field { flex: 1; }
+.location-coords-row .coord-field label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0;
+}
+.location-coords-row .coord-field input {
+    border: none;
+    background: transparent;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #1a1a2e;
+    padding: 2px 0;
+    width: 100%;
+    outline: none;
+}
+.location-coords-row .coord-field input:focus {
+    color: #3B7A8C;
+}
+.location-search-wrap {
+    padding: 10px 12px;
+    background: #fff;
+    border-bottom: 1px solid #e9ecef;
+    position: relative;
+}
+.location-search-wrap input {
+    width: 100%;
+    border: 1.5px solid #e9ecef;
+    border-radius: 8px;
+    padding: 8px 14px 8px 36px;
+    font-size: 0.82rem;
+    transition: all 0.2s ease;
+}
+.location-search-wrap input:focus {
+    border-color: #3B7A8C;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59,122,140,0.1);
+}
+.location-search-wrap i {
+    position: absolute;
+    left: 22px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #adb5bd;
+    font-size: 0.85rem;
+}
+.location-search-results {
+    position: absolute;
+    top: 100%;
+    left: 12px;
+    right: 12px;
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    max-height: 180px;
+    overflow-y: auto;
+    display: none;
+    z-index: 1000;
+}
+.location-search-results.show { display: block; }
+.location-search-results .result-item {
+    padding: 10px 14px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    border-bottom: 1px solid #f0f0f0;
+}
+.location-search-results .result-item:last-child { border-bottom: none; }
+.location-search-results .result-item:hover { background: #f0f4f3; }
+.location-search-results .result-item .ri-name { font-weight: 500; color: #1a1a2e; }
+.location-search-results .result-item .ri-desc { font-size: 0.75rem; color: #6c757d; }
+
+/* Leaflet custom marker style */
+.custom-marker-icon {
+    background: none;
+    border: none;
+}
+.custom-marker-pin {
+    width: 30px;
+    height: 42px;
+    margin-left: -15px;
+    margin-top: -42px;
+    position: relative;
+}
+.custom-marker-pin svg {
+    fill: #3B7A8C;
+    stroke: #1a3a42;
+    stroke-width: 1.5;
+}
+
+@media (max-width: 767.98px) {
+    .location-map { height: 220px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-11 col-xl-10">
+
+        <!-- ============================================================
+             PROFILE HEADER
+             ============================================================ -->
+        <div class="card border-0 shadow-sm mb-4" style="border-radius: 14px; overflow: hidden;">
+            <!-- Cover -->
+            <div class="profile-cover-wrap">
+                {% if user.cover_photo %}
+                <img src="{{ user.cover_photo.url }}" alt="Cover">
+                {% endif %}
+            </div>
+
+            <!-- Avatar + Info -->
+            <div class="profile-avatar-section">
+                <div class="d-flex align-items-end gap-3 flex-wrap">
+                    <div class="profile-avatar-wrap">
+                        {% if user.profile_picture %}
+                        <img src="{{ user.profile_picture.url }}" alt="{{ user.username }}" class="profile-avatar" id="headerAvatar">
+                        {% else %}
+                        <div class="profile-avatar-placeholder" id="headerAvatarPlaceholder">
+                            {{ user.first_name|first|default:user.username|first|upper }}
+                        </div>
+                        {% endif %}
+                        <label for="id_profile_picture" class="profile-avatar-overlay" title="Change photo">
+                            <i class="fas fa-camera"></i>
+                        </label>
+                        {% if user.skill_level %}
+                        <span class="skill-badge-dot"
+                              style="background: {% if user.skill_level == 'beginner' %}#28a745{% elif user.skill_level == 'intermediate' %}#ffc107{% elif user.skill_level == 'advanced' %}#fd7e14{% else %}#dc3545{% endif %};">
+                            {{ user.skill_level|first|upper }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div class="flex-grow-1" style="padding-top: 22px;">
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <h3 class="profile-name mb-0">{{ user.get_full_name|default:user.username }}</h3>
+                            {% if user.is_super_admin %}
+                            <i class="fas fa-check-circle text-primary" title="Verified" style="font-size: 1.1rem;"></i>
+                            {% endif %}
+                        </div>
+                        <div class="profile-username">@{{ user.username }}</div>
+                        <div class="d-flex flex-wrap align-items-center gap-1 mb-1">
+                            <span class="badge px-3 py-1.5 {% if user.role == 'super_admin' %}bg-danger{% elif user.role == 'staff' %}bg-warning text-dark{% else %}bg-info{% endif %}" style="border-radius: 20px; font-weight: 500;">
+                                <i class="fas {% if user.role == 'super_admin' %}fa-crown{% elif user.role == 'staff' %}fa-users{% else %}fa-user{% endif %} me-1"></i>
+                                {{ user.get_role_display }}
+                            </span>
+                            {% if user.skill_level %}
+                            <span class="badge px-3 py-1.5" style="border-radius: 20px; font-weight: 500; background: {% if user.skill_level == 'beginner' %}#28a745{% elif user.skill_level == 'intermediate' %}#ffc107{% elif user.skill_level == 'advanced' %}#fd7e14{% else %}#dc3545{% endif %}; color: #fff;">
+                                <i class="fas fa-chart-line me-1"></i>{{ user.get_skill_level_display }}
+                            </span>
+                            {% endif %}
+                            {% if user.organization %}
+                            <span class="badge bg-light text-dark border px-3 py-1.5" style="border-radius: 20px; font-weight: 500;">
+                                <i class="fas fa-building me-1 text-primary"></i>{{ user.organization.name }}
+                            </span>
+                            {% endif %}
+                        </div>
+                        {% if user.bio %}
+                        <p class="profile-bio">{{ user.bio }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Bar -->
+            <div class="profile-stats-bar">
+                <div class="profile-stat-cell">
+                    <div class="profile-stat-num">{{ total_reservations }}</div>
+                    <div class="label">Reservations</div>
+                </div>
+                <div class="profile-stat-cell">
+                    <div class="profile-stat-num">{{ completed_matches }}</div>
+                    <div class="label">Matches</div>
+                </div>
+                <div class="profile-stat-cell">
+                    <div class="profile-stat-num">{{ tournament_count }}</div>
+                    <div class="label">Tournaments</div>
+                </div>
+                <div class="profile-stat-cell">
+                    <div class="profile-stat-num">{{ wins }}</div>
+                    <div class="label">Wins</div>
+                </div>
+                <div class="profile-stat-cell">
+                    <div class="profile-stat-num">{{ user.date_joined|date:"Y" }}</div>
+                    <div class="label">Member</div>
+                </div>
+            </div>
+
+            <!-- Social -->
+            {% if user.website_url or user.twitter_url or user.instagram_url or user.facebook_url %}
+            <div class="px-4 py-2 border-top d-flex gap-2 flex-wrap">
+                {% if user.website_url %}<a href="{{ user.website_url }}" target="_blank" class="btn btn-sm btn-outline-secondary" style="border-radius: 20px;"><i class="fas fa-globe me-1"></i>Website</a>{% endif %}
+                {% if user.twitter_url %}<a href="{{ user.twitter_url }}" target="_blank" class="btn btn-sm btn-outline-secondary" style="border-radius: 20px;"><i class="fab fa-x-twitter me-1"></i>X</a>{% endif %}
+                {% if user.instagram_url %}<a href="{{ user.instagram_url }}" target="_blank" class="btn btn-sm btn-outline-secondary" style="border-radius: 20px;"><i class="fab fa-instagram me-1"></i>Instagram</a>{% endif %}
+                {% if user.facebook_url %}<a href="{{ user.facebook_url }}" target="_blank" class="btn btn-sm btn-outline-secondary" style="border-radius: 20px;"><i class="fab fa-facebook me-1"></i>Facebook</a>{% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ============================================================
+             QUICK STATS ROW (standardized)
+             ============================================================ -->
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+                <div class="card stat-card h-100" style="background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+                    <div class="card-body">
+                        <div class="stat-icon" style="background: rgba(59,122,140,0.1); color: #3B7A8C;">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="stat-value" style="color: #1a1a2e;">{{ total_reservations }}</div>
+                            <div class="stat-label" style="color: #6c757d;">Total Reservations</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card stat-card h-100" style="background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+                    <div class="card-body">
+                        <div class="stat-icon" style="background: rgba(40,167,69,0.1); color: #28a745;">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="stat-value" style="color: #1a1a2e;">{{ confirmed_reservations }}</div>
+                            <div class="stat-label" style="color: #6c757d;">Confirmed</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card stat-card h-100" style="background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+                    <div class="card-body">
+                        <div class="stat-icon" style="background: rgba(255,193,7,0.12); color: #856404;">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="stat-value" style="color: #1a1a2e;">{{ pending_reservations }}</div>
+                            <div class="stat-label" style="color: #6c757d;">Pending</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card stat-card h-100" style="background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+                    <div class="card-body">
+                        <div class="stat-icon" style="background: rgba(111,66,193,0.1); color: #6f42c1;">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="stat-value" style="color: #1a1a2e;">{{ wins }}</div>
+                            <div class="stat-label" style="color: #6c757d;">Matches Won</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             MAIN CONTENT — TWO COLUMNS
+             ============================================================ -->
+        <div class="row g-4">
+
+            <!-- LEFT COLUMN: Edit Profile -->
+            <div class="col-lg-7">
+
+                <!-- Edit Profile Form -->
+                <div class="card border-0 shadow-sm mb-4" style="border-radius: 14px; overflow: hidden;">
+                    <div class="section-header">
+                        <div class="section-icon primary"><i class="fas fa-user-edit"></i></div>
+                        <h5>Edit Profile</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <form method="post" enctype="multipart/form-data" class="profile-form" id="profileForm">
+                            {% csrf_token %}
+                            <input type="hidden" name="update_profile" value="1">
+
+                            <!-- Profile Images -->
+                            <div class="form-section-title"><i class="fas fa-camera me-1"></i>Profile Images</div>
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label" for="id_profile_picture">Profile Picture</label>
+                                    <div class="d-flex flex-column gap-2">
+                                        <div class="upload-preview-box{% if user.profile_picture %} has-image{% endif %}" id="profilePicPreview">
+                                            {% if user.profile_picture %}
+                                            <img src="{{ user.profile_picture.url }}" alt="Current">
+                                            {% else %}
+                                            <div class="upload-preview-placeholder">
+                                                <i class="fas fa-user"></i>
+                                                <span>No photo</span>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="upload-input-wrap">{{ form.profile_picture }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="id_cover_photo">Cover Photo</label>
+                                    <div class="d-flex flex-column gap-2">
+                                        <div class="upload-preview-box upload-preview-cover{% if user.cover_photo %} has-image{% endif %}" id="coverPhotoPreview">
+                                            {% if user.cover_photo %}
+                                            <img src="{{ user.cover_photo.url }}" alt="Current">
+                                            {% else %}
+                                            <div class="upload-preview-placeholder">
+                                                <i class="fas fa-image"></i>
+                                                <span>No cover</span>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="upload-input-wrap">{{ form.cover_photo }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Personal Information -->
+                            <div class="form-section-title"><i class="fas fa-user me-1"></i>Personal Information</div>
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label" for="id_first_name">First Name <span class="text-danger">*</span></label>
+                                    {{ form.first_name }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="id_last_name">Last Name <span class="text-danger">*</span></label>
+                                    {{ form.last_name }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="id_email">Email <span class="text-danger">*</span></label>
+                                    {{ form.email }}
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label" for="id_gender">Gender</label>
+                                    {{ form.gender }}
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label" for="id_birth_date">Birth Date</label>
+                                    {{ form.birth_date }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="id_phone_number">Phone Number</label>
+                                    {{ form.phone_number }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="id_skill_level">Skill Level</label>
+                                    {{ form.skill_level }}
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label" for="id_bio">Bio</label>
+                                    {{ form.bio }}
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label" for="id_address">Address</label>
+                                    {{ form.address }}
+                                </div>
+                            </div>
+
+                            <!-- Social Links -->
+                            <!-- Location Section -->
+                            <div class="form-section-title"><i class="fas fa-map-marker-alt me-1"></i>Your Location</div>
+                            <div class="row g-3 mb-4">
+                                <div class="col-12">
+                                    <div class="location-map-wrap" id="locationMapWrap">
+                                        <div class="location-search-wrap">
+                                            <i class="fas fa-search"></i>
+                                            <input type="text" id="locationSearch" placeholder="Search for a location..." autocomplete="off" aria-label="Search for a location">
+                                            <div class="location-search-results" id="searchResults"></div>
+                                        </div>
+                                        <div id="profileMap" class="location-map"></div>
+                                        <div class="location-coords-row">
+                                            <div class="coord-field">
+                                                <label for="id_latitude">Latitude</label>
+                                                {{ form.latitude }}
+                                            </div>
+                                            <div class="coord-field">
+                                                <label for="id_longitude">Longitude</label>
+                                                {{ form.longitude }}
+                                            </div>
+                                        </div>
+                                        <div class="location-map-controls">
+                                            <button type="button" class="btn btn-outline-primary" id="detectLocationBtn">
+                                                <i class="fas fa-crosshairs"></i> Use My Location
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary" id="resetMapBtn">
+                                                <i class="fas fa-undo"></i> Reset
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-section-title"><i class="fas fa-share-alt me-1"></i>Social Links</div>
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label" for="id_website_url"><i class="fas fa-globe me-1 text-muted"></i>Website</label>
+                                    {{ form.website_url }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="id_twitter_url"><i class="fab fa-x-twitter me-1 text-muted"></i>X (Twitter)</label>
+                                    {{ form.twitter_url }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="id_instagram_url"><i class="fab fa-instagram me-1 text-muted"></i>Instagram</label>
+                                    {{ form.instagram_url }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="id_facebook_url"><i class="fab fa-facebook me-1 text-muted"></i>Facebook</label>
+                                    {{ form.facebook_url }}
+                                </div>
+                            </div>
+
+                            <hr class="my-4">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary px-4" id="saveProfileBtn">
+                                    <i class="fas fa-save me-2"></i>Save Changes
+                                </button>
+                                <a href="{% url dashboard_url %}" class="btn btn-outline-secondary px-4">Cancel</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN: Activity + Security -->
+            <div class="col-lg-5">
+
+                <!-- Reservation History -->
+                <div class="card border-0 shadow-sm mb-4" style="border-radius: 14px; overflow: hidden;">
+                    <div class="section-header">
+                        <div class="section-icon primary"><i class="fas fa-calendar-alt"></i></div>
+                        <h5>Reservations</h5>
+                        <span class="badge bg-light text-dark ms-auto">{{ reservation_history|length }}</span>
+                    </div>
+                    <div style="max-height: 360px; overflow-y: auto;">
+                        {% if reservation_history %}
+                            {% for res in reservation_history %}
+                            <div class="res-card" style="border-left-color: {% if res.status == 'confirmed' %}#28a745{% elif res.status == 'pending' %}#ffc107{% elif res.status == 'completed' %}#6c757d{% else %}#dc3545{% endif %};">
+                                <div class="rc-icon"><i class="fas fa-calendar-day"></i></div>
+                                <div class="rc-body">
+                                    <div class="rc-title">{{ res.court.name }}</div>
+                                    <div class="rc-sub">{{ res.date|date:"M d, Y" }} · {{ res.start_time|time:"g:i A" }}</div>
+                                </div>
+                                <div class="activity-meta">
+                                    <span class="badge px-2 py-1 {% if res.status == 'confirmed' %}bg-success{% elif res.status == 'pending' %}bg-warning text-dark{% elif res.status == 'completed' %}bg-secondary{% else %}bg-danger{% endif %}" style="font-size: 0.68rem; border-radius: 10px;">
+                                        {{ res.get_status_display }}
+                                    </span>
+                                    <br>
+                                    <a href="{% url 'reservation_detail' res.id %}" class="btn btn-sm mt-1" style="border-radius: 6px; padding: 1px 8px; font-size: 0.72rem; border: 1px solid #dee2e6; color: #6c757d;">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            <div class="text-center py-2 border-top">
+                                <a href="{% url 'reservation_list' %}" class="btn btn-link btn-sm text-decoration-none" style="font-size: 0.82rem;">
+                                    View All <i class="fas fa-arrow-right ms-1"></i>
+                                </a>
+                            </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <div class="empty-state-icon"><i class="fas fa-calendar-times"></i></div>
+                            <h6>No Reservations</h6>
+                            <p>Book a court to get started.</p>
+                            <a href="{% url 'court_list' %}" class="btn btn-primary btn-sm px-4" style="border-radius: 20px;">
+                                <i class="fas fa-plus me-1"></i> Book a Court
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Recent Activity Timeline -->
+                <div class="card border-0 shadow-sm mb-4" style="border-radius: 14px; overflow: hidden;">
+                    <div class="section-header">
+                        <div class="section-icon info"><i class="fas fa-history"></i></div>
+                        <h5>Recent Activity</h5>
+                    </div>
+                    <div class="timeline" style="max-height: 320px; overflow-y: auto;">
+                        {% if recent_activities %}
+                            {% for act in recent_activities %}
+                            <div class="timeline-item">
+                                <div class="timeline-dot" style="background: {% if 'Login' in act.action %}rgba(59,122,140,0.1);color:#3B7A8C{% elif 'Password' in act.action %}rgba(255,193,7,0.12);color:#856404{% elif 'Profile' in act.action %}rgba(40,167,69,0.1);color:#28a745{% else %}rgba(23,162,184,0.1);color:#17a2b8{% endif %};">
+                                    <i class="fas {% if 'Login' in act.action %}fa-right-to-bracket{% elif 'Password' in act.action %}fa-key{% elif 'Profile' in act.action %}fa-user-pen{% else %}fa-circle{% endif %}"></i>
+                                </div>
+                                <div class="timeline-body">
+                                    <div class="tl-title">{{ act.action }}</div>
+                                    <div class="tl-sub">{{ act.created_at|date:"M d, g:i A" }}</div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                        <div class="empty-state" style="padding: 24px 20px;">
+                            <div class="empty-state-icon" style="width: 44px; height: 44px; font-size: 1rem;"><i class="fas fa-clock"></i></div>
+                            <h6 style="font-size: 0.9rem;">No recent activity</h6>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Security Section -->
+                <div class="card border-0 shadow-sm mb-4" style="border-radius: 14px; overflow: hidden;">
+                    <div class="section-header">
+                        <div class="section-icon danger"><i class="fas fa-shield"></i></div>
+                        <h5>Account Security</h5>
+                    </div>
+                    <div class="card-body p-4 border-bottom">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <div class="fw-semibold" style="font-size: 0.88rem;">Last Login</div>
+                                <small class="text-muted">{{ user.last_login|date:"M d, Y · g:i A"|default:"Not available" }}</small>
+                            </div>
+                            <i class="fas fa-right-to-bracket text-muted"></i>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-semibold" style="font-size: 0.88rem;">Member Since</div>
+                                <small class="text-muted">{{ user.date_joined|date:"M d, Y" }}</small>
+                            </div>
+                            <i class="fas fa-calendar-plus text-muted"></i>
+                        </div>
+                    </div>
+
+                    <!-- Change Password -->
+                    <div class="card-body p-4">
+                        <h6 class="fw-semibold mb-3"><i class="fas fa-lock me-2 text-warning"></i>Change Password</h6>
+                        <form method="post" class="profile-form" id="passwordForm">
+                            {% csrf_token %}
+                            <input type="hidden" name="change_password" value="1">
+
+                            <div class="mb-3">
+                                <label class="form-label" for="id_old_password">Current Password</label>
+                                <div class="password-wrapper">
+                                    {{ password_form.old_password }}
+                                    <button type="button" class="password-toggle" onclick="togglePasswordVisibility('id_old_password', this)" tabindex="-1" aria-label="Show password">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label" for="id_new_password1">New Password</label>
+                                <div class="password-wrapper">
+                                    {{ password_form.new_password1 }}
+                                    <button type="button" class="password-toggle" onclick="togglePasswordVisibility('id_new_password1', this)" tabindex="-1" aria-label="Show password">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <!-- Strength meter -->
+                                <div class="pw-meter" id="pwMeter" style="display:none;">
+                                    <div class="pw-meter-bar">
+                                        <div class="pw-meter-fill" id="pwMeterFill" style="width:0;"></div>
+                                    </div>
+                                    <div class="pw-meter-text" id="pwMeterText" style="font-size:0.75rem;">&nbsp;</div>
+                                </div>
+                                <div class="pw-requirements" id="pwRequirements">
+                                    <span class="pw-req" data-req="length"><i class="fas fa-circle"></i> 8+ characters</span>
+                                    <span class="pw-req" data-req="upper"><i class="fas fa-circle"></i> Uppercase</span>
+                                    <span class="pw-req" data-req="lower"><i class="fas fa-circle"></i> Lowercase</span>
+                                    <span class="pw-req" data-req="number"><i class="fas fa-circle"></i> Number</span>
+                                    <span class="pw-req" data-req="special"><i class="fas fa-circle"></i> Special</span>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label" for="id_new_password2">Confirm New Password</label>
+                                <div class="password-wrapper">
+                                    {{ password_form.new_password2 }}
+                                    <button type="button" class="password-toggle" onclick="togglePasswordVisibility('id_new_password2', this)" tabindex="-1" aria-label="Show password">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {% if password_form.non_field_errors %}
+                            <div class="alert alert-danger small py-2">{{ password_form.non_field_errors.0 }}</div>
+                            {% endif %}
+
+                            {% if password_form.old_password.errors %}
+                            <div class="text-danger small mb-2">{{ password_form.old_password.errors.0 }}</div>
+                            {% endif %}
+                            {% if password_form.new_password1.errors %}
+                            <div class="text-danger small mb-2">{{ password_form.new_password1.errors.0 }}</div>
+                            {% endif %}
+                            {% if password_form.new_password2.errors %}
+                            <div class="text-danger small mb-2">{{ password_form.new_password2.errors.0 }}</div>
+                            {% endif %}
+
+                            <button type="submit" class="btn btn-warning w-100" id="changePwBtn">
+                                <i class="fas fa-key me-2"></i>Update Password
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Favorite Courts -->
+                {% if favorite_courts %}
+                <div class="card border-0 shadow-sm mb-4" style="border-radius: 14px; overflow: hidden;">
+                    <div class="section-header">
+                        <div class="section-icon purple"><i class="fas fa-heart"></i></div>
+                        <h5>Favorite Courts</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        {% for court in favorite_courts %}
+                        <div class="d-flex align-items-center gap-3 mb-2">
+                            <i class="fas fa-map-marker-alt" style="color: #dc3545;"></i>
+                            <span class="fw-semibold" style="font-size: 0.9rem;">{{ court }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+/* ================================================================
+   Password Strength Meter
+   ================================================================ */
+document.addEventListener('DOMContentLoaded', function() {
+    const pwInput = document.getElementById('id_new_password1');
+    const pwConfirm = document.getElementById('id_new_password2');
+    const meter = document.getElementById('pwMeter');
+    const fill = document.getElementById('pwMeterFill');
+    const text = document.getElementById('pwMeterText');
+    const reqs = document.querySelectorAll('.pw-req');
+
+    if (!pwInput) return;
+
+    pwInput.addEventListener('input', function() {
+        const val = this.value;
+        if (!val) { meter.style.display = 'none'; return; }
+        meter.style.display = 'block';
+
+        const checks = {
+            length: val.length >= 8,
+            upper: /[A-Z]/.test(val),
+            lower: /[a-z]/.test(val),
+            number: /[0-9]/.test(val),
+            special: /[^A-Za-z0-9]/.test(val)
+        };
+        const met = Object.values(checks).filter(Boolean).length;
+
+        reqs.forEach(function(r) {
+            const key = r.dataset.req;
+            const isMet = checks[key];
+            r.classList.toggle('met', isMet);
+            r.querySelector('i').className = isMet ? 'fas fa-check-circle' : 'fas fa-circle';
+        });
+
+        const pct = (met / 5) * 100;
+        fill.style.width = pct + '%';
+
+        if (met <= 1) { fill.style.background = '#dc3545'; text.textContent = 'Weak'; text.style.color = '#dc3545'; }
+        else if (met <= 2) { fill.style.background = '#fd7e14'; text.textContent = 'Fair'; text.style.color = '#fd7e14'; }
+        else if (met <= 3) { fill.style.background = '#ffc107'; text.textContent = 'Good'; text.style.color = '#856404'; }
+        else if (met <= 4) { fill.style.background = '#3B7A8C'; text.textContent = 'Strong'; text.style.color = '#3B7A8C'; }
+        else { fill.style.background = '#28a745'; text.textContent = 'Very Strong'; text.style.color = '#28a745'; }
+
+        // Confirm match
+        if (pwConfirm && pwConfirm.value) checkConfirmMatch();
+    });
+
+    if (pwConfirm) {
+        pwConfirm.addEventListener('input', checkConfirmMatch);
+    }
+
+    function checkConfirmMatch() {
+        const pw = pwInput.value;
+        const confirm = pwConfirm.value;
+        const feedback = pwConfirm.closest('.mb-3').querySelector('.text-danger');
+        if (confirm && pw !== confirm) {
+            if (!feedback) {
+                const el = document.createElement('div');
+                el.className = 'text-danger small mt-1';
+                el.textContent = 'Passwords do not match';
+                pwConfirm.closest('.mb-3').appendChild(el);
+            }
+        } else {
+            const fb = pwConfirm.closest('.mb-3').querySelector('.text-danger');
+            if (fb) fb.remove();
+        }
+    }
+});
+
+/* ================================================================
+   Image Upload Preview
+   ================================================================ */
+document.addEventListener('DOMContentLoaded', function() {
+    const ppInput = document.getElementById('id_profile_picture');
+    const cpInput = document.getElementById('id_cover_photo');
+    const ppPreview = document.getElementById('profilePicPreview');
+    const cpPreview = document.getElementById('coverPhotoPreview');
+    const headerAvatar = document.getElementById('headerAvatar');
+    const headerPlaceholder = document.getElementById('headerAvatarPlaceholder');
+
+    function setupPreview(input, previewEl, headerUpdate) {
+        if (!input) return;
+        input.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file.');
+                input.value = '';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                previewEl.innerHTML = '<img src="' + ev.target.result + '" alt="Preview">';
+                previewEl.classList.add('has-image');
+                if (headerUpdate) headerUpdate(ev.target.result);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    setupPreview(ppInput, ppPreview, function(src) {
+        if (headerAvatar) { headerAvatar.src = src; headerAvatar.style.display = 'block'; }
+        if (headerPlaceholder) headerPlaceholder.style.display = 'none';
+    });
+    setupPreview(cpInput, cpPreview, null);
+});
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* ================================================================
+   Interactive Location Map (Leaflet + OpenStreetMap)
+   ================================================================ */
+document.addEventListener('DOMContentLoaded', function() {
+    
+    const DEFAULT_COORDS = { lat: 14.5547, lng: 121.0244 }; // Manila, PH
+    const latInput = document.getElementById('id_latitude');
+    const lngInput = document.getElementById('id_longitude');
+    const mapEl = document.getElementById('profileMap');
+    const searchInput = document.getElementById('locationSearch');
+    const searchResults = document.getElementById('searchResults');
+    const detectBtn = document.getElementById('detectLocationBtn');
+    const resetBtn = document.getElementById('resetMapBtn');
+    
+    if (!mapEl || !latInput || !lngInput) return;
+    
+    // Parse saved coordinates
+    let savedLat = parseFloat(latInput.value);
+    let savedLng = parseFloat(lngInput.value);
+    let center = (savedLat && savedLng) ? { lat: savedLat, lng: savedLng } : DEFAULT_COORDS;
+    let marker = null;
+    let searchTimeout = null;
+    
+    // ---- Initialize Map ----
+    let map = L.map('profileMap', {
+        center: [center.lat, center.lng],
+        zoom: 15,
+        scrollWheelZoom: true,
+        zoomControl: true
+    });
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 19
+    }).addTo(map);
+    
+    // Nominatim usage headers (per usage policy)
+    let NOMINATIM_HEADERS = { 'User-Agent': 'PickleSphere/1.0' };
+    
+    // Custom marker icon (SVG pin)
+    let makiIcon = L.divIcon({
+        className: 'custom-marker-icon',
+        html: '<div class="custom-marker-pin"><svg viewBox="0 0 30 42" width="30" height="42"><path d="M15 0C6.7 0 0 6.7 0 15c0 8.2 6.2 14.9 14 15.9l1 11.1 1-11.1C23.8 29.9 30 23.2 30 15 30 6.7 23.3 0 15 0zm0 22c-3.9 0-7-3.1-7-7s3.1-7 7-7 7 3.1 7 7-3.1 7-7 7z" fill="#3B7A8C" stroke="#1a3a42" stroke-width="1.5"/></svg></div>',
+        iconSize: [30, 42],
+        iconAnchor: [15, 42],
+        popupAnchor: [0, -42]
+    });
+    
+    // ---- Place Marker ----
+    function placeMarker(lat, lng) {
+        if (marker) {
+            marker.setLatLng([lat, lng]);
+        } else {
+            marker = L.marker([lat, lng], { icon: makiIcon, draggable: true }).addTo(map);
+            marker.on('dragend', function() {
+                var pos = marker.getLatLng();
+                updateCoords(pos.lat, pos.lng);
+                reverseGeocode(pos.lat, pos.lng);
+            });
+        }
+        updateCoords(lat, lng);
+    }
+    
+    // ---- Update Coordinate Fields ----
+    function updateCoords(lat, lng) {
+        latInput.value = lat.toFixed(6);
+        lngInput.value = lng.toFixed(6);
+        latInput.dispatchEvent(new Event('change', { bubbles: true }));
+        lngInput.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    
+    // ---- Click on Map to Place Marker ----
+    map.on('click', function(e) {
+        placeMarker(e.latlng.lat, e.latlng.lng);
+        reverseGeocode(e.latlng.lat, e.latlng.lng);
+    });
+    
+    // ---- Reverse Geocode (Nominatim) ----
+    let geocodeTimeout = null;
+    function reverseGeocode(lat, lng) {
+        if (geocodeTimeout) clearTimeout(geocodeTimeout);
+        geocodeTimeout = setTimeout(function() {
+            fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' + lat + '&lon=' + lng + '&addressdetails=1', { headers: NOMINATIM_HEADERS })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data && data.display_name) {
+                        var addr = data.display_name;
+                        var parts = addr.split(',');
+                        var shortAddr = parts.slice(0, Math.min(3, parts.length)).join(',');
+                        searchInput.value = shortAddr.trim();
+                        
+                        var addressField = document.getElementById('id_address');
+                        if (addressField && !addressField.value.trim()) {
+                            addressField.value = addr;
+                        }
+                    }
+                })
+                .catch(function() {});
+        }, 500);
+    }
+    
+    // ---- Search for Location (Nominatim) ----
+    searchInput.addEventListener('input', function() {
+        var query = this.value.trim();
+        if (searchTimeout) clearTimeout(searchTimeout);
+        
+        if (query.length < 3) {
+            searchResults.classList.remove('show');
+            return;
+        }
+        
+        searchTimeout = setTimeout(function() {
+            fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&q=' + encodeURIComponent(query) + '&limit=5', { headers: NOMINATIM_HEADERS })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    searchResults.innerHTML = '';
+                    if (data && data.length > 0) {
+                        data.forEach(function(item) {
+                            var div = document.createElement('div');
+                            div.className = 'result-item';
+                            div.innerHTML = '<div class="ri-name">' + item.display_name.split(',')[0] + '</div><div class="ri-desc">' + item.display_name + '</div>';
+                            div.addEventListener('click', function() {
+                                var lat = parseFloat(item.lat);
+                                var lng = parseFloat(item.lon);
+                                placeMarker(lat, lng);
+                                map.setView([lat, lng], 16);
+                                searchInput.value = item.display_name.split(',')[0];
+                                searchResults.classList.remove('show');
+                                
+                                var addressField = document.getElementById('id_address');
+                                if (addressField) {
+                                    addressField.value = item.display_name;
+                                }
+                            });
+                            searchResults.appendChild(div);
+                        });
+                        searchResults.classList.add('show');
+                    } else {
+                        searchResults.classList.remove('show');
+                    }
+                })
+                .catch(function() {});
+        }, 400);
+    });
+    
+    // Hide search results on blur
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.location-search-wrap')) {
+            searchResults.classList.remove('show');
+        }
+    });
+    
+    // ---- Detect My Location (Browser Geolocation) ----
+    detectBtn.addEventListener('click', function() {
+        var btn = this;
+        if (!navigator.geolocation) {
+            alert('Geolocation is not supported by your browser.');
+            return;
+        }
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Detecting...';
+        
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                var lat = position.coords.latitude;
+                var lng = position.coords.longitude;
+                placeMarker(lat, lng);
+                map.setView([lat, lng], 16);
+                reverseGeocode(lat, lng);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-crosshairs"></i> Use My Location';
+            },
+            function(error) {
+                var msg = 'Unable to detect your location.';
+                if (error.code === 1) msg = 'Location access denied. Please enable location services.';
+                else if (error.code === 2) msg = 'Location unavailable. Try again.';
+                else if (error.code === 3) msg = 'Location request timed out.';
+                alert(msg);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-crosshairs"></i> Use My Location';
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+        );
+    });
+    
+    // ---- Reset Map ----
+    resetBtn.addEventListener('click', function() {
+        var target = savedLat && savedLng ? { lat: savedLat, lng: savedLng } : DEFAULT_COORDS;
+        placeMarker(target.lat, target.lng);
+        map.setView([target.lat, target.lng], 15);
+        searchInput.value = '';
+    });
+    
+    // ---- Place initial marker if coordinates exist ----
+    if (savedLat && savedLng) {
+        placeMarker(savedLat, savedLng);
+    }
+    
+    // ---- Invalidate map size after card renders ----
+    setTimeout(function() {
+        map.invalidateSize();
+    }, 300);
+    
+    window.addEventListener('load', function() {
+        map.invalidateSize();
+    });
+    
+});
+</script>
+{% endblock %}

@@ -1,0 +1,426 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}{{ court.name }}{% endblock %}
+
+{% block body %}
+{% include 'components/header.html' %}
+
+<!-- Hero Section -->
+<section class="hero-section" style="background: linear-gradient(rgba(26, 58, 66, 0.85), rgba(59, 122, 140, 0.9)), url('{% if court.image %}{{ court.image.url }}{% else %}https://images.unsplash.com/photo-1622163642998-1ea36b1ade5b?w=1920{% endif %}') center/cover; padding: 80px 0 60px; position: relative;">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <nav aria-label="breadcrumb" class="mb-3">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-white-50">Home</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'all_courts' %}" class="text-white-50">Courts</a></li>
+                        <li class="breadcrumb-item active text-white" aria-current="page">{{ court.name }}</li>
+                    </ol>
+                </nav>
+                <h1 class="display-4 fw-bold text-white mb-3" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">{{ court.name }}</h1>
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <span class="badge bg-white text-primary px-3 py-2">
+                        <i class="fas fa-cloud me-1"></i>{{ court.get_court_type_display }}
+                    </span>
+                    <span class="badge {% if court.status == 'available' %}bg-success{% else %}bg-warning{% endif %} px-3 py-2">
+                        <i class="fas {% if court.status == 'available' %}fa-check-circle{% else %}fa-clock{% endif %} me-1"></i>
+                        {{ court.get_status_display }}
+                    </span>
+                    <span class="badge bg-white text-dark px-3 py-2">
+                        <i class="fas fa-map-marker-alt me-1 text-primary"></i>{{ court.site.name }}
+                    </span>
+                </div>
+            </div>
+            <div class="col-lg-4 text-lg-end">
+                <div class="bg-white rounded-4 p-4 d-inline-block text-center" style="backdrop-filter: blur(10px);">
+                    <p class="text-muted mb-1">Starting from</p>
+                    <h2 class="text-primary fw-bold mb-0">₱{{ court.hourly_rate|floatformat:0 }}<small class="fs-6 text-muted">/hour</small></h2>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Main Content -->
+<div class="container py-5">
+    <div class="row g-4">
+        <!-- Main Content Column -->
+        <div class="col-lg-8">
+            <!-- Image Gallery -->
+            <div class="card border-0 shadow-lg mb-4" style="border-radius: 15px; overflow: hidden;">
+                <div class="position-relative">
+                    {% if court.images.all %}
+                        {% with primary_image=court.images.all.0 %}
+                            <img src="{{ primary_image.image.url }}" class="card-img-top court-detail-image clickable-image" alt="{{ primary_image.alt_text|default:court.name }}" data-lightbox data-caption="{{ court.name }}" id="mainImage">
+                        {% endwith %}
+                    {% elif court.image %}
+                        <img src="{{ court.image.url }}" class="card-img-top court-detail-image clickable-image" alt="{{ court.name }}" data-lightbox data-caption="{{ court.name }}" id="mainImage">
+                    {% else %}
+                        <img src="https://images.unsplash.com/photo-1622163642998-1ea36b1ade5b?w=1200" class="card-img-top court-detail-image" alt="{{ court.name }}" id="mainImage">
+                    {% endif %}
+                    <div class="position-absolute bottom-0 start-0 end-0 p-4" style="background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);">
+                        <h4 class="text-white mb-0"><i class="fas fa-camera me-2"></i>Photo Gallery</h4>
+                    </div>
+                </div>
+                {% if court.images.all %}
+                <div class="card-body bg-light">
+                    <div class="row g-2">
+                        {% for img in court.images.all %}
+                        <div class="col-3">
+                            <div class="image-wrapper">
+                                <img src="{{ img.image.url }}" class="img-fluid rounded-3 cursor-pointer" style="height: 80px; object-fit: cover; width: 100%;" onclick="document.getElementById('mainImage').src='{{ img.image.url }}'" alt="{{ img.alt_text|default:court.name }}">
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Court Description -->
+            <div class="card border-0 shadow-lg mb-4" style="border-radius: 15px;">
+                <div class="card-header bg-transparent border-0 p-4">
+                    <h4 class="fw-bold mb-0"><i class="fas fa-info-circle me-2 text-primary"></i>About This Court</h4>
+                </div>
+                <div class="card-body p-4 pt-0">
+                    {% if court.description %}
+                        <p class="lead">{{ court.description }}</p>
+                    {% else %}
+                        <p class="lead">Experience premium pickleball at its finest on our {{ court.name }}. This {{ court.get_court_type_display|lower }} court features professional-grade surfaces, excellent lighting, and all the amenities you need for an exceptional playing experience.</p>
+                    {% endif %}
+                    
+                    <hr class="my-4">
+                    
+                    <!-- Court Features Grid -->
+                    <h5 class="fw-bold mb-3">Court Features</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 45px; height: 45px; background: rgba(59,122,140,0.1);">
+                                        <i class="fas fa-ruler-combined text-primary"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-0">Professional Surface</h6>
+                                    <small class="text-muted">Tournament-grade quality</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 45px; height: 45px; background: rgba(40,167,69,0.1);">
+                                        <i class="fas fa-lightbulb text-success"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-0">LED Lighting</h6>
+                                    <small class="text-muted">Perfect visibility</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 45px; height: 45px; background: rgba(255,193,7,0.1);">
+                                        <i class="fas fa-wind text-warning"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-0">Ventilation</h6>
+                                    <small class="text-muted">Climate controlled</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 45px; height: 45px; background: rgba(23,162,184,0.1);">
+                                        <i class="fas fa-chair text-info"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-0">Player Benches</h6>
+                                    <small class="text-muted">Comfortable seating</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Amenities -->
+            {% if court.amenities %}
+            <div class="card border-0 shadow-lg mb-4" style="border-radius: 15px;">
+                <div class="card-header bg-transparent border-0 p-4">
+                    <h4 class="fw-bold mb-0"><i class="fas fa-star me-2 text-warning"></i>Amenities</h4>
+                </div>
+                <div class="card-body p-4 pt-0">
+                    <div class="row g-2">
+                        {% for amenity in court.amenities %}
+                        <div class="col-md-4 col-6">
+                            <div class="d-flex align-items-center p-2 bg-light rounded-3">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <span class="small">{{ amenity }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Availability Calendar -->
+            <div class="card border-0 shadow-lg mb-4" style="border-radius: 15px;">
+                <div class="card-header bg-transparent border-0 p-4">
+                    <h4 class="fw-bold mb-0"><i class="fas fa-calendar-alt me-2 text-primary"></i>Availability</h4>
+                </div>
+                <div class="card-body p-4 pt-0">
+                    {% if upcoming_reservations %}
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-info-circle me-2"></i>Showing upcoming bookings for the next 7 days
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Time</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for reservation in upcoming_reservations|slice:":5" %}
+                                    <tr>
+                                        <td>{{ reservation.date|date:"M d, Y" }}</td>
+                                        <td>{{ reservation.start_time|time:"g:i A" }} - {{ reservation.end_time|time:"g:i A" }}</td>
+                                        <td>
+                                            <span class="badge {% if reservation.status == 'confirmed' %}bg-danger{% else %}bg-warning{% endif %}">
+                                                {% if reservation.status == 'confirmed' %}Booked{% else %}{{ reservation.get_status_display }}{% endif %}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% if upcoming_reservations|length > 5 %}
+                        <p class="text-muted small text-center mb-0">+ {{ upcoming_reservations|length|add:"-5" }} more upcoming reservations</p>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-calendar-check fa-3x text-success mb-3"></i>
+                            <h5 class="text-success">Fully Available!</h5>
+                            <p class="text-muted mb-0">No upcoming reservations. Book now to secure your preferred time slot.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Location Map -->
+            <div class="card border-0 shadow-lg" style="border-radius: 15px; overflow: hidden;">
+                <div class="card-header bg-transparent border-0 p-4">
+                    <h4 class="fw-bold mb-0"><i class="fas fa-map-marker-alt me-2 text-primary"></i>Location</h4>
+                </div>
+                <div class="card-body p-0">
+                    {% if court.organization and court.organization.latitude and court.organization.longitude %}
+                    <div id="courtLocationMap" style="height: 250px; width: 100%;"></div>
+                    <div class="card-footer bg-transparent p-3 text-center border-0">
+                        <a href="{% url 'court_directions' court.id %}" class="btn btn-success" style="border-radius: 10px; font-weight: 600;">
+                            <i class="fas fa-directions me-2"></i>Get Directions
+                        </a>
+                        {% if court.organization.location_address %}
+                        <small class="text-muted d-block mt-2">{{ court.organization.location_address|truncatechars:80 }}</small>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="bg-light rounded-4 d-flex align-items-center justify-content-center" style="height: 250px;">
+                        <div class="text-center">
+                            <i class="fas fa-map-marked-alt fa-3x text-primary mb-3"></i>
+                            <h6>{{ court.site.name }}</h6>
+                            <p class="text-muted small mb-0">{{ court.organization.address|default:"Location not set" }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Quick Booking Card -->
+            <div class="card border-0 shadow-lg mb-4 sticky-top" style="border-radius: 15px; top: 100px; z-index: 100;">
+                <div class="card-header bg-primary text-white p-4" style="border-radius: 15px 15px 0 0;">
+                    <h5 class="fw-bold mb-0"><i class="fas fa-calendar-plus me-2"></i>Book This Court</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="mb-4">
+                        <span class="text-muted small">Hourly Rate</span>
+                        <h2 class="text-primary fw-bold mb-0">₱{{ court.hourly_rate|floatformat:0 }}<small class="fs-6 text-muted fw-normal">/hour</small></h2>
+                    </div>
+                    
+                    <hr class="my-3">
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Court Type</span>
+                            <span class="fw-bold">{{ court.get_court_type_display }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Location</span>
+                            <span class="fw-bold">{{ court.site.name }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Status</span>
+                            <span class="fw-bold {% if court.status == 'available' %}text-success{% else %}text-warning{% endif %}">{{ court.get_status_display }}</span>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-3">
+                    
+                    {% if court.status == 'available' %}
+                        <a href="{% url 'reservation_create' %}?court={{ court.id }}" class="btn btn-primary btn-lg w-100 mb-3">
+                            <i class="fas fa-calendar-plus me-2"></i>Book Now
+                        </a>
+                        <p class="text-muted small text-center mb-0"><i class="fas fa-lock me-1"></i>Secure booking with instant confirmation</p>
+                    {% else %}
+                        <button class="btn btn-secondary btn-lg w-100 mb-3" disabled>
+                            <i class="fas fa-clock me-2"></i>Currently Unavailable
+                        </button>
+                        <a href="{% url 'all_courts' %}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-search me-2"></i>Find Similar Courts
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Related Courts Section -->
+{% if related_courts %}
+<section class="py-5 bg-light">
+    <div class="container">
+        <h3 class="fw-bold mb-4"><i class="fas fa-th-large me-2 text-primary"></i>Similar Courts You Might Like</h3>
+        <div class="row g-4">
+            {% for related in related_courts|slice:":3" %}
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-lg hover-card" style="border-radius: 15px; overflow: hidden;">
+                    <div class="position-relative">
+                        {% if related.image %}
+                            <img src="{{ related.image.url }}" class="card-img-top" alt="{{ related.name }}" style="height: 200px; object-fit: cover;">
+                        {% else %}
+                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                <i class="fas fa-table-tennis fa-3x text-muted"></i>
+                            </div>
+                        {% endif %}
+                        <div class="position-absolute top-0 end-0 m-3">
+                            <span class="badge {% if related.status == 'available' %}bg-success{% else %}bg-warning{% endif %}">
+                                {{ related.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <h5 class="card-title fw-bold mb-2">{{ related.name }}</h5>
+                        <p class="text-muted small mb-3">
+                            <i class="fas fa-map-marker-alt me-2 text-primary"></i>{{ related.site.name }}
+                        </p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="text-primary fw-bold mb-0">₱{{ related.hourly_rate|floatformat:0 }}<small class="text-muted fs-6">/hour</small></h5>
+                            <a href="{% url 'court_view' related.id %}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-eye me-1"></i>View
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- CTA Section -->
+<section class="py-5" style="background: linear-gradient(135deg, #1a3a42 0%, #3B7A8C 100%);">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8 text-center text-lg-start mb-4 mb-lg-0">
+                <h2 class="display-5 fw-bold text-white mb-3">Ready to Play?</h2>
+                <p class="lead text-white-50 mb-0">Book {{ court.name }} now and enjoy an unforgettable pickleball experience</p>
+            </div>
+            <div class="col-lg-4 text-center text-lg-end">
+                {% if court.status == 'available' %}
+                <a href="{% url 'reservation_create' %}?court={{ court.id }}" class="btn btn-light btn-lg px-5">
+                    <i class="fas fa-calendar-plus me-2"></i>Book Now
+                </a>
+                {% else %}
+                <a href="{% url 'all_courts' %}" class="btn btn-light btn-lg px-5">
+                    <i class="fas fa-search me-2"></i>Find Other Courts
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+/* Hover Effects */
+.hover-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.hover-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 1rem 3rem rgba(0,0,0,0.15) !important;
+}
+#courtLocationMap {
+    border-radius: 0;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+.cursor-pointer:hover {
+    opacity: 0.8;
+}
+
+/* Breadcrumb styling */
+.breadcrumb-item a {
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+.breadcrumb-item a:hover {
+    color: white !important;
+}
+</style>
+
+{% if court.organization and court.organization.latitude and court.organization.longitude %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function() {
+    var lat = {{ court.organization.latitude }};
+    var lng = {{ court.organization.longitude }};
+    var map = L.map('courtLocationMap', {
+        center: [lat, lng],
+        zoom: 15,
+        zoomControl: false,
+        scrollWheelZoom: false,
+        dragging: false,
+    });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap',
+    }).addTo(map);
+    L.marker([lat, lng]).addTo(map)
+        .bindPopup('<strong>{{ court.organization.name|escapejs }}</strong>')
+        .openPopup();
+})();
+</script>
+{% endif %}
+
+{% include 'components/footer.html' %}
+{% endblock %}
+

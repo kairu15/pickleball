@@ -1,0 +1,38 @@
+{% extends 'base/dashboard_base.html' %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_title %}<i class="fas fa-folder me-2"></i>{{ page_title }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="admin-card">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Category Name</label>
+                        <input type="text" name="name" class="form-control" value="{{ category.name|default:'' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Icon (Font Awesome class)</label>
+                        <input type="text" name="icon" class="form-control" value="{{ category.icon|default:'fa-question-circle' }}" placeholder="e.g., fa-calendar-check, fa-tools">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Display Order</label>
+                        <input type="number" name="display_order" class="form-control" value="{{ category.display_order|default:'0' }}">
+                    </div>
+                    {% if category %}
+                    <div class="mb-3 form-check form-switch">
+                        <input type="checkbox" name="is_active" class="form-check-input" id="isActive" {% if category.is_active %}checked{% endif %}>
+                        <label class="form-check-label fw-semibold" for="isActive">Active</label>
+                    </div>
+                    {% endif %}
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Save</button>
+                        <a href="{% url 'super_admin_faq_cms' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

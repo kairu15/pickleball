@@ -1,0 +1,169 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Equipment Management{% endblock %}
+{% block page_title %}Equipment Management{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/staff.css' %}">
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'staff_dashboard' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Equipment Management</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<!-- Stats Cards (matching org admin dashboard) -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3 animate-fadeInUp" style="animation-delay: 0.1s;">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-primary text-white me-3">
+                    <i class="fas fa-boxes fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">{{ stats.total }}</div>
+                    <div class="stats-label text-muted">Total Items</div>
+                    <small class="text-primary"><i class="fas fa-cube me-1"></i>All equipment</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 animate-fadeInUp" style="animation-delay: 0.2s;">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-warning text-white me-3">
+                    <i class="fas fa-exclamation-triangle fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">{{ stats.low_stock }}</div>
+                    <div class="stats-label text-muted">Low Stock</div>
+                    <small class="text-warning"><i class="fas fa-box-open me-1"></i>Need restocking</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 animate-fadeInUp" style="animation-delay: 0.3s;">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-danger text-white me-3">
+                    <i class="fas fa-times-circle fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">{{ stats.out_of_stock }}</div>
+                    <div class="stats-label text-muted">Out of Stock</div>
+                    <small class="text-danger"><i class="fas fa-ban me-1"></i>Currently unavailable</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 animate-fadeInUp" style="animation-delay: 0.4s;">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-success text-white me-3">
+                    <i class="fas fa-hand-holding fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">{{ stats.active_rentals }}</div>
+                    <div class="stats-label text-muted">Active Rentals</div>
+                    <small class="text-success"><i class="fas fa-handshake me-1"></i>Currently rented</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Equipment List -->
+<div class="staff-card animate-fadeInUp" style="animation-delay: 0.5s;">
+    <div class="staff-card-header d-flex justify-content-between align-items-center">
+        <h5 class="staff-card-title"><i class="fas fa-boxes text-primary me-2"></i>All Equipment</h5>
+        <span class="badge-staff badge-id">{{ equipment|length }} items</span>
+    </div>
+    <div class="staff-card-body p-0">
+        <div class="table-responsive">
+            <table class="staff-table">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Type</th>
+                        <th>Available</th>
+                        <th>Total</th>
+                        <th>Price</th>
+                        <th>Condition</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in equipment %}
+                    <tr>
+                        <td data-label="Item">
+                            <div class="equipment-item">
+                                {% if item.image %}
+                                    <div class="equipment-image-wrapper-sm clickable-image" data-lightbox data-caption="{{ item.name }} - {{ item.get_type_display }}" style="cursor: zoom-in;">
+                                        <img src="{{ item.image.url }}" alt="{{ item.name }}" class="equipment-image">
+                                    </div>
+                                {% else %}
+                                    <div class="equipment-image-placeholder">
+                                        <i class="fas fa-tools"></i>
+                                    </div>
+                                {% endif %}
+                                <div class="equipment-info">
+                                    <div class="equipment-name">{{ item.name }}</div>
+                                    <div class="equipment-meta">ID: #{{ item.id }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td data-label="Type">{{ item.get_type_display }}</td>
+                        <td data-label="Available">
+                            {% if item.quantity_available == 0 %}
+                                <span class="badge-staff badge-status-cancelled">{{ item.quantity_available }}</span>
+                            {% elif item.quantity_available <= 5 %}
+                                <span class="badge-staff badge-status-pending">{{ item.quantity_available }}</span>
+                            {% else %}
+                                <span class="badge-staff badge-status-confirmed">{{ item.quantity_available }}</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Total">{{ item.quantity_total }}</td>
+                        <td data-label="Price">
+                            <span class="table-cell-main">₱{{ item.rental_price|floatformat:0 }}</span>
+                            <span class="table-cell-sub">/ {{ item.rental_duration }} hrs</span>
+                        </td>
+                        <td data-label="Condition">
+                            <span class="badge-staff {% if item.condition == 'new' %}badge-equipment-new{% elif item.condition == 'good' %}badge-equipment-good{% elif item.condition == 'fair' %}badge-equipment-fair{% else %}badge-equipment-poor{% endif %}">
+                                <i class="fas fa-{% if item.condition == 'new' %}star{% elif item.condition == 'good' %}thumbs-up{% elif item.condition == 'fair' %}exclamation{% else %}warning{% endif %}"></i>
+                                {{ item.get_condition_display }}
+                            </span>
+                        </td>
+                        <td data-label="Status">
+                            <span class="badge-staff {% if item.is_active %}badge-status-confirmed{% else %}badge-status-completed{% endif %}">
+                                <i class="fas fa-{% if item.is_active %}check-circle{% else %}times-circle{% endif %}"></i>
+                                {% if item.is_active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">
+                                    <i class="fas fa-box-open"></i>
+                                </div>
+                                <h6 class="empty-state-title">No equipment found</h6>
+                                <p class="empty-state-text">Add equipment items to start renting to customers.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

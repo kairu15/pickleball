@@ -1,0 +1,52 @@
+{% extends 'base/dashboard_base.html' %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_title %}<i class="fas fa-shield-alt me-2"></i>{{ page_title }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="admin-card">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold">Title</label>
+                            <input type="text" name="title" class="form-control" value="{{ section.title|default:'' }}" required maxlength="200">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Section Number</label>
+                            <input type="number" name="section_number" class="form-control" value="{{ section.section_number|default:'1' }}" min="1">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Content</label>
+                            <textarea name="content" class="form-control" rows="8" required>{{ section.content|default:'' }}</textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Icon (Font Awesome class)</label>
+                            <input type="text" name="icon" class="form-control" value="{{ section.icon|default:'fa-shield-alt' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Icon Color</label>
+                            <select name="icon_color" class="form-select">
+                                {% for value, label in color_choices %}
+                                <option value="{{ value }}" {% if section and section.icon_color == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% if section %}
+                        <div class="col-12 form-check form-switch">
+                            <input type="checkbox" name="is_active" class="form-check-input" id="isActive" {% if section.is_active %}checked{% endif %}>
+                            <label class="form-check-label fw-semibold" for="isActive">Active</label>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="mt-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Save</button>
+                        <a href="{% url 'super_admin_privacy_cms' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,231 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Pricing Page Management{% endblock %}
+{% block page_title %}Pricing Page Management{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'super_admin_analytics' %}"><i class="fas fa-home me-1"></i>Dashboard</a></li>
+        <li class="breadcrumb-item active">Pricing Page Management</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<!-- Content Sections -->
+<div class="admin-card mb-4">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-file-alt text-primary"></i>
+            Content Sections
+        </h5>
+        <a href="{% url 'super_admin_pricing_content_add' %}" class="btn btn-sm btn-primary">
+            <i class="fas fa-plus me-1"></i>Add Content
+        </a>
+    </div>
+    <div class="card-body p-0">
+        {% if content %}
+        <div class="admin-table-container">
+            <table class="table admin-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Section</th>
+                        <th>Content Preview</th>
+                        <th>Status</th>
+                        <th>Updated</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in content %}
+                    <tr>
+                        <td class="fw-semibold">{{ item.get_section_display }}</td>
+                        <td class="text-muted">{{ item.content|truncatechars:60 }}</td>
+                        <td>
+                            {% if item.is_active %}
+                            <span class="status-badge active">Active</span>
+                            {% else %}
+                            <span class="status-badge inactive">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ item.updated_at|date:"M d, Y" }}</td>
+                        <td class="text-end">
+                            <div class="action-buttons justify-content-end">
+                                <a href="{% url 'super_admin_pricing_content_edit' item.id %}" class="action-btn edit" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'super_admin_pricing_content_delete' item.id %}" class="action-btn delete" title="Delete" data-confirm-message="Delete this content?" onclick="return customConfirm(this.dataset.confirmMessage, () => { window.location.href = this.href; })">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="fas fa-file-alt fa-2x text-muted"></i>
+            </div>
+            <h5 class="empty-state-title">No content sections created yet</h5>
+            <p class="empty-state-text">Add content sections to customize the Pricing page.</p>
+            <a href="{% url 'super_admin_pricing_content_add' %}" class="btn btn-primary mt-3">
+                <i class="fas fa-plus me-2"></i>Add First Content
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Pricing Tiers -->
+<div class="admin-card mb-4">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-tags text-success"></i>
+            Membership Tiers
+        </h5>
+        <a href="{% url 'super_admin_pricing_tier_add' %}" class="btn btn-sm btn-success">
+            <i class="fas fa-plus me-1"></i>Add Tier
+        </a>
+    </div>
+    <div class="card-body p-0">
+        {% if tiers %}
+        <div class="admin-table-container">
+            <table class="table admin-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Order</th>
+                        <th>Name</th>
+                        <th>Price</th>
+                        <th>Recommended</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tier in tiers %}
+                    <tr>
+                        <td>{{ tier.display_order }}</td>
+                        <td class="fw-semibold">{{ tier.name }}</td>
+                        <td>
+                            {% if tier.price == 0 %}
+                            <span class="badge bg-success">Free</span>
+                            {% else %}
+                            <span class="fw-semibold">₱{{ tier.price }}{% if tier.period %}/{{ tier.period }}{% endif %}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if tier.is_recommended %}
+                            <span class="status-badge active">Recommended</span>
+                            {% else %}
+                            <span class="status-badge inactive">No</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if tier.is_active %}
+                            <span class="status-badge active">Active</span>
+                            {% else %}
+                            <span class="status-badge inactive">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <div class="action-buttons justify-content-end">
+                                <a href="{% url 'super_admin_pricing_tier_edit' tier.id %}" class="action-btn edit" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'super_admin_pricing_tier_delete' tier.id %}" class="action-btn delete" title="Delete" data-confirm-message="Delete this tier?" onclick="return customConfirm(this.dataset.confirmMessage, () => { window.location.href = this.href; })">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="fas fa-tags fa-2x text-muted"></i>
+            </div>
+            <h5 class="empty-state-title">No pricing tiers created yet</h5>
+            <p class="empty-state-text">Add membership plans to display on the Pricing page.</p>
+            <a href="{% url 'super_admin_pricing_tier_add' %}" class="btn btn-success mt-3">
+                <i class="fas fa-plus me-2"></i>Add First Tier
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- FAQs -->
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-question-circle text-info"></i>
+            FAQs
+        </h5>
+        <a href="{% url 'super_admin_pricing_faq_add' %}" class="btn btn-sm btn-info text-white">
+            <i class="fas fa-plus me-1"></i>Add FAQ
+        </a>
+    </div>
+    <div class="card-body p-0">
+        {% if faqs %}
+        <div class="admin-table-container">
+            <table class="table admin-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Order</th>
+                        <th>Question</th>
+                        <th>Answer Preview</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for faq in faqs %}
+                    <tr>
+                        <td>{{ faq.display_order }}</td>
+                        <td class="fw-semibold">{{ faq.question|truncatechars:50 }}</td>
+                        <td class="text-muted">{{ faq.answer|truncatechars:60 }}</td>
+                        <td>
+                            {% if faq.is_active %}
+                            <span class="status-badge active">Active</span>
+                            {% else %}
+                            <span class="status-badge inactive">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <div class="action-buttons justify-content-end">
+                                <a href="{% url 'super_admin_pricing_faq_edit' faq.id %}" class="action-btn edit" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'super_admin_pricing_faq_delete' faq.id %}" class="action-btn delete" title="Delete" data-confirm-message="Delete this FAQ?" onclick="return customConfirm(this.dataset.confirmMessage, () => { window.location.href = this.href; })">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="fas fa-question-circle fa-2x text-muted"></i>
+            </div>
+            <h5 class="empty-state-title">No FAQs created yet</h5>
+            <p class="empty-state-text">Add frequently asked questions about pricing.</p>
+            <a href="{% url 'super_admin_pricing_faq_add' %}" class="btn btn-info text-white mt-3">
+                <i class="fas fa-plus me-2"></i>Add First FAQ
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

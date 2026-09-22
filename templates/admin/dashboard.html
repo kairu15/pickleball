@@ -1,0 +1,862 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}System Analytics Dashboard{% endblock %}
+{% block page_title %}System Analytics{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'super_admin_analytics' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">System Analytics</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<!-- Key Metrics Row -->
+<div class="row g-4 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="admin-card h-100" style="animation-delay: 0.1s;">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-primary text-white me-3">
+                    <i class="fas fa-users fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">{{ metrics.total_users }}</div>
+                    <div class="stats-label text-muted">Total Registered Users</div>
+                    <small class="text-success"><i class="fas fa-arrow-up me-1"></i>{{ metrics.active_users }} active accounts</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="admin-card h-100" style="animation-delay: 0.2s;">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-success text-white me-3">
+                    <i class="fas fa-calendar-check fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">{{ metrics.total_reservations }}</div>
+                    <div class="stats-label text-muted">Total Reservations</div>
+                    <small class="text-info"><i class="fas fa-calendar-day me-1"></i>{{ metrics.today_reservations }} booked today</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="admin-card h-100" style="animation-delay: 0.3s;">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-warning text-white me-3">
+                    <i class="fas fa-map-marker-alt fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">{{ metrics.total_courts }}</div>
+                    <div class="stats-label text-muted">Active Courts</div>
+                    <small class="text-muted"><i class="fas fa-check-circle me-1"></i>All operational</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="admin-card h-100" style="animation-delay: 0.4s;">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-danger text-white me-3">
+                    <i class="fas fa-money-bill-wave fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">₱{{ revenue_stats.total_revenue|floatformat:0 }}</div>
+                    <div class="stats-label text-muted">Total Revenue Collected</div>
+                    <small class="text-success"><i class="fas fa-calendar-day me-1"></i>₱{{ revenue_stats.today_revenue|floatformat:0 }} earned today</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Secondary Metrics Row -->
+<div class="row g-4 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="admin-card h-100" style="animation-delay: 0.5s;">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-success text-white me-3">
+                    <i class="fas fa-chart-line fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">₱{{ this_month_revenue|floatformat:0 }}</div>
+                    <div class="stats-label text-muted">Revenue This Month</div>
+                    <small class="{% if revenue_growth > 0 %}text-success{% elif revenue_growth < 0 %}text-danger{% else %}text-muted{% endif %}">
+                        <i class="fas fa-{% if revenue_growth > 0 %}arrow-up{% elif revenue_growth < 0 %}arrow-down{% else %}minus{% endif %} me-1"></i>
+                        {{ revenue_growth }}% vs last month (₱{{ last_month_revenue|floatformat:0 }})
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="admin-card h-100" style="animation-delay: 0.6s;">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-warning text-white me-3">
+                    <i class="fas fa-clock fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">{{ metrics.pending_reservations }}</div>
+                    <div class="stats-label text-muted">Reservations Pending Approval</div>
+                    <small class="text-warning"><i class="fas fa-hourglass-half me-1"></i>Awaiting confirmation</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="admin-card h-100" style="animation-delay: 0.7s;">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-info text-white me-3">
+                    <i class="fas fa-tools fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">{{ equipment_utilization.utilization_rate }}%</div>
+                    <div class="stats-label text-muted">Equipment Utilization Rate</div>
+                    <small class="text-info"><i class="fas fa-boxes me-1"></i>{{ equipment_utilization.in_use }}/{{ equipment_utilization.total_capacity }} items in use</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="admin-card h-100" style="animation-delay: 0.8s;">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-warning text-white me-3">
+                    <i class="fas fa-star fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">{{ rating_data.average_rating }} <small class="fs-6 text-muted">/ 5</small></div>
+                    <div class="stats-label text-muted">Customer Ratings</div>
+                    <small class="text-warning">
+                        <i class="fas fa-star me-1"></i>{{ rating_data.total_ratings }} total · {{ rating_data.featured_ratings }} featured
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-bolt text-warning"></i>
+                    Platform Management
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="{% url 'super_admin_user_list' %}" class="btn btn-info text-white">
+                        <i class="fas fa-users me-2"></i>Users
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CMS Quick Actions -->
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-edit text-success"></i>
+                    Content Management (CMS)
+                </h5>
+                <span class="badge bg-success">Super Admin Only</span>
+            </div>
+            <div class="card-body">
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="{% url 'super_admin_homepage' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-home me-2"></i>Homepage
+                    </a>
+                    <a href="{% url 'super_admin_courts_cms' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-map-marker-alt me-2"></i>Courts Page
+                    </a>
+                    <a href="{% url 'super_admin_tournaments_cms' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-trophy me-2"></i>Tournaments
+                    </a>
+                    <a href="{% url 'super_admin_equipment_cms' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-tools me-2"></i>Equipment
+                    </a>
+                    <a href="{% url 'super_admin_about' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-info-circle me-2"></i>About Page
+                    </a>
+                    <a href="{% url 'super_admin_contact' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-envelope me-2"></i>Contact Page
+                    </a>
+                    <a href="{% url 'super_admin_pricing' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-tags me-2"></i>Pricing Page
+                    </a>
+                    <a href="{% url 'super_admin_maintenance' %}" class="btn btn-outline-warning">
+                        <i class="fas fa-tools me-2"></i>Maintenance
+                    </a>
+                    <a href="{% url 'super_admin_site_settings' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-globe me-2"></i>Site Settings
+                    </a>
+                    <a href="{% url 'super_admin_content_versions' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-history me-2"></i>Version History
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row 1: User Registrations + Revenue Trend -->
+<div class="row g-4 mb-4">
+    <div class="col-xl-6">
+        <div class="admin-card h-100" style="animation-delay: 0.9s;">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-chart-line text-primary"></i>
+                    User Registration Trend
+                </h5>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary">6-month view</span>
+                    <button class="btn btn-sm btn-outline-secondary chart-fullscreen-btn" data-chart-id="userRegistrationChart" title="View full screen">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Monthly new user sign-ups over the past 6 months. Use this to track growth and user acquisition trends.
+                </p>
+                <div class="chart-scroll-wrapper"><canvas id="userRegistrationChart" height="140"></canvas></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-6">
+        <div class="admin-card h-100" style="animation-delay: 0.9s;">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-chart-area text-success"></i>
+                    Revenue & Booking Trend
+                </h5>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-success">14-day view</span>
+                    <button class="btn btn-sm btn-outline-secondary chart-fullscreen-btn" data-chart-id="revenueTrendChart" title="View full screen">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Daily revenue (bars) and booking count (line) over the last 14 days. Monitor daily performance at a glance.
+                </p>
+                <div class="chart-scroll-wrapper"><canvas id="revenueTrendChart" height="140"></canvas></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row 2: Peak Hours + Equipment Utilization -->
+<div class="row g-4 mb-4">
+    <div class="col-xl-7">
+        <div class="admin-card h-100" style="animation-delay: 1s;">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-clock text-warning"></i>
+                    Peak Booking Hours
+                </h5>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary">{{ peak_hours_counts|length }} hourly slots</span>
+                    <button class="btn btn-sm btn-outline-secondary chart-fullscreen-btn" data-chart-id="peakHoursChart" title="View full screen">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Hourly booking distribution over the last 30 days. The highlighted bar shows the busiest hour. Use this to optimize staffing and court availability.
+                </p>
+                <div class="chart-scroll-wrapper"><canvas id="peakHoursChart" height="140"></canvas></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-5">
+        <div class="admin-card h-100" style="animation-delay: 1s;">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-tools text-info"></i>
+                    Equipment Utilization
+                </h5>
+                <span class="badge bg-info">{{ equipment_utilization.total_items }} items</span>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Current equipment usage breakdown showing availability and most rented items.
+                </p>
+                <!-- Utilization Gauge -->
+                <div class="text-center mb-3">
+                    <div style="position: relative; display: inline-block;">
+                        <canvas id="utilizationGauge" width="140" height="140"></canvas>
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                            <div class="fw-bold fs-4" style="color: #3B7A8C;">{{ equipment_utilization.utilization_rate }}%</div>
+                            <small class="text-muted">in use</small>
+                        </div>
+                    </div>
+                </div>
+                <!-- Quick Stats -->
+                <div class="row g-2 text-center">
+                    <div class="col-4">
+                        <div class="p-3 bg-light rounded-3">
+                            <div class="fw-bold fs-5">{{ equipment_utilization.total_capacity }}</div>
+                            <small class="text-muted">Total Capacity</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-3 bg-light rounded-3">
+                            <div class="fw-bold fs-5 text-success">{{ equipment_utilization.total_available }}</div>
+                            <small class="text-muted">Available Now</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-3 bg-light rounded-3">
+                            <div class="fw-bold fs-5 text-warning">{{ equipment_utilization.in_use }}</div>
+                            <small class="text-muted">Currently In Use</small>
+                        </div>
+                    </div>
+                </div>
+                {% if equipment_utilization.most_rented %}
+                <hr>
+                <h6 class="fw-bold small text-muted text-uppercase mb-2">
+                    <i class="fas fa-trophy me-1"></i>Most Rented Equipment
+                </h6>
+                <div style="max-height: 120px; overflow-y: auto;">
+                    {% for item in equipment_utilization.most_rented %}
+                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
+                        <span class="small">{{ item.equipment__name }}</span>
+                        <span class="badge bg-light text-dark border">{{ item.total_rented }} rentals</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.share-col { width: 35%; }
+@media (max-width: 767.98px) {
+    .share-col { width: 100% !important; display: block !important; }
+    .share-col .progress { margin-top: 4px; }
+}
+/* Chart scroll wrapper: horizontal scroll on mobile, normal on desktop */
+.chart-scroll-wrapper {
+    width: 100%;
+    overflow: visible;
+}
+.chart-scroll-wrapper canvas {
+    max-height: 200px;
+    width: 100%;
+}
+@media (max-width: 767.98px) {
+    .chart-scroll-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 8px;
+    }
+    .chart-scroll-wrapper canvas {
+        min-width: 550px;
+        width: auto;
+    }
+}
+/* Fullscreen chart overlay */
+.chart-fullscreen-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+.chart-fullscreen-overlay.active {
+    display: flex;
+}
+.chart-fullscreen-overlay .admin-card {
+    width: 100%;
+    max-width: 1200px;
+    max-height: 90vh;
+    margin: 0 auto;
+    background: white;
+    border-radius: var(--border-radius-lg, 16px);
+    box-shadow: 0 25px 80px rgba(0,0,0,0.4);
+    overflow: hidden;
+}
+.chart-fullscreen-overlay .admin-card .card-body {
+    overflow: auto;
+}
+.chart-fullscreen-overlay .chart-scroll-wrapper {
+    overflow: visible !important;
+}
+.chart-fullscreen-overlay .chart-scroll-wrapper canvas {
+    max-height: 60vh;
+    min-width: auto !important;
+    width: 100% !important;
+}
+.chart-fullscreen-close {
+    position: absolute;
+    top: 40px;
+    right: 40px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.9);
+    color: #333;
+    font-size: 1.25rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    transition: all 0.2s ease;
+    z-index: 10000;
+}
+.chart-fullscreen-close:hover {
+    transform: scale(1.1);
+    background: white;
+}
+</style>
+
+<!-- Revenue & Court Usage Row -->
+<div class="row g-4 mb-4">
+    <div class="col-xl-4">
+        <div class="admin-card h-100" style="animation-delay: 0.9s;">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-wallet text-primary"></i>
+                    Revenue Summary
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    <i class="fas fa-info-circle me-1"></i>
+                    A quick snapshot of revenue performance across different time periods.
+                </p>
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <span class="text-muted"><i class="fas fa-infinity me-2 text-primary"></i>Total Revenue</span>
+                    <span class="fw-bold fs-5">₱{{ revenue_stats.total_revenue|floatformat:0 }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <span class="text-muted"><i class="fas fa-calendar-alt me-2 text-success"></i>This Month</span>
+                    <span class="fw-bold text-success">₱{{ revenue_stats.month_revenue|floatformat:0 }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <span class="text-muted"><i class="fas fa-calendar-day me-2 text-info"></i>Today</span>
+                    <span class="fw-bold text-info">₱{{ revenue_stats.today_revenue|floatformat:0 }}</span>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between align-items-center py-2">
+                    <span class="text-muted"><i class="fas fa-check-circle me-2 text-success"></i>Confirmed</span>
+                    <span class="fw-bold text-success">{{ metrics.confirmed_reservations }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-2">
+                    <span class="text-muted"><i class="fas fa-clock me-2 text-warning"></i>Pending</span>
+                    <span class="fw-bold text-warning">{{ metrics.pending_reservations }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-8">
+        <div class="admin-card h-100" style="animation-delay: 1.1s;">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-chart-bar text-primary"></i>
+                    Top Courts by Usage
+                </h5>
+                <span class="badge bg-primary">{{ court_usage|length }} courts</span>
+            </div>
+            <div class="card-body p-0">
+                <p class="text-muted small mb-0 px-4 pt-3">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Courts ranked by total reservation count. The progress bar shows each court's share of total bookings.
+                </p>
+                {% if court_usage %}
+                <div class="admin-table-container">
+                    <table class="table admin-table mb-0">
+                        <thead>
+                            <tr>
+                                <th data-label="Court Name">Court</th>
+                                <th data-label="Reservations">Total Reservations</th>
+                                <th data-label="Share">Share of Bookings</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for court in court_usage %}
+                            <tr>
+                                <td data-label="Court" class="fw-semibold">
+                                    <i class="fas fa-map-marker-alt text-primary me-2"></i>
+                                    {{ court.court__name }}
+                                </td>
+                                <td data-label="Reservations">
+                                    <span class="badge bg-info">{{ court.total }}</span>
+                                </td>
+                                <td data-label="Share" class="share-col">
+                                    <div class="progress" style="height: 8px; border-radius: 4px;">
+                                        <div class="progress-bar bg-primary court-utilization-bar" role="progressbar"
+                                             data-court-total="{{ court.total }}"
+                                             data-total-reservations="{{ metrics.total_reservations }}"></div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-chart-bar fa-2x text-muted"></i>
+                    </div>
+                    <h5 class="empty-state-title">No court usage data yet</h5>
+                    <p class="empty-state-text">Court usage statistics will appear here once reservations are made.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fullscreen Chart Overlay -->
+<div class="chart-fullscreen-overlay" id="chartFullscreenOverlay">
+    <button class="chart-fullscreen-close" id="chartFullscreenClose" title="Close">
+        <i class="fas fa-times"></i>
+    </button>
+    <div class="admin-card" id="chartFullscreenContent"></div>
+</div>
+
+<!-- Recent Data Section -->
+<div class="row g-4 mb-4">
+    <!-- Recent Users -->
+    <div class="col-lg-12">
+        <div class="admin-card h-100" style="animation-delay: 1s;">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-users text-primary"></i>
+                    Newest Users
+                </h5>
+                <a href="{% url 'super_admin_user_list' %}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-list me-1"></i>View All
+                </a>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_users %}
+                <div class="admin-table-container">
+                    <table class="table admin-table mb-0">
+                        <thead>
+                            <tr>
+                                <th data-label="Username">Username</th>
+                                <th data-label="Email">Email</th>
+                                <th data-label="Role">Role</th>
+                                <th data-label="Joined">Joined</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in recent_users %}
+                            <tr>
+                                <td data-label="Username">
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 28px; height: 28px; background: rgba(59,122,140,0.1); color: var(--primary-color); font-weight: 600; font-size: 0.75rem;">
+                                            {{ user.username|first|upper }}
+                                        </div>
+                                        <span>{{ user.username }}</span>
+                                    </div>
+                                </td>
+                                <td data-label="Email"><small>{{ user.email }}</small></td>
+                                <td data-label="Role"><span class="badge bg-light text-dark border">{{ user.get_role_display }}</span></td>
+                                <td data-label="Joined"><small>{{ user.created_at|date:"M d, Y" }}</small></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-users fa-2x text-muted"></i>
+                    </div>
+                    <h5 class="empty-state-title">No users found</h5>
+                    <p class="empty-state-text">New user registrations will appear here.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Calculate court utilization progress bars
+const courtUtilBars = document.querySelectorAll('.court-utilization-bar');
+courtUtilBars.forEach(function(bar) {
+    var courtTotal = parseInt(bar.getAttribute('data-court-total')) || 0;
+    var totalReservations = parseInt(bar.getAttribute('data-total-reservations')) || 0;
+    var percentage = totalReservations > 0 ? (courtTotal / totalReservations * 100) : 0;
+    bar.style.width = Math.min(percentage, 100) + '%';
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const primaryColor = '#3B7A8C';
+    const successColor = '#28a745';
+    const warningColor = '#ffc107';
+    const dangerColor = '#dc3545';
+    const infoColor = '#17a2b8';
+
+    // ===== 1. User Registration Chart =====
+    var months = {{ months|safe }};
+    var userCounts = {{ user_counts|safe }};
+    var ctx = document.getElementById('userRegistrationChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: 'New Users',
+                    data: userCounts,
+                    borderColor: primaryColor,
+                    backgroundColor: 'rgba(59, 122, 140, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: primaryColor,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+            }
+        });
+    }
+
+    // ===== 2. Revenue Trend Chart =====
+    var revLabels = {{ revenue_trend_labels|safe }};
+    var revValues = {{ revenue_trend_values|safe }};
+    var bookingValues = {{ booking_trend_values|safe }};
+    var revCtx = document.getElementById('revenueTrendChart');
+    if (revCtx) {
+        new Chart(revCtx, {
+            type: 'bar',
+            data: {
+                labels: revLabels,
+                datasets: [
+                    {
+                        label: 'Revenue (₱)',
+                        data: revValues,
+                        backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                        borderColor: successColor,
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Bookings',
+                        data: bookingValues,
+                        type: 'line',
+                        borderColor: primaryColor,
+                        backgroundColor: 'rgba(59, 122, 140, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: primaryColor,
+                        pointRadius: 3,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                plugins: { legend: { position: 'top', labels: { boxWidth: 12, padding: 10 } } },
+                scales: {
+                    y: { beginAtZero: true, position: 'left', title: { display: true, text: 'Revenue (₱)' } },
+                    y1: { beginAtZero: true, position: 'right', title: { display: true, text: 'Bookings' }, grid: { drawOnChartArea: false } }
+                }
+            }
+        });
+    }
+
+    // ===== 3. Peak Hours Chart =====
+    var peakLabels = {{ peak_hours_labels|safe }};
+    var peakCounts = {{ peak_hours_counts|safe }};
+    var peakRevenue = {{ peak_hours_revenue|safe }};
+    var peakCtx = document.getElementById('peakHoursChart');
+    if (peakCtx) {
+        new Chart(peakCtx, {
+            type: 'bar',
+            data: {
+                labels: peakLabels,
+                datasets: [
+                    {
+                        label: 'Bookings',
+                        data: peakCounts,
+                        backgroundColor: peakCounts.map(function(v) {
+                            var max = Math.max.apply(null, peakCounts);
+                            return v === max ? 'rgba(220, 53, 69, 0.8)' : 'rgba(59, 122, 140, 0.6)';
+                        }),
+                        borderColor: peakCounts.map(function(v) {
+                            var max = Math.max.apply(null, peakCounts);
+                            return v === max ? dangerColor : primaryColor;
+                        }),
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Revenue (₱)',
+                        data: peakRevenue,
+                        type: 'line',
+                        borderColor: successColor,
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: successColor,
+                        pointRadius: 3,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                plugins: {
+                    legend: { position: 'top', labels: { boxWidth: 12, padding: 10 } },
+                    tooltip: {
+                        callbacks: {
+                            afterTitle: function(items) {
+                                var idx = items[0].dataIndex;
+                                return 'Revenue: ₱' + peakRevenue[idx].toLocaleString();
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { beginAtZero: true, position: 'left', title: { display: true, text: 'Bookings' }, ticks: { stepSize: 1 } },
+                    y1: { beginAtZero: true, position: 'right', title: { display: true, text: 'Revenue (₱)' }, grid: { drawOnChartArea: false } }
+                }
+            }
+        });
+    }
+
+    // ===== 4. Equipment Utilization Doughnut =====
+    var utilCtx = document.getElementById('utilizationGauge');
+    if (utilCtx) {
+        var inUse = {{ equipment_utilization.in_use }};
+        var available = {{ equipment_utilization.total_available }};
+        new Chart(utilCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['In Use', 'Available'],
+                datasets: [{
+                    data: [inUse, available],
+                    backgroundColor: [infoColor, '#e9ecef'],
+                    borderWidth: 0,
+                    cutout: '75%'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { legend: { display: false }, tooltip: { enabled: true } }
+            }
+        });
+    }
+
+    // ===== Fullscreen Chart Toggle =====
+    var fsOverlay = document.getElementById('chartFullscreenOverlay');
+    var fsContent = document.getElementById('chartFullscreenContent');
+    var fsClose = document.getElementById('chartFullscreenClose');
+    var fsSavedPosition = null;
+
+    document.querySelectorAll('.chart-fullscreen-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (fsOverlay.classList.contains('active')) return;
+
+            var srcCard = this.closest('.admin-card');
+            if (!srcCard) return;
+
+            // Hide (don't remove) the fullscreen button so we can restore it later
+            var fsBtn = srcCard.querySelector('.chart-fullscreen-btn');
+            if (fsBtn) fsBtn.style.display = 'none';
+
+            // Save position to restore the card later
+            fsSavedPosition = {
+                parent: srcCard.parentNode,
+                nextSibling: srcCard.nextSibling,
+                fsBtn: fsBtn
+            };
+
+            // Move the actual card into the overlay (preserves Chart.js instance)
+            fsContent.innerHTML = '';
+            fsContent.appendChild(srcCard);
+            fsOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            // Resize the chart to fill the larger overlay
+            var chartCanvas = srcCard.querySelector('canvas');
+            if (chartCanvas) {
+                var inst = Chart.getChart(chartCanvas.id);
+                if (inst) {
+                    setTimeout(function() { inst.resize(); }, 150);
+                }
+            }
+        });
+    });
+
+    function closeFs() {
+        fsOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+
+        // Restore the card to its original position
+        var movedCard = fsContent.querySelector('.admin-card');
+        if (movedCard && fsSavedPosition) {
+            if (fsSavedPosition.nextSibling) {
+                fsSavedPosition.parent.insertBefore(movedCard, fsSavedPosition.nextSibling);
+            } else {
+                fsSavedPosition.parent.appendChild(movedCard);
+            }
+            // Restore the fullscreen button visibility
+            if (fsSavedPosition.fsBtn) {
+                fsSavedPosition.fsBtn.style.display = '';
+            }
+        }
+        fsContent.innerHTML = '';
+        fsSavedPosition = null;
+    }
+
+    fsClose.addEventListener('click', closeFs);
+    fsOverlay.addEventListener('click', function(e) {
+        if (e.target === fsOverlay) closeFs();
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && fsOverlay.classList.contains('active')) closeFs();
+    });
+});
+</script>
+{% endblock %}

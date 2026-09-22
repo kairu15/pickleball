@@ -1,0 +1,269 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Contact Us - PickleSphere{% endblock %}
+
+{% block body %}
+{% include 'components/header.html' %}
+
+<!-- Hero Section -->
+<section class="hero-section" style="background: linear-gradient(rgba(26, 58, 66, 0.85), rgba(59, 122, 140, 0.95)), url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920') center/cover; padding: 120px 0 100px; position: relative;">
+    <div class="container">
+        <div class="row justify-content-center text-center">
+            <div class="col-lg-8">
+                <span class="badge mb-3 px-4 py-2" style="background: var(--bg-white); color: var(--primary-color); font-size: 0.875rem; letter-spacing: 1px; text-transform: uppercase; font-weight: 600;"><i class="fas fa-headset me-2"></i>{{ content.hero_badge|default:"Platform Support" }}</span>
+                <h1 class="display-3 fw-bold mb-4 text-white" style="text-shadow: 2px 4px 8px rgba(0,0,0,0.4); letter-spacing: -1px;">{{ content.hero_title|default:"Get in Touch" }}</h1>
+                <p class="lead mb-0" style="color: rgba(255,255,255,0.85); text-shadow: 1px 2px 4px rgba(0,0,0,0.3); max-width: 650px; margin: 0 auto;">{{ content.hero_subtitle|default:"Have a question, suggestion, or need help? Our support team is here to assist you." }}</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Contact Info Cards Row -->
+<section class="py-5 marketing-section" style="margin-top: -60px; position: relative; z-index: 2;">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card border-0 shadow-lg h-100" style="border-radius: 15px;">
+                    <div class="card-body text-center p-4">
+                        <div class="stat-icon gradient-primary lg mx-auto mb-3">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <h5 class="fw-bold mb-2">{{ content.email_label|default:"Email Us" }}</h5>
+                        <p class="text-muted mb-1">{{ contact_info.email|default:"picklesphere@gmail.com" }}</p>
+                        <p class="small text-muted mb-0">{{ content.email_response|default:"We reply within 24 hours" }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-lg h-100" style="border-radius: 15px;">
+                    <div class="card-body text-center p-4">
+                        <div class="stat-icon gradient-success lg mx-auto mb-3">
+                            <i class="fas fa-phone-alt"></i>
+                        </div>
+                        <h5 class="fw-bold mb-2">{{ content.phone_label|default:"Call Us" }}</h5>
+                        <p class="text-muted mb-1">{{ contact_info.phone|default:"09455470173" }}</p>
+                        <p class="small text-muted mb-0">{{ content.phone_hours|default:"Mon-Sat, 9AM - 6PM" }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-lg h-100" style="border-radius: 15px;">
+                    <div class="card-body text-center p-4">
+                        <div class="stat-icon gradient-info lg mx-auto mb-3">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <h5 class="fw-bold mb-2">{{ content.visit_label|default:"Our Office" }}</h5>
+                        <p class="text-muted mb-1">{{ contact_info.address|default:"PickleSphere Headquarters" }}</p>
+                        <p class="small text-muted mb-0">{{ contact_info.city_country|default:"" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Contact Form & Info Section -->
+<section class="py-5 bg-light marketing-section">
+    <div class="container">
+        <div class="row g-5">
+            <!-- Contact Form -->
+            <div class="col-lg-7">
+                <div class="card border-0 shadow-lg" style="border-radius: 15px; overflow: hidden;">
+                    <div class="card-header bg-primary text-white p-4">
+                        <h4 class="fw-bold mb-0"><i class="fas fa-paper-plane me-2"></i>{{ content.form_title|default:"Send us a Message" }}</h4>
+                    </div>
+                    <div class="card-body p-4">
+                        <form method="post" action="{% url 'contact' %}">
+                            {% csrf_token %}
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-primary"><i class="fas fa-user me-2"></i>{{ content.form_name_label|default:"Your Name" }}</label>
+                                    <input type="text" name="name" class="form-control form-control-lg" placeholder="John Doe" required style="border-radius: 10px;">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-primary"><i class="fas fa-envelope me-2"></i>{{ content.form_email_label|default:"Email Address" }}</label>
+                                    <input type="email" name="email" class="form-control form-control-lg" placeholder="john@example.com" required style="border-radius: 10px;">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-bold text-primary"><i class="fas fa-tag me-2"></i>{{ content.form_subject_label|default:"Subject" }}</label>
+                                    <select name="subject" class="form-select form-select-lg" required style="border-radius: 10px;">
+                                        <option value="">Select a topic...</option>
+                                        <option value="general_inquiry">General Inquiry</option>
+                                        <option value="booking">Court Booking</option>
+                                        <option value="support">Technical Support</option>
+                                        <option value="tournament">Tournament</option>
+                                        <option value="feedback">Feedback</option>
+                                        <option value="partnership">Partnership</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-bold text-primary"><i class="fas fa-comment me-2"></i>{{ content.form_message_label|default:"Message" }}</label>
+                                    <textarea name="message" class="form-control form-control-lg" rows="5" placeholder="Tell us how we can help you..." required style="border-radius: 10px;"></textarea>
+                                </div>
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-primary btn-lg w-100" style="border-radius: 10px;">
+                                        <i class="fas fa-paper-plane me-2"></i>{{ content.form_submit_text|default:"Send Message" }}
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Business Hours & Quick Links -->
+            <div class="col-lg-5">
+                <!-- Business Hours -->
+                <div class="card border-0 shadow-lg mb-4" style="border-radius: 15px; overflow: hidden;">
+                    <div class="card-header bg-transparent border-0 p-4">
+                        <h5 class="fw-bold mb-0"><i class="fas fa-clock me-2 text-primary"></i>{{ content.hours_title|default:"Platform Support Hours" }}</h5>
+                    </div>
+                    <div class="card-body p-4 pt-0">
+                        <div class="table-responsive">
+                            <table class="table table-borderless">
+                                <tbody>
+                                    {% for hour in business_hours %}
+                                    <tr class="{% if not forloop.last %}border-bottom{% endif %}">
+                                        <td><i class="fas fa-calendar-day me-2 text-{{ hour.icon_color }}"></i>{{ hour.day_range }}</td>
+                                        <td class="text-end fw-bold">{{ hour.hours }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="card border-0 shadow-lg mb-4" style="border-radius: 15px; overflow: hidden;">
+                    <div class="card-header bg-transparent border-0 p-4">
+                        <h5 class="fw-bold mb-0"><i class="fas fa-link me-2 text-primary"></i>{{ content.quick_links_title|default:"Quick Links" }}</h5>
+                    </div>
+                    <div class="card-body p-4 pt-0">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex align-items-center px-0 py-3">
+                                <i class="fas fa-search me-3 text-primary fa-lg"></i>
+                                <div class="flex-grow-1">
+                                    <a href="{% url 'all_courts' %}" class="text-decoration-none fw-bold">Find a Court</a>
+                                    <p class="text-muted small mb-0">Browse available courts near you</p>
+                                </div>
+                                <i class="fas fa-arrow-right text-muted"></i>
+                            </li>
+                            <li class="list-group-item d-flex align-items-center px-0 py-3">
+                                <i class="fas fa-trophy me-3 text-success fa-lg"></i>
+                                <div class="flex-grow-1">
+                                    <a href="{% url 'tournament_list' %}" class="text-decoration-none fw-bold">Tournaments</a>
+                                    <p class="text-muted small mb-0">Join upcoming competitions</p>
+                                </div>
+                                <i class="fas fa-arrow-right text-muted"></i>
+                            </li>
+                            <li class="list-group-item d-flex align-items-center px-0 py-3">
+                                <i class="fas fa-trophy me-3 text-info fa-lg"></i>
+                                <div class="flex-grow-1">
+                                    <a href="{% url 'tournament_list' %}" class="text-decoration-none fw-bold">Tournaments</a>
+                                    <p class="text-muted small mb-0">Browse and join tournaments</p>
+                                </div>
+                                <i class="fas fa-arrow-right text-muted"></i>
+                            </li>
+                            <li class="list-group-item d-flex align-items-center px-0 py-3">
+                                <i class="fas fa-info-circle me-3 text-warning fa-lg"></i>
+                                <div class="flex-grow-1">
+                                    <a href="{% url 'about' %}" class="text-decoration-none fw-bold">About the Platform</a>
+                                    <p class="text-muted small mb-0">Learn more about PickleSphere</p>
+                                </div>
+                                <i class="fas fa-arrow-right text-muted"></i>
+                            </li>
+                            <li class="list-group-item d-flex align-items-center px-0 py-3">
+                                <i class="fas fa-tags me-3 text-success fa-lg"></i>
+                                <div class="flex-grow-1">
+                                    <a href="{% url 'pricing' %}" class="text-decoration-none fw-bold">Pricing</a>
+                                    <p class="text-muted small mb-0">View court rates and memberships</p>
+                                </div>
+                                <i class="fas fa-arrow-right text-muted"></i>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Social Media -->
+                {% if social_links %}
+                <div class="card border-0 shadow-lg" style="border-radius: 15px; overflow: hidden;">
+                    <div class="card-header bg-transparent border-0 p-4">
+                        <h5 class="fw-bold mb-0"><i class="fas fa-share-alt me-2 text-primary"></i>{{ content.social_title|default:"Follow Us" }}</h5>
+                    </div>
+                    <div class="card-body p-4 pt-0">
+                        <div class="d-flex gap-2">
+                            {% for link in social_links %}
+                            <a href="{{ link.url }}" class="btn {{ link.button_class }} flex-fill" style="border-radius: 10px;" target="_blank">
+                                <i class="{{ link.icon_class }} fa-lg"></i>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FAQ Section -->
+<section class="py-5 marketing-section">
+    <div class="container">
+        <div class="text-center mb-5">
+            <span class="badge bg-primary mb-3 px-3 py-2">{{ content.faq_badge|default:"FAQ" }}</span>
+            <h2 class="display-5 fw-bold">{{ content.faq_title|default:"Frequently Asked Questions" }}</h2>
+            <p class="lead text-muted">{{ content.faq_subtitle|default:"Quick answers to common questions about our platform" }}</p>
+        </div>
+        <div class="row g-4">
+            {% for faq in faqs %}
+            <div class="col-md-6">
+                <div class="card h-100 border-0 shadow-sm hover-card" style="border-radius: 12px;">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-start">
+                            <div class="flex-shrink-0">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 45px; height: 45px; background: rgba(59,122,140,0.1);">
+                                    <i class="fas fa-question text-{{ faq.icon_color }}"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="fw-bold mb-2 text-{{ faq.icon_color }}">{{ faq.question }}</h6>
+                                <p class="text-muted small mb-0">{{ faq.answer }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-5 marketing-section" style="background: linear-gradient(135deg, #1a3a42 0%, #3B7A8C 100%);">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8 text-center text-lg-start mb-4 mb-lg-0">
+                <h2 class="display-5 fw-bold text-white mb-3">{{ content.cta_title|default:"Ready to Play?" }}</h2>
+                <p class="lead text-white-50 mb-0">{{ content.cta_subtitle|default:"Join thousands of players enjoying pickleball through our platform. Find courts, join tournaments, and connect with organizations near you!" }}</p>
+            </div>
+            <div class="col-lg-4 text-center text-lg-end">
+                <a href="{% url 'register' %}" class="btn btn-light btn-lg px-5 me-2 mb-2">
+                    <i class="fas fa-user-plus me-2"></i>Sign Up Free
+                </a>
+                <a href="{% url 'all_courts' %}" class="btn btn-outline-light btn-lg px-5 mb-2">
+                    <i class="fas fa-search me-2"></i>Find Courts
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+/* Contact page retains minimal custom styles only */
+</style>
+
+{% include 'components/footer.html' %}
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends 'emails/base_email.html' %}
+
+{% block email_content %}
+    <span class="notification-badge success">🏆 Tournament Results</span>
+    <h2>Tournament Results: {{ tournament_name }}</h2>
+    <p>Hi <strong>{{ user.get_full_name|default:user.username }}</strong>,</p>
+    <p>{{ tournament_name }} has concluded! Check out the final standings and results.</p>
+    
+    {% if placement %}
+    <div class="details-card" style="text-align: center;">
+        <h3 style="font-size: 24px; color: #3B7A8C; margin: 0;">{{ placement }}</h3>
+    </div>
+    {% endif %}
+    
+    <p>Thank you for participating and making this tournament a great success!</p>
+    
+    <div style="text-align: center;">
+        <a href="{{ action_url }}" class="cta-button">{{ action_text }}</a>
+    </div>
+{% endblock %}

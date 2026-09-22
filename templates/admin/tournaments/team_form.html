@@ -1,0 +1,107 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}{% if team %}Edit Team{% else %}Create Team{% endif %} - {{ tournament.name }} - PickleSphere{% endblock %}
+
+{% block page_title %}{% if team %}Edit Team{% else %}Create Team{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Back Button -->
+            <a href="{% url 'admin_team_list' tournament.pk %}" class="btn btn-sm btn-outline-secondary mb-3" style="border-radius: 8px;">
+                <i class="fas fa-arrow-left me-2"></i>Back to Teams
+            </a>
+
+            <div class="card border-0 shadow-lg" style="border-radius: 15px; overflow: hidden;">
+                <div class="card-header text-white p-4" style="background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div style="width: 45px; height: 45px; background: rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-{% if team %}edit{% else %}plus{% endif %} fa-lg text-white"></i>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <h5 class="mb-0 fw-bold">{% if team %}Edit Team{% else %}Create New Team{% endif %}</h5>
+                            <p class="mb-0 opacity-75">Manage doubles team configuration</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="card border-0 mb-4" style="background: linear-gradient(135deg, #e7f3ff 0%, #f0f9ff 100%); border-radius: 12px;">
+                        <div class="card-body p-3">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center">
+                                        <div style="width: 30px; height: 30px; background: rgba(59,122,140,0.1); border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fas fa-trophy text-primary"></i>
+                                        </div>
+                                        <strong class="ms-2">Tournament:</strong> {{ tournament.name }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center">
+                                        <div style="width: 30px; height: 30px; background: rgba(59,122,140,0.1); border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fas fa-users text-primary"></i>
+                                        </div>
+                                        <strong class="ms-2">Category:</strong> {{ tournament.get_category_display }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold"><i class="fas fa-signature me-2 text-primary"></i>Team Name</label>
+                            {{ form.name }}
+                            <div class="form-text">Optional - will auto-generate from player names if blank</div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold"><i class="fas fa-user me-2 text-primary"></i>Player 1 <span class="text-danger">*</span></label>
+                                {{ form.player1 }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold"><i class="fas fa-user-friends me-2 text-primary"></i>Player 2</label>
+                                {{ form.player2 }}
+                                <div class="form-text">Optional for incomplete teams</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold"><i class="fas fa-sort-numeric-down me-2 text-primary"></i>Seed (Optional)</label>
+                            {{ form.seed }}
+                            <div class="form-text">Tournament seeding position</div>
+                        </div>
+
+                        <div class="d-flex justify-content-between pt-2">
+                            <a href="{% url 'admin_team_list' tournament.pk %}" class="btn btn-outline-secondary px-4" style="border-radius: 10px;">
+                                <i class="fas fa-arrow-left me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-success px-5" style="border-radius: 10px; background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%); border: none;">
+                                <i class="fas fa-save me-2"></i>{% if team %}Save Changes{% else %}Create Team{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('select').forEach(function(select) {
+    select.classList.add('form-select');
+    select.style.borderRadius = '10px';
+});
+document.querySelectorAll('input[type="text"], input[type="number"]').forEach(function(input) {
+    input.style.borderRadius = '10px';
+});
+</script>
+{% endblock %}
+

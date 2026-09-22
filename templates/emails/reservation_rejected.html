@@ -1,0 +1,36 @@
+{% extends 'emails/base_email.html' %}
+
+{% block email_content %}
+    <span class="notification-badge error">❌ Not Approved</span>
+    <h2>Reservation Not Approved</h2>
+    <p>Hi <strong>{{ user.get_full_name|default:user.username }}</strong>, unfortunately your reservation could not be approved.</p>
+    
+    <div class="details-card">
+        <table cellpadding="0" cellspacing="0">
+            <tr>
+                <td class="label">Court</td>
+                <td class="value">{{ court_name }}</td>
+            </tr>
+            <tr>
+                <td class="label">Date</td>
+                <td class="value">{{ date }}</td>
+            </tr>
+            <tr>
+                <td class="label">Reservation #</td>
+                <td class="value">{{ reservation_id }}</td>
+            </tr>
+            {% if reason %}
+            <tr>
+                <td class="label">Reason</td>
+                <td class="value">{{ reason }}</td>
+            </tr>
+            {% endif %}
+        </table>
+    </div>
+    
+    <p>Please try booking a different time slot or contact the facility for more information.</p>
+    
+    <div style="text-align: center;">
+        <a href="{{ action_url }}" class="cta-button">{{ action_text }}</a>
+    </div>
+{% endblock %}

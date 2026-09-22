@@ -1,0 +1,148 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Review Registration - {{ tournament.name }} - PickleSphere{% endblock %}
+
+{% block page_title %}Review Registration{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Back Button -->
+            <a href="{% url 'admin_registration_list' tournament.pk %}" class="btn btn-sm btn-outline-secondary mb-3" style="border-radius: 8px;">
+                <i class="fas fa-arrow-left me-2"></i>Back to Registrations
+            </a>
+
+            <div class="card border-0 shadow-lg" style="border-radius: 15px; overflow: hidden;">
+                <div class="card-header text-white p-4" style="background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div style="width: 45px; height: 45px; background: rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-gavel fa-lg text-white"></i>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <h5 class="mb-0 fw-bold">Review Registration</h5>
+                            <p class="mb-0 opacity-75">Approve or reject player registration</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Player Info -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card border-0" style="background: #f8f9fa; border-radius: 12px;">
+                                <div class="card-body p-4">
+                                    <h6 class="fw-bold mb-3"><i class="fas fa-user me-2 text-primary"></i>Player Information</h6>
+                                    <div class="d-flex align-items-center mb-3">
+                                        {% if registration.user.profile_picture %}
+                                            <img src="{{ registration.user.profile_picture.url }}" class="rounded-circle me-3" style="width: 70px; height: 70px; object-fit: cover;">
+                                        {% else %}
+                                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 70px; height: 70px; font-size: 1.75rem;">
+                                                {{ registration.user.username|first|upper }}
+                                            </div>
+                                        {% endif %}
+                                        <div>
+                                            <h5 class="mb-0 fw-bold">{{ registration.user.get_full_name|default:registration.user.username }}</h5>
+                                            <small class="text-muted">{{ registration.user.email }}</small>
+                                        </div>
+                                    </div>
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <td style="border: none; padding: 8px 0;"><i class="fas fa-at me-2 text-muted"></i>Username:</td>
+                                            <td style="border: none; padding: 8px 0;">{{ registration.user.username }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: none; padding: 8px 0;"><i class="fas fa-phone me-2 text-muted"></i>Phone:</td>
+                                            <td style="border: none; padding: 8px 0;">{{ registration.user.phone_number|default:"-" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: none; padding: 8px 0;"><i class="fas fa-calendar-alt me-2 text-muted"></i>Member Since:</td>
+                                            <td style="border: none; padding: 8px 0;">{{ registration.user.created_at|date:"M d, Y" }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card border-0" style="background: #f8f9fa; border-radius: 12px;">
+                                <div class="card-body p-4">
+                                    <h6 class="fw-bold mb-3"><i class="fas fa-clipboard-list me-2 text-primary"></i>Registration Details</h6>
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <td style="border: none; padding: 8px 0;"><i class="fas fa-clock me-2 text-muted"></i>Registered:</td>
+                                            <td style="border: none; padding: 8px 0;">{{ registration.registered_at|date:"M d, Y H:i" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: none; padding: 8px 0;"><i class="fas fa-star me-2 text-muted"></i>Skill Level:</td>
+                                            <td style="border: none; padding: 8px 0;"><span class="badge bg-info px-3 py-2">{{ registration.get_skill_level_display }}</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: none; padding: 8px 0;"><i class="fas fa-venus-mars me-2 text-muted"></i>Gender:</td>
+                                            <td style="border: none; padding: 8px 0;">{{ registration.get_gender_display|default:"Not specified" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: none; padding: 8px 0;"><i class="fas fa-trophy me-2 text-muted"></i>Tournament:</td>
+                                            <td style="border: none; padding: 8px 0;">{{ tournament.name }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: none; padding: 8px 0;"><i class="fas fa-users me-2 text-muted"></i>Format:</td>
+                                            <td style="border: none; padding: 8px 0;">{{ tournament.get_category_display }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Review Form -->
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold"><i class="fas fa-balance-scale me-2 text-primary"></i>Decision <span class="text-danger">*</span></label>
+                            <div class="d-flex gap-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="status" id="approve" value="approved" {% if registration.status == 'approved' %}checked{% endif %}>
+                                    <label class="form-check-label text-success fw-bold" for="approve">
+                                        <i class="fas fa-check-circle me-1"></i>Approve
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="status" id="reject" value="rejected" {% if registration.status == 'rejected' %}checked{% endif %}>
+                                    <label class="form-check-label text-danger fw-bold" for="reject">
+                                        <i class="fas fa-times-circle me-1"></i>Reject
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.admin_notes.id_for_label }}" class="form-label fw-bold"><i class="fas fa-sticky-note me-2 text-primary"></i>Admin Notes</label>
+                            {{ form.admin_notes }}
+                            <div class="form-text">Optional notes about this decision</div>
+                        </div>
+
+                        <div class="d-flex justify-content-between pt-2">
+                            <a href="{% url 'admin_registration_list' tournament.pk %}" class="btn btn-outline-secondary px-4" style="border-radius: 10px;">
+                                <i class="fas fa-arrow-left me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary px-5" style="border-radius: 10px;">
+                                <i class="fas fa-save me-2"></i>Save Decision
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('textarea').forEach(function(textarea) {
+    textarea.style.borderRadius = '10px';
+});
+</script>
+{% endblock %}
+

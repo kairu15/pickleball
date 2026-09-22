@@ -1,0 +1,15 @@
+{% comment %}
+===== Reusable Filter Bar Wrapper (Start) =====
+
+Usage:
+  {% include 'components/filter_bar_start.html' with method='get' %}
+    ... filter fields ...
+  {% include 'components/filter_bar_end.html' %}
+
+Parameters:
+  - method: form method, default 'get'
+  - extra_class: additional class(es) for the filter-bar-standard div
+{% endcomment %}
+<div class="filter-bar-standard{{ extra_class|default:'' }}">
+    <div class="card-body">
+        <form method="{{ method|default:'get' }}" class="row g-3 align-items-end">

@@ -1,0 +1,517 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Verify Payment{% endblock %}
+{% block page_title %}Verify Payment #{{ payment.id }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/staff.css' %}">
+<style>
+    .info-item {
+        display: flex;
+        align-items: flex-start;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid rgba(0,0,0,0.04);
+    }
+    .info-item:last-child {
+        border-bottom: none;
+    }
+    .info-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        margin-right: 0.75rem;
+    }
+    .info-content {
+        flex: 1;
+    }
+    .info-label {
+        font-size: 0.75rem;
+        color: var(--text-muted, #6c757d);
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        margin-bottom: 0.15rem;
+        font-weight: 500;
+    }
+    .info-value {
+        font-weight: 600;
+        color: var(--text-color, #212529);
+        word-break: break-word;
+    }
+    .timeline-item {
+        position: relative;
+        padding: 0.75rem 0 0.75rem 1.5rem;
+        border-left: 2px solid #e9ecef;
+        margin-left: 0.25rem;
+    }
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -7px;
+        top: 1rem;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #3B7A8C;
+    }
+    .timeline-item:last-child {
+        border-left: 2px solid transparent;
+    }
+    .copy-btn {
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .copy-btn:hover {
+        background: rgba(59,122,140,0.1);
+    }
+    .refund-card {
+        border: 1px solid rgba(23,162,184,0.2) !important;
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'staff_dashboard' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'staff_payments' %}">Payments</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Verify #{{ payment.id }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-8">
+        <!-- Payment Details Card -->
+        <div class="staff-card mb-4 animate-fadeInUp">
+            <div class="staff-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h5 class="staff-card-title mb-0"><i class="fas fa-credit-card text-primary me-2"></i>Payment Details</h5>
+                <span class="badge-staff {% if payment.status == 'paid' %}badge-payment-paid{% elif payment.status == 'pending' %}badge-payment-pending{% elif payment.status == 'refunded' %}badge-payment-refunded{% else %}badge-status-completed{% endif %}">
+                    <i class="fas fa-{% if payment.status == 'paid' %}check-circle{% elif payment.status == 'pending' %}clock{% elif payment.status == 'refunded' %}undo{% else %}times-circle{% endif %} me-1"></i>
+                    {{ payment.get_status_display }}
+                </span>
+            </div>
+            <div class="staff-card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="info-item">
+                            <div class="info-icon" style="background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);">
+                                <i class="fas fa-hashtag text-white" style="font-size: 0.8rem;"></i>
+                            </div>
+                            <div class="info-content">
+                                <div class="info-label">Payment ID</div>
+                                <div class="info-value">#{{ payment.id }}</div>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-icon" style="background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);">
+                                <i class="fas fa-calendar-check text-white" style="font-size: 0.8rem;"></i>
+                            </div>
+                            <div class="info-content">
+                                <div class="info-label">Reservation</div>
+                                <div class="info-value">#{{ payment.reservation.id }}</div>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-icon" style="background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);">
+                                <i class="fas fa-user text-white" style="font-size: 0.8rem;"></i>
+                            </div>
+                            <div class="info-content">
+                                <div class="info-label">Customer</div>
+                                <div class="info-value">{{ payment.reservation.user.get_full_name|default:payment.reservation.user.username }}</div>
+                                <small class="text-muted d-block">{{ payment.reservation.user.email }}</small>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-icon" style="background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);">
+                                <i class="fas fa-map-marker-alt text-white" style="font-size: 0.8rem;"></i>
+                            </div>
+                            <div class="info-content">
+                                <div class="info-label">Court / Site</div>
+                                <div class="info-value">{{ payment.reservation.court.name }}</div>
+                                {% if payment.reservation.court.site %}
+                                <small class="text-muted d-block">{{ payment.reservation.court.site.name }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="info-item">
+                            <div class="info-icon" style="background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);">
+                                <i class="fas fa-peso-sign text-white" style="font-size: 0.8rem;"></i>
+                            </div>
+                            <div class="info-content">
+                                <div class="info-label">Amount</div>
+                                <div class="info-value text-success">₱{{ payment.amount|floatformat:2 }}</div>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-icon" style="background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);">
+                                {% if payment.method == 'gcash' %}<i class="fas fa-mobile-alt text-white" style="font-size: 0.8rem;"></i>
+                                {% elif payment.method == 'maya' %}<i class="fas fa-wallet text-white" style="font-size: 0.8rem;"></i>
+                                {% elif payment.method == 'bank_transfer' %}<i class="fas fa-university text-white" style="font-size: 0.8rem;"></i>
+                                {% elif payment.method == 'cash' %}<i class="fas fa-money-bill-wave text-white" style="font-size: 0.8rem;"></i>
+                                {% else %}<i class="fas fa-credit-card text-white" style="font-size: 0.8rem;"></i>{% endif %}
+                            </div>
+                            <div class="info-content">
+                                <div class="info-label">Payment Method</div>
+                                <div class="info-value">
+                                    <span class="badge {% if payment.method == 'gcash' or payment.method == 'maya' or payment.method == 'bank_transfer' %}bg-primary{% elif payment.method == 'cash' %}bg-success{% elif payment.method == 'card' %}bg-info{% else %}bg-secondary{% endif %}">
+                                        {{ payment.get_method_display|default:"N/A" }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-icon" style="background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);">
+                                <i class="fas fa-clock text-white" style="font-size: 0.8rem;"></i>
+                            </div>
+                            <div class="info-content">
+                                <div class="info-label">Payment Date</div>
+                                <div class="info-value">
+                                    {% if payment.method == 'cash' and payment.cash_received_at %}
+                                        {{ payment.cash_received_at|date:"F d, Y g:i A" }}
+                                    {% elif payment.status == 'paid' %}
+                                        {{ payment.updated_at|date:"F d, Y g:i A" }}
+                                    {% else %}
+                                        {{ payment.created_at|date:"F d, Y g:i A" }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% if payment.transaction_id %}
+                        <div class="info-item">
+                            <div class="info-icon" style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);">
+                                <i class="fas fa-fingerprint text-white" style="font-size: 0.8rem;"></i>
+                            </div>
+                            <div class="info-content">
+                                <div class="info-label">Transaction ID</div>
+                                <div class="info-value font-monospace d-flex align-items-center gap-2" style="font-size: 0.85rem;">
+                                    {{ payment.transaction_id }}
+                                    <button class="btn btn-sm btn-outline-secondary copy-btn" style="border-radius: 6px; padding: 2px 8px; font-size: 0.65rem; line-height: 1.4;" onclick="navigator.clipboard.writeText('{{ payment.transaction_id }}').then(() => { this.innerHTML='<i class=\'fas fa-check\'></i>'; setTimeout(() => { this.innerHTML='<i class=\'fas fa-copy\'></i>'; }, 2000); }).catch(() => {});">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if payment.gcash_reference %}
+                        <div class="info-item">
+                            <div class="info-icon" style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);">
+                                <i class="fas fa-hashtag text-white" style="font-size: 0.8rem;"></i>
+                            </div>
+                            <div class="info-content">
+                                <div class="info-label">Payment Reference</div>
+                                <div class="info-value font-monospace">{{ payment.gcash_reference }}</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if payment.gcash_proof_image %}
+        <!-- GCash Proof Card -->
+        <div class="staff-card mb-4 animate-fadeInUp" style="animation-delay: 0.1s;">
+            <div class="staff-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h5 class="staff-card-title mb-0"><i class="fas fa-image text-primary me-2"></i>Payment Proof</h5>
+                <a href="{% url 'view_payment_proof' payment.id %}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-expand me-2"></i>View Full Size
+                </a>
+            </div>
+            <div class="staff-card-body text-center">
+                <a href="{% url 'view_payment_proof' payment.id %}" class="d-inline-block">
+                    <img src="{{ payment.gcash_proof_image.url }}" alt="Payment Proof" class="img-fluid rounded border" style="max-height: 300px; cursor: pointer; border-radius: 12px;">
+                </a>
+                <p class="text-muted small mt-3 mb-0"><i class="fas fa-info-circle me-1"></i>Click image to view full size and verify details</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Cash Payment Details (only for cash payments that have been received) -->
+        {% if payment.method == 'cash' and payment.cash_received_by %}
+        <div class="staff-card mb-4 animate-fadeInUp" style="animation-delay: 0.15s;">
+            <div class="staff-card-header">
+                <h5 class="staff-card-title"><i class="fas fa-money-bill-wave text-success me-2"></i>Cash Payment Details</h5>
+            </div>
+            <div class="staff-card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="info-item">
+                            <div class="info-icon" style="background: rgba(40,167,69,0.1);">
+                                <i class="fas fa-user-check" style="color: #28a745;"></i>
+                            </div>
+                            <div class="info-content">
+                                <div class="info-label">Received By</div>
+                                <div class="info-value">{{ payment.cash_received_by.get_full_name|default:payment.cash_received_by.username }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% if payment.cash_received_at %}
+                    <div class="col-md-6">
+                        <div class="info-item">
+                            <div class="info-icon" style="background: rgba(40,167,69,0.1);">
+                                <i class="fas fa-clock" style="color: #28a745;"></i>
+                            </div>
+                            <div class="info-content">
+                                <div class="info-label">Received At</div>
+                                <div class="info-value">{{ payment.cash_received_at|date:"M d, Y g:i A" }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Refund Details Card -->
+        {% if payment.status == 'refunded' and latest_refund %}
+        <div class="staff-card refund-card mb-4 animate-fadeInUp" style="animation-delay: 0.2s;">
+            <div class="staff-card-header" style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); color: white;">
+                <h5 class="staff-card-title mb-0" style="color: white;"><i class="fas fa-undo me-2"></i>Refund Details</h5>
+            </div>
+            <div class="staff-card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="info-item">
+                            <div class="info-icon" style="background: rgba(23,162,184,0.1);">
+                                <i class="fas fa-peso-sign" style="color: #17a2b8;"></i>
+                            </div>
+                            <div class="info-content">
+                                <div class="info-label">Refund Amount</div>
+                                <div class="info-value" style="color: #17a2b8; font-size: 1.1rem;">₱{{ latest_refund.amount|floatformat:2 }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="info-item">
+                            <div class="info-icon" style="background: rgba(23,162,184,0.1);">
+                                <i class="fas fa-check-circle" style="color: #17a2b8;"></i>
+                            </div>
+                            <div class="info-content">
+                                <div class="info-label">Status</div>
+                                <div class="info-value">{{ latest_refund.get_status_display }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="info-item">
+                            <div class="info-icon" style="background: rgba(23,162,184,0.1);">
+                                <i class="fas fa-user" style="color: #17a2b8;"></i>
+                            </div>
+                            <div class="info-content">
+                                <div class="info-label">Requested By</div>
+                                <div class="info-value">{{ latest_refund.requested_by.get_full_name|default:latest_refund.requested_by.username }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% if latest_refund.approved_by %}
+                    <div class="col-md-6">
+                        <div class="info-item">
+                            <div class="info-icon" style="background: rgba(23,162,184,0.1);">
+                                <i class="fas fa-user-shield" style="color: #17a2b8;"></i>
+                            </div>
+                            <div class="info-content">
+                                <div class="info-label">Approved By</div>
+                                <div class="info-value">{{ latest_refund.approved_by.get_full_name|default:latest_refund.approved_by.username }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="col-md-6">
+                        <div class="info-item">
+                            <div class="info-icon" style="background: rgba(23,162,184,0.1);">
+                                <i class="fas fa-calendar" style="color: #17a2b8;"></i>
+                            </div>
+                            <div class="info-content">
+                                <div class="info-label">Requested</div>
+                                <div class="info-value">{{ latest_refund.requested_at|date:"M d, Y" }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% if latest_refund.processed_at %}
+                    <div class="col-md-6">
+                        <div class="info-item">
+                            <div class="info-icon" style="background: rgba(23,162,184,0.1);">
+                                <i class="fas fa-check-double" style="color: #17a2b8;"></i>
+                            </div>
+                            <div class="info-content">
+                                <div class="info-label">Processed</div>
+                                <div class="info-value">{{ latest_refund.processed_at|date:"M d, Y g:i A" }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if latest_refund.reason %}
+                    <div class="col-12">
+                        <div class="info-item">
+                            <div class="info-icon" style="background: rgba(23,162,184,0.1);">
+                                <i class="fas fa-comment" style="color: #17a2b8;"></i>
+                            </div>
+                            <div class="info-content">
+                                <div class="info-label">Reason</div>
+                                <div class="info-value" style="font-weight: 400; font-size: 0.85rem;">{{ latest_refund.reason }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Update Status Form -->
+        <div class="staff-card animate-fadeInUp" style="animation-delay: 0.25s;">
+            <div class="staff-card-header">
+                <h5 class="staff-card-title"><i class="fas fa-edit text-primary me-2"></i>Update Payment Status</h5>
+            </div>
+            <div class="staff-card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {% for field in form %}
+                    <div class="staff-form-group">
+                        <label class="staff-form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}
+                        <div class="form-text">{{ field.help_text }}</div>
+                        {% endif %}
+                        {% if field.errors %}
+                        <div class="invalid-feedback d-block">{{ field.errors }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    <div class="d-flex justify-content-between pt-3 border-top">
+                        <a href="{% url 'staff_payments' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back
+                        </a>
+                        <button type="submit" class="btn btn-success px-5">
+                            <i class="fas fa-check me-2"></i>Update Payment
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar: Reservation & Activity Details -->
+    <div class="col-lg-4">
+        <div class="staff-card animate-fadeInUp" style="animation-delay: 0.3s;">
+            <div class="staff-card-header">
+                <h5 class="staff-card-title"><i class="fas fa-calendar"></i>Reservation Details</h5>
+            </div>
+            <div class="staff-card-body">
+                <div class="info-item">
+                    <div class="info-icon" style="background: rgba(59,122,140,0.1);">
+                        <i class="fas fa-calendar-day" style="color: #3B7A8C;"></i>
+                    </div>
+                    <div class="info-content">
+                        <div class="info-label">Reservation Date</div>
+                        <div class="info-value">{{ payment.reservation.date|date:"F d, Y" }}</div>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon" style="background: rgba(59,122,140,0.1);">
+                        <i class="fas fa-clock" style="color: #3B7A8C;"></i>
+                    </div>
+                    <div class="info-content">
+                        <div class="info-label">Time Slot</div>
+                        <div class="info-value">{{ payment.reservation.start_time|time:"g:i A" }} - {{ payment.reservation.end_time|time:"g:i A" }}</div>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon" style="background: rgba(59,122,140,0.1);">
+                        <i class="fas fa-hourglass-half" style="color: #3B7A8C;"></i>
+                    </div>
+                    <div class="info-content">
+                        <div class="info-label">Duration</div>
+                        <div class="info-value">{{ payment.reservation.duration_hours|floatformat:1 }} hours</div>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon" style="background: rgba(59,122,140,0.1);">
+                        <i class="fas fa-map-marker-alt" style="color: #3B7A8C;"></i>
+                    </div>
+                    <div class="info-content">
+                        <div class="info-label">Court / Site</div>
+                        <div class="info-value">{{ payment.reservation.court.name }}</div>
+                        {% if payment.reservation.court.site %}
+                        <small class="text-muted d-block">{{ payment.reservation.court.site.name }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon" style="background: rgba(40,167,69,0.1);">
+                        <i class="fas fa-peso-sign" style="color: #28a745;"></i>
+                    </div>
+                    <div class="info-content">
+                        <div class="info-label">Court Fee</div>
+                        <div class="info-value">₱{{ payment.reservation.subtotal|floatformat:2 }}</div>
+                    </div>
+                </div>
+                {% if payment.reservation.equipment_fee > 0 %}
+                <div class="info-item">
+                    <div class="info-icon" style="background: rgba(255,193,7,0.1);">
+                        <i class="fas fa-tools" style="color: #d39e00;"></i>
+                    </div>
+                    <div class="info-content">
+                        <div class="info-label">Equipment Fee</div>
+                        <div class="info-value">₱{{ payment.reservation.equipment_fee|floatformat:2 }}</div>
+                    </div>
+                </div>
+                {% endif %}
+                <div class="info-item">
+                    <div class="info-icon" style="background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);">
+                        <i class="fas fa-receipt text-white" style="font-size: 0.8rem;"></i>
+                    </div>
+                    <div class="info-content">
+                        <div class="info-label">Total Charged</div>
+                        <div class="info-value" style="color: #3B7A8C; font-size: 1rem;">₱{{ payment.amount|floatformat:2 }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Activity Log -->
+        <div class="staff-card animate-fadeInUp mt-4" style="animation-delay: 0.4s;">
+            <div class="staff-card-header">
+                <h5 class="staff-card-title"><i class="fas fa-history"></i>Payment Activity</h5>
+            </div>
+            <div class="staff-card-body">
+                {% for log in logs %}
+                <div class="timeline-item">
+                    <div class="fw-semibold small">{{ log.action }}</div>
+                    {% if log.details %}
+                    <div class="text-muted small">{{ log.details|truncatechars:60 }}</div>
+                    {% endif %}
+                    <div class="text-muted" style="font-size: 0.7rem;">
+                        <i class="fas fa-user me-1"></i>
+                        {% if log.performed_by %}{{ log.performed_by.get_full_name|default:log.performed_by.username }}{% else %}System{% endif %}
+                        • {{ log.created_at|timesince }} ago
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-muted text-center mb-0">No activity recorded</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Style form elements
+document.querySelectorAll('select, input[type="text"], input[type="number"], textarea').forEach(function(el) {
+    el.classList.add('form-control', 'staff-form-control');
+});
+document.querySelectorAll('select').forEach(function(select) {
+    select.classList.add('staff-form-select');
+});
+</script>
+{% endblock %}

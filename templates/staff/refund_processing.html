@@ -1,0 +1,650 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Refund Processing{% endblock %}
+{% block page_title %}Refund Processing{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+/* ===== ANIMATIONS ===== */
+@keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes shimmer {
+    0% { background-position: -200px 0; }
+    100% { background-position: 200px 0; }
+}
+.animate-in {
+    animation: fadeSlideUp 0.4s ease forwards;
+    opacity: 0;
+}
+.animate-in-d1 { animation-delay: 0.05s; }
+.animate-in-d2 { animation-delay: 0.1s; }
+.animate-in-d3 { animation-delay: 0.15s; }
+.animate-in-d4 { animation-delay: 0.2s; }
+.animate-in-d5 { animation-delay: 0.25s; }
+.animate-in-d6 { animation-delay: 0.3s; }
+
+/* ===== STAT CARDS ===== */
+
+/* ===== FILTER BAR ===== */
+.filter-bar {
+    background: white;
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 1.5rem;
+}
+.filter-bar .form-control,
+.filter-bar .form-select {
+    border-radius: 10px;
+    border: 1.5px solid #e9ecef;
+    transition: all 0.2s;
+}
+.filter-bar .form-control:focus,
+.filter-bar .form-select:focus {
+    border-color: #17a2b8;
+    box-shadow: 0 0 0 3px rgba(23,162,184,0.12);
+}
+
+/* ===== REFUND CARD ===== */
+.refund-card {
+    border-radius: 16px;
+    border: 1.5px solid #e9ecef;
+    transition: all 0.25s ease;
+    background: white;
+    margin-bottom: 1.25rem;
+    overflow: hidden;
+}
+.refund-card:hover {
+    border-color: #dee2e6;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+}
+.refund-card .card-accent {
+    height: 4px;
+    background: linear-gradient(90deg, #17a2b8, #20c997);
+}
+.refund-card-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+.refund-card-body {
+    padding: 1.25rem 1.5rem;
+}
+.refund-card-footer {
+    padding: 1rem 1.5rem;
+    background: #f8f9fa;
+    border-top: 1px solid #f0f0f0;
+}
+
+/* ===== RECEIPT BOX ===== */
+.receipt-box {
+    background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%);
+    border: 2px dashed #dee2e6;
+    border-radius: 12px;
+    padding: 1.25rem;
+    max-width: 360px;
+}
+.receipt-box-header {
+    text-align: center;
+    border-bottom: 1px dashed #dee2e6;
+    padding-bottom: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+.receipt-box-title {
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: #1a3a42;
+}
+.receipt-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.3rem 0;
+    font-size: 0.85rem;
+}
+.receipt-row.total {
+    border-top: 2px solid #1a3a42;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    font-weight: 700;
+}
+.receipt-row.total .receipt-val {
+    color: #17a2b8;
+    font-size: 1.1rem;
+}
+.receipt-label {
+    color: #6c757d;
+}
+.receipt-val {
+    font-weight: 600;
+    text-align: right;
+}
+
+/* ===== DETAIL ITEMS ===== */
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+.detail-item .lbl {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6c757d;
+    font-weight: 600;
+}
+.detail-item .val {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #212529;
+}
+.detail-item .val-sm {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #6c757d;
+}
+.detail-box {
+    padding: 0.75rem 1rem;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    background: #f8f9fa;
+}
+
+/* ===== REFUND METHOD BADGE ===== */
+.refund-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+.refund-badge.gcash {
+    background: rgba(59,122,140,0.12);
+    color: #2c5f6e;
+    border: 1px solid rgba(59,122,140,0.2);
+}
+.refund-badge.paypal {
+    background: rgba(0,112,186,0.1);
+    color: #005a9e;
+    border: 1px solid rgba(0,112,186,0.15);
+}
+
+/* ===== BUTTONS ===== */
+.btn-process {
+    background: linear-gradient(135deg, #17a2b8 0%, #0d7a8c 100%);
+    border: none;
+    color: white;
+    font-weight: 600;
+    padding: 0.65rem 1.5rem;
+    border-radius: 10px;
+    transition: all 0.25s;
+    box-shadow: 0 3px 12px rgba(23,162,184,0.3);
+}
+.btn-process:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 18px rgba(23,162,184,0.4);
+    color: white;
+}
+.btn-process:active {
+    transform: translateY(0);
+}
+
+/* ===== MODAL ===== */
+.confirm-modal .modal-content {
+    border-radius: 16px;
+    border: none;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+.confirm-modal .modal-header {
+    border: none;
+    padding: 1.5rem 1.5rem 0;
+}
+.confirm-modal .modal-body {
+    padding: 1rem 1.5rem 1.5rem;
+}
+.confirm-modal .modal-footer {
+    border: none;
+    padding: 0 1.5rem 1.5rem;
+    gap: 0.5rem;
+}
+
+/* ===== EMPTY STATE ===== */
+.empty-state {
+    text-align: center;
+    padding: 4rem 1rem;
+}
+.empty-state-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    color: #00838f;
+    font-size: 1.8rem;
+}
+.empty-state-title {
+    font-weight: 700;
+    color: #212529;
+    margin-bottom: 0.25rem;
+}
+.empty-state-text {
+    font-size: 0.88rem;
+    color: #6c757d;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .receipt-box { max-width: 100%; }
+    .refund-card-header { flex-direction: column; align-items: flex-start; }
+}
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'staff_dashboard' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'staff_cancellations' %}">Cancellations</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Process Refunds</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<!-- ===== STAT CARDS ===== -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-info text-white me-3">
+                    <i class="fas fa-hourglass-half fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">{{ total_pending }}</div>
+                    <div class="stats-label text-muted">Pending Refunds</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-success text-white me-3">
+                    <i class="fas fa-check-circle fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">{{ total_processed }}</div>
+                    <div class="stats-label text-muted">Refunded</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-primary text-white me-3">
+                    <i class="fas fa-mobile-alt fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">{{ gcash_count }}</div>
+                    <div class="stats-label text-muted">GCash Refunds</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-purple text-white me-3">
+                    <i class="fab fa-paypal fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">{{ paypal_count }}</div>
+                    <div class="stats-label text-muted">PayPal Refunds</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== FILTER BAR ===== -->
+<div class="filter-bar animate-in animate-in-d3">
+    <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label fw-semibold text-muted small text-uppercase"><i class="fas fa-search me-1"></i>Search</label>
+            <input type="text" name="search" class="form-control" placeholder="ID, user, court..." value="{{ search_query }}">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-semibold text-muted small text-uppercase"><i class="fas fa-filter me-1"></i>Method</label>
+            <select name="method" class="form-select">
+                <option value="">All Methods</option>
+                <option value="gcash" {% if method_filter == 'gcash' %}selected{% endif %}>GCash</option>
+                <option value="paypal" {% if method_filter == 'paypal' %}selected{% endif %}>PayPal</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-semibold text-muted small text-uppercase"><i class="fas fa-calendar me-1"></i>From</label>
+            <input type="date" name="date_from" class="form-control" value="{{ date_from }}">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-semibold text-muted small text-uppercase"><i class="fas fa-calendar me-1"></i>To</label>
+            <input type="date" name="date_to" class="form-control" value="{{ date_to }}">
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary w-100" style="border-radius: 10px;">
+                <i class="fas fa-search me-1"></i> Search
+            </button>
+            {% if search_query or method_filter or date_from or date_to %}
+            <a href="{% url 'staff_refund_processing' %}" class="btn btn-outline-secondary" style="border-radius: 10px;">
+                <i class="fas fa-times"></i>
+            </a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- ===== REFUND CARDS ===== -->
+<div class="animate-in animate-in-d4">
+    {% for cancellation in cancellations %}
+    {% with r=cancellation.reservation %}
+    <div class="refund-card">
+        <div class="card-accent"></div>
+        <div class="refund-card-header">
+            <div class="d-flex align-items-center gap-3">
+                <div style="width: 44px; height: 44px; background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <i class="fas fa-undo-alt" style="color: #00838f;"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-0">Refund for Reservation <span class="font-monospace">#{{ r.id }}</span></h6>
+                    <div class="d-flex align-items-center gap-2 mt-1">
+                        <span class="refund-badge {{ cancellation.refund_method }}">
+                            <i class="{% if cancellation.refund_method == 'gcash' %}fas fa-mobile-alt{% else %}fab fa-paypal{% endif %}"></i>
+                            {{ cancellation.get_refund_method_display }}
+                        </span>
+                        <small class="text-muted">Approved {{ cancellation.approved_at|timesince }} ago</small>
+                    </div>
+                </div>
+            </div>
+            <span class="badge bg-light text-dark px-3 py-2" style="border-radius: 20px; font-size: 0.75rem;">
+                <i class="fas fa-user me-1"></i>{{ r.user.username }}
+            </span>
+        </div>
+
+        <div class="refund-card-body">
+            <div class="row g-4">
+                <!-- Left: Customer & Reservation -->
+                <div class="col-lg-4">
+                    <div class="detail-box mb-3">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div style="width: 40px; height: 40px; background: rgba(59,122,140,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <i class="fas fa-user text-primary"></i>
+                            </div>
+                            <div>
+                                <div class="lbl" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; color: #6c757d; font-weight: 600;">Customer</div>
+                                <div class="fw-semibold small">{{ r.user.get_full_name|default:r.user.username }}</div>
+                                <div class="small text-muted">{{ r.user.email }}</div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div style="width: 40px; height: 40px; background: rgba(40,167,69,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <i class="fas fa-map-marker-alt text-success"></i>
+                            </div>
+                            <div>
+                                <div class="lbl" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; color: #6c757d; font-weight: 600;">Court</div>
+                                <div class="fw-semibold small">{{ r.court.name }}</div>
+                                {% if r.court.site %}<div class="small text-muted">{{ r.court.site.name }}</div>{% endif %}
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-3">
+                            <div style="width: 40px; height: 40px; background: rgba(255,152,0,0.12); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <i class="fas fa-calendar text-warning"></i>
+                            </div>
+                            <div>
+                                <div class="lbl" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; color: #6c757d; font-weight: 600;">Date</div>
+                                <div class="fw-semibold small">{{ r.date|date:"M d, Y" }}</div>
+                                <div class="small text-muted">{{ r.start_time|time:"g:i A" }} — {{ r.end_time|time:"g:i A" }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Center: Refund Method Details -->
+                <div class="col-lg-4">
+                    <div class="detail-box mb-3">
+                        <h6 class="fw-bold small mb-2" style="text-transform: uppercase; letter-spacing: 0.5px; color: #6c757d;">
+                            <i class="fas fa-credit-card me-1"></i>Refund Details
+                        </h6>
+                        {% if cancellation.refund_method == 'gcash' %}
+                        <div class="mb-2">
+                            <div class="lbl" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; color: #6c757d; font-weight: 600;">GCash Number</div>
+                            <div class="fw-bold" style="font-family: monospace; font-size: 1.1rem;">{{ cancellation.gcash_number|default:"—" }}</div>
+                        </div>
+                        <div>
+                            <div class="lbl" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; color: #6c757d; font-weight: 600;">Account Name</div>
+                            <div class="fw-semibold">{{ cancellation.account_name|default:"—" }}</div>
+                        </div>
+                        {% elif cancellation.refund_method == 'paypal' %}
+                        <div>
+                            <div class="lbl" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; color: #6c757d; font-weight: 600;">PayPal Email</div>
+                            <div class="fw-bold" style="font-size: 1rem;">{{ cancellation.paypal_email|default:"—" }}</div>
+                        </div>
+                        {% else %}
+                        <div class="text-muted small">
+                            <i class="fas fa-info-circle me-1"></i>No refund method specified
+                        </div>
+                        {% endif %}
+
+                        <hr class="my-2">
+                        <div>
+                            <div class="lbl" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; color: #6c757d; font-weight: 600;">Cancellation Reason</div>
+                            <div class="small" style="color: #495057;">{{ cancellation.reason|truncatewords:30 }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Receipt-style breakdown -->
+                <div class="col-lg-4">
+                    <div class="receipt-box ms-auto">
+                        <div class="receipt-box-header">
+                            <div class="receipt-box-title">PICKLESPHERE</div>
+                            <small class="text-muted">Refund Receipt</small>
+                        </div>
+                        <div class="receipt-row">
+                            <span class="receipt-label">Reservation #</span>
+                            <span class="receipt-val font-monospace">{{ r.id }}</span>
+                        </div>
+                        <div class="receipt-row">
+                            <span class="receipt-label">Customer</span>
+                            <span class="receipt-val">{{ r.user.username }}</span>
+                        </div>
+                        <hr style="border-top: 1px dashed #dee2e6; margin: 0.5rem 0;">
+                        <div class="receipt-row">
+                            <span class="receipt-label">Total Paid</span>
+                            <span class="receipt-val">₱{{ r.total_amount|floatformat:2 }}</span>
+                        </div>
+                        <div class="receipt-row">
+                            <span class="receipt-label">Fee ({{ cancellation.deduction_percentage|floatformat:0 }}%)</span>
+                            <span class="receipt-val text-danger">−₱{{ cancellation.deduction_amount|floatformat:2 }}</span>
+                        </div>
+                        <hr style="border-top: 1px dashed #dee2e6; margin: 0.5rem 0;">
+                        <div class="receipt-row total">
+                            <span class="receipt-label">Net Refund</span>
+                            <span class="receipt-val" style="color: #17a2b8;">₱<span class="r-total" data-total="{{ r.total_amount|floatformat:2 }}" data-fee="{{ cancellation.deduction_amount|floatformat:2 }}"></span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="refund-card-footer d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <small class="text-muted">
+                <i class="fas fa-clock me-1"></i>
+                Approved by <strong>{{ cancellation.approved_by.get_full_name|default:cancellation.approved_by.username }}</strong>
+                on {{ cancellation.approved_at|date:"M d, Y g:i A" }}
+            </small>
+            <button type="button" class="btn btn-process" onclick="openRefundModal({{ cancellation.id }}, {{ r.id }}, '{{ r.user.username|escapejs }}', '{{ cancellation.refund_method|escapejs }}')">
+                <i class="fas fa-check-double me-1"></i>Mark Refund as Sent
+            </button>
+        </div>
+    </div>
+    {% endwith %}
+    {% empty %}
+    <div class="card border-0 shadow-sm" style="border-radius: 16px;">
+        <div class="card-body">
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-check-double"></i>
+                </div>
+                <h6 class="empty-state-title">All caught up!</h6>
+                <p class="empty-state-text">
+                    {% if search_query or method_filter or date_from or date_to %}
+                        No results match your filters. Try adjusting them.
+                    {% else %}
+                        There are no pending refunds to process. All approved cancellations have been refunded.
+                    {% endif %}
+                </p>
+                {% if not search_query and not method_filter and not date_from and not date_to %}
+                <a href="{% url 'staff_cancellations' %}" class="btn btn-outline-primary mt-3" style="border-radius: 10px;">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Cancellations
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- ===== PAGINATION ===== -->
+{% if is_paginated %}
+<nav aria-label="Page navigation" class="mt-4">
+    <ul class="pagination justify-content-center mb-0">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page=1{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if method_filter %}&amp;method={{ method_filter }}{% endif %}{% if date_from %}&amp;date_from={{ date_from }}{% endif %}{% if date_to %}&amp;date_to={{ date_to }}{% endif %}"><i class="fas fa-angle-double-left"></i></a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if method_filter %}&amp;method={{ method_filter }}{% endif %}{% if date_from %}&amp;date_from={{ date_from }}{% endif %}{% if date_to %}&amp;date_to={{ date_to }}{% endif %}"><i class="fas fa-angle-left"></i></a>
+        </li>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+            {% if num == page_obj.number %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <li class="page-item"><a class="page-link" href="?page={{ num }}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if method_filter %}&amp;method={{ method_filter }}{% endif %}{% if date_from %}&amp;date_from={{ date_from }}{% endif %}{% if date_to %}&amp;date_to={{ date_to }}{% endif %}">{{ num }}</a></li>
+            {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if method_filter %}&amp;method={{ method_filter }}{% endif %}{% if date_from %}&amp;date_from={{ date_from }}{% endif %}{% if date_to %}&amp;date_to={{ date_to }}{% endif %}"><i class="fas fa-angle-right"></i></a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if method_filter %}&amp;method={{ method_filter }}{% endif %}{% if date_from %}&amp;date_from={{ date_from }}{% endif %}{% if date_to %}&amp;date_to={{ date_to }}{% endif %}"><i class="fas fa-angle-double-right"></i></a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    'use strict';
+
+    // ===== Build Confirmation Modal =====
+    var modalHtml = '' +
+        '<div class="modal fade confirm-modal" id="refundModal" tabindex="-1" aria-hidden="true">' +
+        '  <div class="modal-dialog modal-dialog-centered">' +
+        '    <div class="modal-content">' +
+        '      <div class="modal-header text-center d-block">' +
+        '        <div style="width: 64px; height: 64px; background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 0.5rem;">' +
+        '          <i class="fas fa-check-double fa-2x" style="color: #00838f;"></i>' +
+        '        </div>' +
+        '        <h5 class="fw-bold mb-1" id="modal-title">Mark Refund as Sent?</h5>' +
+        '        <p class="text-muted small mb-0" id="modal-desc">Confirm details before proceeding.</p>' +
+        '      </div>' +
+        '      <div class="modal-body">' +
+        '        <div id="modal-details" class="mb-3 p-3 rounded-3" style="background: #f8f9fa; border: 1px solid #e9ecef;">' +
+        '          <div class="small mb-1"><strong>Reservation:</strong> <span id="modal-res-id"></span></div>' +
+        '          <div class="small mb-1"><strong>Customer:</strong> <span id="modal-customer"></span></div>' +
+        '          <div class="small"><strong>Method:</strong> <span id="modal-method"></span></div>' +
+        '        </div>' +
+        '        <form method="post" id="refund-form">' +
+        '          {% csrf_token %}' +
+        '          <input type="hidden" name="cancellation_id" id="modal-cancel-id">' +
+        '          <div class="mb-2">' +
+        '            <label class="form-label small fw-semibold">Refund Notes <small class="text-muted">(optional)</small></label>' +
+        '            <textarea name="refund_notes" class="form-control" rows="2" placeholder="e.g. Sent via GCash on 09XX..." style="border-radius: 8px; font-size: 0.85rem;"></textarea>' +
+        '          </div>' +
+        '        </form>' +
+        '        <div class="p-3 rounded-3" style="background: #fff8e1;">' +
+        '          <i class="fas fa-info-circle text-warning me-2"></i>' +
+        '          <span class="small">This will notify the customer that their refund has been sent.</span>' +
+        '        </div>' +
+        '      </div>' +
+        '      <div class="modal-footer d-flex gap-2 justify-content-center">' +
+        '        <button type="button" class="btn btn-outline-secondary flex-fill" style="border-radius: 10px;" data-bs-dismiss="modal">' +
+        '          <i class="fas fa-times me-1"></i>Cancel' +
+        '        </button>' +
+        '        <button type="button" class="btn flex-fill" id="modal-submit-btn" style="border-radius: 10px; background: linear-gradient(135deg, #17a2b8 0%, #0d7a8c 100%); border: none; color: white; font-weight: 600;" onclick="submitRefund()">' +
+        '          <i class="fas fa-check-double me-1"></i>Yes, Mark as Sent' +
+        '        </button>' +
+        '      </div>' +
+        '    </div>' +
+        '  </div>' +
+        '</div>';
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // ===== Open Modal =====
+    // ===== Compute refund amounts =====
+    document.querySelectorAll('.r-total').forEach(function(el) {
+        var total = parseFloat(el.getAttribute('data-total')) || 0;
+        var fee = parseFloat(el.getAttribute('data-fee')) || 0;
+        el.textContent = (total - fee).toFixed(2);
+    });
+
+    // ===== Open Modal =====
+    window.openRefundModal = function(cancelId, resId, username, method) {
+        document.getElementById('modal-cancel-id').value = cancelId;
+        document.getElementById('modal-res-id').textContent = '#' + resId;
+        document.getElementById('modal-customer').textContent = username;
+        document.getElementById('modal-method').textContent = method === 'gcash' ? 'GCash' : method === 'paypal' ? 'PayPal' : method;
+
+        var modalEl = document.getElementById('refundModal');
+        var modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    };
+
+    // ===== Submit =====
+    window.submitRefund = function() {
+        var modalEl = document.getElementById('refundModal');
+        var modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+
+        document.getElementById('refund-form').submit();
+    };
+
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,656 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Revenue Reports{% endblock %}
+{% block page_title %}Revenue Reports{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'super_admin_analytics' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'super_admin_analytics' %}"><i class="fas fa-chart-pie me-1"></i>Analytics</a></li>
+        <li class="breadcrumb-item active">Revenue Reports</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<style>
+.chart-container { position: relative; width: 100%; min-height: 250px; }
+.chart-container canvas { width: 100% !important; max-height: 250px; }
+@media (max-width: 767.98px) {
+    .chart-container { min-height: 200px; }
+    .chart-container canvas { max-height: 200px; }
+    .stat-card-responsive { margin-bottom: 12px; }
+}
+</style>
+
+<!-- Filters -->
+<div class="filter-card">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-2">
+                <label class="admin-form-label">
+                    <i class="fas fa-calendar me-2 text-primary"></i>From
+                </label>
+                <input type="date" name="date_from" class="form-control admin-form-control" value="{{ date_from }}">
+            </div>
+            <div class="col-md-2">
+                <label class="admin-form-label">
+                    <i class="fas fa-calendar me-2 text-primary"></i>To
+                </label>
+                <input type="date" name="date_to" class="form-control admin-form-control" value="{{ date_to }}">
+            </div>
+            <div class="col-md-2">
+                <label class="admin-form-label">
+                    <i class="fas fa-filter me-2 text-primary"></i>Court
+                </label>
+                <select name="court" class="form-select admin-form-control">
+                    <option value="">All Courts</option>
+                    {% for court in courts %}
+                    <option value="{{ court.id }}" {% if court_filter == court.id|stringformat:"s" %}selected{% endif %}>{{ court.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="admin-form-label">
+                    <i class="fas fa-credit-card me-2 text-primary"></i>Method
+                </label>
+                <select name="method" class="form-select admin-form-control">
+                    <option value="">All Methods</option>
+                    <option value="gcash" {% if method_filter == 'gcash' %}selected{% endif %}>GCash</option>
+                    <option value="maya" {% if method_filter == 'maya' %}selected{% endif %}>Maya</option>
+                    <option value="bank_transfer" {% if method_filter == 'bank_transfer' %}selected{% endif %}>Bank Transfer</option>
+                    <option value="cash" {% if method_filter == 'cash' %}selected{% endif %}>Cash</option>
+                    <option value="card" {% if method_filter == 'card' %}selected{% endif %}>Card/Stripe</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search me-2"></i>Generate
+                </button>
+            </div>
+            <div class="col-md-2">
+                <div class="btn-group w-100">
+                    <a href="{% url 'super_admin_revenue_report_export' %}?date_from={{ date_from }}&amp;date_to={{ date_to }}&amp;format=csv" class="btn btn-success">
+                        <i class="fas fa-file-csv me-1"></i>CSV
+                    </a>
+                    <a href="{% url 'super_admin_revenue_report_export' %}?date_from={{ date_from }}&amp;date_to={{ date_to }}&amp;format=xlsx" class="btn btn-info text-white">
+                        <i class="fas fa-file-excel me-1"></i>Excel
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3 col-sm-6 stat-card-responsive">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-success text-white me-3">
+                    <i class="fas fa-money-bill-wave fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">₱{{ summary_metrics.total_revenue|floatformat:0 }}</div>
+                    <div class="stats-label text-muted">Total Revenue</div>
+                    <small class="{% if summary_metrics.revenue_growth > 0 %}text-success{% elif summary_metrics.revenue_growth < 0 %}text-danger{% else %}text-muted{% endif %}">
+                        <i class="fas fa-{% if summary_metrics.revenue_growth > 0 %}arrow-up{% elif summary_metrics.revenue_growth < 0 %}arrow-down{% else %}minus{% endif %} me-1"></i>
+                        {{ summary_metrics.revenue_growth|floatformat:1 }}% vs prev period
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 stat-card-responsive">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-primary text-white me-3">
+                    <i class="fas fa-receipt fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">{{ summary_metrics.total_paid_bookings }}</div>
+                    <div class="stats-label text-muted">Paid Bookings</div>
+                    <small class="text-muted"><i class="fas fa-calendar-day me-1"></i>₱{{ summary_metrics.avg_revenue_per_booking|floatformat:0 }}/booking</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 stat-card-responsive">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-warning text-white me-3">
+                    <i class="fas fa-clock fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">₱{{ refunds_data.net_revenue|floatformat:0 }}</div>
+                    <div class="stats-label text-muted">Net Revenue</div>
+                    <small class="text-info"><i class="fas fa-undo me-1"></i>₱{{ refunds_data.total_refunds|floatformat:0 }} refunded</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 stat-card-responsive">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-info text-white me-3">
+                    <i class="fas fa-percentage fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">₱{{ summary_metrics.avg_revenue_per_day|floatformat:0 }}</div>
+                    <div class="stats-label text-muted">Avg Revenue/Day</div>
+                    <small class="{% if summary_metrics.booking_growth > 0 %}text-success{% elif summary_metrics.booking_growth < 0 %}text-danger{% else %}text-muted{% endif %}">
+                        <i class="fas fa-{% if summary_metrics.booking_growth > 0 %}arrow-up{% elif summary_metrics.booking_growth < 0 %}arrow-down{% else %}minus{% endif %} me-1"></i>
+                        {{ summary_metrics.booking_growth|floatformat:1 }}% bookings growth
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart Row 1: Daily Revenue + Revenue by Method -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="admin-card h-100">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-chart-bar text-success"></i>
+                    Daily Revenue Trend
+                </h5>
+                <span class="badge bg-success">{{ chart_data.daily_labels|length }} days</span>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Daily revenue (bars) and booking count (line) for the selected date range.
+                </p>
+                <div class="chart-container"><canvas id="dailyRevenueChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="admin-card h-100">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-chart-pie text-primary"></i>
+                    Revenue by Method
+                </h5>
+                <span class="badge bg-primary">{{ payment_info.revenue_by_method|length }} methods</span>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Payment method distribution for the selected period.
+                </p>
+                <div class="chart-container" style="min-height: 200px;"><canvas id="methodPieChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart Row 2: Revenue by Court + Hourly Distribution -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-7">
+        <div class="admin-card h-100">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-map-marker-alt text-info"></i>
+                    Revenue by Court
+                </h5>
+                <span class="badge bg-info">{{ chart_data.court_labels|length }} courts</span>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Court revenue distribution. Larger bars indicate higher revenue-generating courts.
+                </p>
+                <div class="chart-container" style="min-height: 220px;"><canvas id="courtRevenueChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="admin-card h-100">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-clock text-warning"></i>
+                    Hourly Booking Distribution
+                </h5>
+                <span class="badge bg-warning text-dark">{{ chart_data.hourly_labels|length }} slots</span>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Peak booking hours based on reservation start times.
+                </p>
+                <div class="chart-container" style="min-height: 200px;"><canvas id="hourlyChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Revenue by Source & Details -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="admin-card h-100">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-chart-simple text-success"></i>
+                    Revenue by Source
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Revenue breakdown by source type showing which services generate the most income.
+                </p>
+                {% if revenue_by_source %}
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="p-3 bg-light rounded-3 text-center">
+                            <div class="text-muted small mb-1">Court Reservations</div>
+                            <div class="fw-bold fs-5 text-success">₱{{ revenue_by_source.court_reservations|floatformat:0 }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 bg-light rounded-3 text-center">
+                            <div class="text-muted small mb-1">Game Fees</div>
+                            <div class="fw-bold fs-5 text-primary">₱{{ revenue_by_source.game_fees|floatformat:0 }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 bg-light rounded-3 text-center">
+                            <div class="text-muted small mb-1">Equipment Rentals</div>
+                            <div class="fw-bold fs-5 text-warning">₱{{ revenue_by_source.equipment_rentals|floatformat:0 }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 bg-light rounded-3 text-center">
+                            <div class="text-muted small mb-1">Court Fees Only</div>
+                            <div class="fw-bold fs-5 text-info">₱{{ revenue_by_source.court_fees_only|floatformat:0 }}</div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <p class="empty-state-text">No source data available for the selected period.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="admin-card h-100">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-credit-card text-primary"></i>
+                    Payment Method Breakdown
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                {% if payment_info.revenue_by_method %}
+                <div class="admin-table-container">
+                    <table class="table admin-table mb-0">
+                        <thead>
+                            <tr>
+                                <th data-label="Method">Method</th>
+                                <th data-label="Transactions">Transactions</th>
+                                <th data-label="Revenue" class="text-end">Revenue</th>
+                                <th data-label="Share" class="text-end">Share</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in payment_info.revenue_by_method %}
+                            <tr>
+                                <td data-label="Method">
+                                    <span class="badge bg-light text-dark border px-3 py-2">
+                                        <i class="fas fa-{% if item.method == 'gcash' %}mobile-alt{% elif item.method == 'maya' %}wallet{% elif item.method == 'bank_transfer' %}university{% elif item.method == 'cash' %}money-bill-wave{% else %}credit-card{% endif %} me-1"></i>
+                                        {{ item.method|title|default:"N/A" }}
+                                    </span>
+                                </td>
+                                <td data-label="Transactions"><span class="badge bg-info">{{ item.count }}</span></td>
+                                <td data-label="Revenue" class="text-end fw-semibold text-success">₱{{ item.total|floatformat:2 }}</td>
+                                <td data-label="Share" class="text-end">
+                                    <span class="badge bg-light text-dark border">{{ item.percentage|floatformat:1 }}%</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <p class="empty-state-text">No payment data available for the selected period.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Refunds & Cancellations -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="admin-card h-100">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-undo text-danger"></i>
+                    Refunds & Cancellations
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Refund and cancellation activity within the selected period.
+                </p>
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <span><i class="fas fa-undo text-danger me-2"></i>Total Refunded</span>
+                    <span class="fw-bold text-danger">₱{{ refunds_data.total_refunds|floatformat:2 }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <span><i class="fas fa-times-circle text-warning me-2"></i>Cancelled Revenue</span>
+                    <span class="fw-bold text-warning">₱{{ refunds_data.cancelled_revenue|floatformat:2 }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <span><i class="fas fa-calculator text-info me-2"></i>Net Revenue</span>
+                    <span class="fw-bold fs-5 text-success">₱{{ refunds_data.net_revenue|floatformat:2 }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-2">
+                    <span><i class="fas fa-times text-muted me-2"></i>Refund Count</span>
+                    <span class="badge bg-danger">{{ refunds_data.refund_count }} refunds</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-2">
+                    <span><i class="fas fa-ban text-muted me-2"></i>Cancelled Count</span>
+                    <span class="badge bg-warning text-dark">{{ refunds_data.cancelled_count }} cancelled</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="admin-card h-100">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-calendar-alt text-primary"></i>
+                    Period Revenue Summary
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Revenue performance across different timeframes.
+                </p>
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <span><i class="fas fa-calendar-week text-info me-2"></i>This Week</span>
+                    <span class="fw-bold">₱{{ summary_metrics.weekly_revenue|floatformat:0 }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <span><i class="fas fa-calendar-alt text-success me-2"></i>This Month</span>
+                    <span class="fw-bold">₱{{ summary_metrics.monthly_revenue|floatformat:0 }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <span><i class="fas fa-calendar text-primary me-2"></i>This Year</span>
+                    <span class="fw-bold">₱{{ summary_metrics.yearly_revenue|floatformat:0 }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-2">
+                    <span><i class="fas fa-chart-line text-muted me-2"></i>Previous Period</span>
+                    <span class="fw-bold">₱{{ summary_metrics.prev_revenue|floatformat:0 }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-2">
+                    <span><i class="fas fa-arrow-up text-muted me-2"></i>Revenue Growth</span>
+                    <span class="fw-bold {% if summary_metrics.revenue_growth > 0 %}text-success{% elif summary_metrics.revenue_growth < 0 %}text-danger{% else %}text-muted{% endif %}">
+                        {{ summary_metrics.revenue_growth|floatformat:1 }}%
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Revenue Breakdown Table -->
+{% if booking_details %}
+<div class="admin-card mb-4">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-list text-primary"></i>
+            Booking Details
+        </h5>
+        <span class="badge bg-primary">{{ booking_details|length }} bookings</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="admin-table-container">
+            <table class="table admin-table mb-0">
+                <thead>
+                    <tr>
+                        <th data-label="ID">#</th>
+                        <th data-label="Date">Date</th>
+                        <th data-label="User">User</th>
+                        <th data-label="Court">Court</th>
+                        <th data-label="Method">Method</th>
+                        <th data-label="Amount" class="text-end">Amount</th>
+                        <th data-label="Status" class="text-end">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in booking_details %}
+                    <tr>
+                        <td data-label="ID" class="fw-semibold">#{{ payment.id }}</td>
+                        <td data-label="Date"><small>{{ payment.created_at|date:"M d, Y" }}</small></td>
+                        <td data-label="User">{{ payment.reservation.user.username }}</td>
+                        <td data-label="Court">{{ payment.reservation.court.name }}</td>
+                        <td data-label="Method">
+                            <span class="badge bg-light text-dark border">{{ payment.get_method_display|default:"N/A" }}</span>
+                        </td>
+                        <td data-label="Amount" class="text-end fw-semibold text-success">₱{{ payment.amount|floatformat:2 }}</td>
+                        <td data-label="Status" class="text-end">
+                            <span class="status-badge {{ payment.status }}">
+                                {% if payment.status == 'paid' %}<i class="fas fa-check-circle me-1"></i>{% endif %}
+                                {{ payment.get_status_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const primaryColor = '#3B7A8C';
+    const successColor = '#28a745';
+    const warningColor = '#ffc107';
+    const dangerColor = '#dc3545';
+    const infoColor = '#17a2b8';
+
+    // ===== 1. Daily Revenue Chart =====
+    var dailyLabels = {{ chart_data.daily_labels|safe }};
+    var dailyRevenue = {{ chart_data.daily_revenue|safe }};
+    var dailyBookings = {{ chart_data.daily_bookings|safe }};
+    var dailyCtx = document.getElementById('dailyRevenueChart');
+    if (dailyCtx && dailyLabels.length > 0) {
+        new Chart(dailyCtx, {
+            type: 'bar',
+            data: {
+                labels: dailyLabels,
+                datasets: [
+                    {
+                        label: 'Revenue (₱)',
+                        data: dailyRevenue,
+                        backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                        borderColor: successColor,
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Bookings',
+                        data: dailyBookings,
+                        type: 'line',
+                        borderColor: primaryColor,
+                        backgroundColor: 'rgba(59, 122, 140, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: primaryColor,
+                        pointRadius: 3,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                plugins: { legend: { position: 'top', labels: { boxWidth: 12, padding: 10 } } },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { beginAtZero: true, position: 'left', title: { display: true, text: 'Revenue (₱)' } },
+                    y1: { beginAtZero: true, position: 'right', title: { display: true, text: 'Bookings' }, grid: { drawOnChartArea: false } }
+                }
+            }
+        });
+    }
+
+    // ===== 2. Revenue by Method Pie Chart =====
+    var methodLabels = [];
+    var methodData = [];
+    var methodColors = ['#28a745', '#ffc107', '#3B7A8C', '#dc3545', '#17a2b8'];
+    {% for item in payment_info.revenue_by_method %}
+    methodLabels.push('{{ item.method|title|default:"N/A" }}');
+    methodData.push({{ item.total|default:0 }});
+    {% endfor %}
+    var methodCtx = document.getElementById('methodPieChart');
+    if (methodCtx && methodLabels.length > 0) {
+        new Chart(methodCtx, {
+            type: 'doughnut',
+            data: {
+                labels: methodLabels,
+                datasets: [{
+                    data: methodData,
+                    backgroundColor: methodColors.slice(0, methodLabels.length),
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10 } },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                var total = context.dataset.data.reduce(function(a, b) { return a + b; }, 0);
+                                var pct = ((context.parsed / total) * 100).toFixed(1);
+                                return '₱' + context.parsed.toLocaleString() + ' (' + pct + '%)';
+                            }
+                        }
+                    }
+                },
+                cutout: '55%'
+            }
+        });
+    } else if (methodCtx) {
+        methodCtx.parentElement.innerHTML = '<div class="empty-state py-3"><p class="empty-state-text mb-0">No payment method data available.</p></div>';
+    }
+
+    // ===== 3. Court Revenue Chart =====
+    var courtLabels = {{ chart_data.court_labels|safe }};
+    var courtRevenue = {{ chart_data.court_revenue|safe }};
+    var courtCtx = document.getElementById('courtRevenueChart');
+    if (courtCtx && courtLabels.length > 0) {
+        new Chart(courtCtx, {
+            type: 'bar',
+            data: {
+                labels: courtLabels,
+                datasets: [{
+                    label: 'Revenue (₱)',
+                    data: courtRevenue,
+                    backgroundColor: courtRevenue.map(function(v) {
+                        var max = Math.max.apply(null, courtRevenue);
+                        return v === max ? 'rgba(59, 122, 140, 0.9)' : 'rgba(59, 122, 140, 0.5)';
+                    }),
+                    borderColor: courtRevenue.map(function(v) {
+                        var max = Math.max.apply(null, courtRevenue);
+                        return v === max ? primaryColor : primaryColor;
+                    }),
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { beginAtZero: true, title: { display: true, text: 'Revenue (₱)' } },
+                    y: { grid: { display: false } }
+                }
+            }
+        });
+    } else if (courtCtx) {
+        courtCtx.parentElement.innerHTML = '<div class="empty-state py-3"><p class="empty-state-text mb-0">No court revenue data available.</p></div>';
+    }
+
+    // ===== 4. Hourly Distribution Chart =====
+    var hourlyLabels = {{ chart_data.hourly_labels|safe }};
+    var hourlyBookings = {{ chart_data.hourly_bookings|safe }};
+    var hourlyRevenue = {{ chart_data.hourly_revenue|safe }};
+    var hourlyCtx = document.getElementById('hourlyChart');
+    if (hourlyCtx && hourlyLabels.length > 0) {
+        new Chart(hourlyCtx, {
+            type: 'bar',
+            data: {
+                labels: hourlyLabels,
+                datasets: [
+                    {
+                        label: 'Bookings',
+                        data: hourlyBookings,
+                        backgroundColor: hourlyBookings.map(function(v) {
+                            var max = Math.max.apply(null, hourlyBookings);
+                            return v === max ? 'rgba(220, 53, 69, 0.8)' : 'rgba(59, 122, 140, 0.6)';
+                        }),
+                        borderColor: hourlyBookings.map(function(v) {
+                            var max = Math.max.apply(null, hourlyBookings);
+                            return v === max ? dangerColor : primaryColor;
+                        }),
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Revenue (₱)',
+                        data: hourlyRevenue,
+                        type: 'line',
+                        borderColor: successColor,
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: successColor,
+                        pointRadius: 3,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                plugins: { legend: { position: 'top', labels: { boxWidth: 12, padding: 10 } } },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { beginAtZero: true, position: 'left', title: { display: true, text: 'Bookings' }, ticks: { stepSize: 1 } },
+                    y1: { beginAtZero: true, position: 'right', title: { display: true, text: 'Revenue (₱)' }, grid: { drawOnChartArea: false } }
+                }
+            }
+        });
+    } else if (hourlyCtx) {
+        hourlyCtx.parentElement.innerHTML = '<div class="empty-state py-3"><p class="empty-state-text mb-0">No hourly data available.</p></div>';
+    }
+});
+</script>
+{% endblock %}

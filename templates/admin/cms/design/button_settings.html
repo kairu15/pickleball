@@ -1,0 +1,229 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+{% block title %}Button Styles CMS{% endblock %}
+{% block page_title %}<i class="fas fa-square-check me-2"></i>Button Styles{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="admin-card mb-4">
+            <div class="admin-card-header"><h5 class="admin-card-title"><i class="fas fa-cog me-2"></i>Button Style Settings</h5></div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <h6 class="fw-bold mb-3"><i class="fas fa-arrows-alt me-2"></i>General Button Settings</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Border Radius</label>
+                            <input type="text" name="button_border_radius" class="form-control" value="{{ settings.button_border_radius }}" placeholder="8px">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Padding Y (Vertical)</label>
+                            <input type="text" name="button_padding_y" class="form-control" value="{{ settings.button_padding_y }}" placeholder="0.625rem">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Padding X (Horizontal)</label>
+                            <input type="text" name="button_padding_x" class="form-control" value="{{ settings.button_padding_x }}" placeholder="1.5rem">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Font Weight</label>
+                            <input type="text" name="button_font_weight" class="form-control" value="{{ settings.button_font_weight }}" placeholder="600">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Font Size</label>
+                            <input type="text" name="button_font_size" class="form-control" value="{{ settings.button_font_size }}" placeholder="0.875rem">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Text Transform</label>
+                            <select name="button_text_transform" class="form-select">
+                                <option value="none" {% if settings.button_text_transform == 'none' %}selected{% endif %}>None</option>
+                                <option value="uppercase" {% if settings.button_text_transform == 'uppercase' %}selected{% endif %}>Uppercase</option>
+                                <option value="capitalize" {% if settings.button_text_transform == 'capitalize' %}selected{% endif %}>Capitalize</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Letter Spacing</label>
+                            <input type="text" name="button_letter_spacing" class="form-control" value="{{ settings.button_letter_spacing }}" placeholder="0.3px">
+                        </div>
+                    </div>
+                    <div class="alert alert-info py-2 px-3 mb-3 small">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Primary &amp; Outline button <strong>colors</strong> now follow the
+                        <a href="{% url 'super_admin_global_design' %}" class="alert-link">Global Design Settings</a> → Primary Color.
+                        Change the brand color there to update all buttons site-wide.
+                    </div>
+                    <hr>
+                    <h6 class="fw-bold mb-3"><i class="fas fa-fill-drip me-2"></i>Primary Button</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Background <span class="badge bg-primary-subtle text-primary ms-1" style="font-weight:400;font-size:0.7rem;">From Global</span></label>
+                            <div class="d-flex gap-2">
+                                <input type="color" class="form-control form-control-color" value="{{ global_settings.primary_color }}" style="width:50px;flex-shrink:0;" disabled>
+                                <input type="text" class="form-control" value="{{ global_settings.primary_color }}" disabled>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Hover Background <span class="badge bg-primary-subtle text-primary ms-1" style="font-weight:400;font-size:0.7rem;">From Global</span></label>
+                            <div class="d-flex gap-2">
+                                <input type="color" class="form-control form-control-color" value="{{ global_settings.primary_hover_color }}" style="width:50px;flex-shrink:0;" disabled>
+                                <input type="text" class="form-control" value="{{ global_settings.primary_hover_color }}" disabled>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Text Color</label>
+                            <div class="d-flex gap-2">
+                                <input type="color" name="primary_text_color" class="form-control form-control-color" value="{{ settings.primary_text_color }}" style="width:50px;flex-shrink:0;" oninput="this.nextElementSibling.value=this.value">
+                                <input type="text" class="form-control" value="{{ settings.primary_text_color }}">
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <button class="btn btn-primary preview-btn" style="border-radius:{{ settings.button_border_radius }};padding:{{ settings.button_padding_y }} {{ settings.button_padding_x }};font-weight:{{ settings.button_font_weight }};font-size:{{ settings.button_font_size }};text-transform:{{ settings.button_text_transform }};letter-spacing:{{ settings.button_letter_spacing }};">
+                                <i class="fas fa-thumbs-up me-1"></i>Primary Button Preview
+                            </button>
+                        </div>
+                    </div>
+                    <hr>
+                    <h6 class="fw-bold mb-3"><i class="fas fa-fill-drip me-2"></i>Secondary Button</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Background</label>
+                            <div class="d-flex gap-2">
+                                <input type="color" name="secondary_bg" class="form-control form-control-color" value="{{ settings.secondary_bg }}" style="width:50px;flex-shrink:0;" oninput="this.nextElementSibling.value=this.value">
+                                <input type="text" class="form-control" value="{{ settings.secondary_bg }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Hover Background</label>
+                            <div class="d-flex gap-2">
+                                <input type="color" name="secondary_hover_bg" class="form-control form-control-color" value="{{ settings.secondary_hover_bg }}" style="width:50px;flex-shrink:0;" oninput="this.nextElementSibling.value=this.value">
+                                <input type="text" class="form-control" value="{{ settings.secondary_hover_bg }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Text Color</label>
+                            <div class="d-flex gap-2">
+                                <input type="color" name="secondary_text_color" class="form-control form-control-color" value="{{ settings.secondary_text_color }}" style="width:50px;flex-shrink:0;" oninput="this.nextElementSibling.value=this.value">
+                                <input type="text" class="form-control" value="{{ settings.secondary_text_color }}">
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+                    <h6 class="fw-bold mb-3"><i class="fas fa-border-all me-2"></i>Outline Button</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Border Color <span class="badge bg-primary-subtle text-primary ms-1" style="font-weight:400;font-size:0.7rem;">From Global</span></label>
+                            <div class="d-flex gap-2">
+                                <input type="color" class="form-control form-control-color" value="{{ global_settings.primary_color }}" style="width:50px;flex-shrink:0;" disabled>
+                                <input type="text" class="form-control" value="{{ global_settings.primary_color }}" disabled>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Hover Background <span class="badge bg-primary-subtle text-primary ms-1" style="font-weight:400;font-size:0.7rem;">From Global</span></label>
+                            <div class="d-flex gap-2">
+                                <input type="color" class="form-control form-control-color" value="{{ global_settings.primary_color }}" style="width:50px;flex-shrink:0;" disabled>
+                                <input type="text" class="form-control" value="{{ global_settings.primary_color }}" disabled>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Text Color <span class="badge bg-primary-subtle text-primary ms-1" style="font-weight:400;font-size:0.7rem;">From Global</span></label>
+                            <div class="d-flex gap-2">
+                                <input type="color" class="form-control form-control-color" value="{{ global_settings.primary_color }}" style="width:50px;flex-shrink:0;" disabled>
+                                <input type="text" class="form-control" value="{{ global_settings.primary_color }}" disabled>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Hover Text Color</label>
+                            <div class="d-flex gap-2">
+                                <input type="color" name="outline_hover_text_color" class="form-control form-control-color" value="{{ settings.outline_hover_text_color }}" style="width:50px;flex-shrink:0;" oninput="this.nextElementSibling.value=this.value">
+                                <input type="text" class="form-control" value="{{ settings.outline_hover_text_color }}">
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+                    <h6 class="fw-bold mb-3"><i class="fas fa-fill-drip me-2"></i>Semantic Button Colors</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Success BG</label>
+                            <div class="d-flex gap-2">
+                                <input type="color" name="success_bg" class="form-control form-control-color" value="{{ settings.success_bg }}" style="width:50px;flex-shrink:0;" oninput="this.nextElementSibling.value=this.value">
+                                <input type="text" class="form-control" value="{{ settings.success_bg }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Danger BG</label>
+                            <div class="d-flex gap-2">
+                                <input type="color" name="danger_bg" class="form-control form-control-color" value="{{ settings.danger_bg }}" style="width:50px;flex-shrink:0;" oninput="this.nextElementSibling.value=this.value">
+                                <input type="text" class="form-control" value="{{ settings.danger_bg }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Warning BG</label>
+                            <div class="d-flex gap-2">
+                                <input type="color" name="warning_bg" class="form-control form-control-color" value="{{ settings.warning_bg }}" style="width:50px;flex-shrink:0;" oninput="this.nextElementSibling.value=this.value">
+                                <input type="text" class="form-control" value="{{ settings.warning_bg }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Info BG</label>
+                            <div class="d-flex gap-2">
+                                <input type="color" name="info_bg" class="form-control form-control-color" value="{{ settings.info_bg }}" style="width:50px;flex-shrink:0;" oninput="this.nextElementSibling.value=this.value">
+                                <input type="text" class="form-control" value="{{ settings.info_bg }}">
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+                    <h6 class="fw-bold mb-3"><i class="fas fa-expand-arrows-alt me-2"></i>Size Variants</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4"><label class="form-label fw-semibold">Large Padding Y</label><input type="text" name="btn_lg_padding_y" class="form-control" value="{{ settings.btn_lg_padding_y }}"></div>
+                        <div class="col-md-4"><label class="form-label fw-semibold">Large Padding X</label><input type="text" name="btn_lg_padding_x" class="form-control" value="{{ settings.btn_lg_padding_x }}"></div>
+                        <div class="col-md-4"><label class="form-label fw-semibold">Large Font Size</label><input type="text" name="btn_lg_font_size" class="form-control" value="{{ settings.btn_lg_font_size }}"></div>
+                        <div class="col-md-4"><label class="form-label fw-semibold">Small Padding Y</label><input type="text" name="btn_sm_padding_y" class="form-control" value="{{ settings.btn_sm_padding_y }}"></div>
+                        <div class="col-md-4"><label class="form-label fw-semibold">Small Padding X</label><input type="text" name="btn_sm_padding_x" class="form-control" value="{{ settings.btn_sm_padding_x }}"></div>
+                        <div class="col-md-4"><label class="form-label fw-semibold">Small Font Size</label><input type="text" name="btn_sm_font_size" class="form-control" value="{{ settings.btn_sm_font_size }}"></div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="form-check form-switch mb-3">
+                            <input type="checkbox" name="is_active" class="form-check-input" id="isActive" {% if settings.is_active %}checked{% endif %}>
+                            <label class="form-check-label fw-semibold" for="isActive">Active</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-save me-2"></i>Save Button Styles</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="admin-card mb-4">
+            <div class="admin-card-header"><h5 class="admin-card-title"><i class="fas fa-eye me-2"></i>Button Previews</h5></div>
+            <div class="card-body">                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="fw-bold mb-0">Primary</h6>
+                            <small class="text-muted">Uses Global Brand Color</small>
+                        </div>
+                <button class="btn btn-primary w-100 mb-3" style="border-radius:{{ settings.button_border_radius }};">
+                    <i class="fas fa-check me-1"></i>Primary Action
+                </button>
+                <h6 class="fw-bold">Secondary</h6>
+                <button class="btn btn-secondary w-100 mb-3" style="background:{{ settings.secondary_bg }};border-color:{{ settings.secondary_bg }};border-radius:{{ settings.button_border_radius }};">
+                    <i class="fas fa-times me-1"></i>Secondary
+                </button>
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="fw-bold mb-0">Outline</h6>
+                            <small class="text-muted">Uses Global Brand Color</small>
+                        </div>
+                <button class="btn btn-outline-primary w-100 mb-3" style="border-radius:{{ settings.button_border_radius }};">
+                    <i class="fas fa-edit me-1"></i>Outline
+                </button>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-success flex-fill" style="background:{{ settings.success_bg }};border-color:{{ settings.success_bg }};border-radius:{{ settings.button_border_radius }};">Success</button>
+                    <button class="btn btn-danger flex-fill" style="background:{{ settings.danger_bg }};border-color:{{ settings.danger_bg }};border-radius:{{ settings.button_border_radius }};">Danger</button>
+                    <button class="btn btn-warning flex-fill" style="background:{{ settings.warning_bg }};border-color:{{ settings.warning_bg }};border-radius:{{ settings.button_border_radius }};">Warning</button>
+                </div>
+                <hr>
+                <h6 class="fw-bold">Sizes</h6>
+                <button class="btn btn-primary w-100 mb-2" style="border-radius:{{ settings.button_border_radius }};padding:{{ settings.btn_lg_padding_y }} {{ settings.btn_lg_padding_x }};font-size:{{ settings.btn_lg_font_size }};">Large Button</button>
+                <button class="btn btn-primary w-100 mb-2" style="border-radius:{{ settings.button_border_radius }};">Default</button>
+                <button class="btn btn-primary w-100" style="border-radius:{{ settings.button_border_radius }};padding:{{ settings.btn_sm_padding_y }} {{ settings.btn_sm_padding_x }};font-size:{{ settings.btn_sm_font_size }};">Small</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

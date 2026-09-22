@@ -1,0 +1,301 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Match #{{ match.id }}{% endblock %}
+{% block page_title %}Match #{{ match.id }} Details{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Match Overview -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-lg mb-4" style="border-radius: 15px;">
+            <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0"><i class="fas fa-trophy text-primary me-2"></i>Match Overview</h5>
+                <span class="badge px-3 py-2 {% if match.status == 'completed' %}bg-success{% elif match.status == 'ongoing' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                    {{ match.get_status_display }}
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong class="text-muted">Court:</strong> {{ match.reservation.court.name }}</p>
+                        <p class="mb-1"><strong class="text-muted">Match Name:</strong> {{ match.match_name|default:"—" }}</p>
+                        <p class="mb-1"><strong class="text-muted">Format:</strong> <span class="badge bg-info">{{ match.get_format_display }}</span></p>
+                        <p class="mb-1"><strong class="text-muted">Game Type:</strong> <span class="badge bg-secondary">{{ match.game_type|title }}</span></p>
+                        <p class="mb-1"><strong class="text-muted">Date:</strong> {{ match.reservation.date|date:"F d, Y" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong class="text-muted">Scoring Format:</strong> 
+                            <span class="badge bg-primary">
+                                {% if match.scoring_format == 'best_of_3' %}Best of 3{% else %}{{ match.scoring_format }} Points{% endif %}
+                            </span>
+                        </p>
+                        <p class="mb-1"><strong class="text-muted">Games to Win:</strong> {{ match.games_to_win }}</p>
+                        <p class="mb-1"><strong class="text-muted">Points per Game:</strong> {{ match.points_per_game }}</p>
+                        <p class="mb-1"><strong class="text-muted">Win by Two:</strong> {% if match.win_by_two %}Yes{% else %}No{% endif %}</p>
+                    </div>
+                </div>
+
+                <!-- Score Display -->
+                <div class="card bg-light border-0 mb-4" style="border-radius: 12px;">
+                    <div class="card-body text-center py-4">
+                        <div class="row align-items-center">
+                            <div class="col-4">
+                                <h6 class="text-muted mb-2">{% if match.team1_name %}{{ match.team1_name }}{% else %}Team 1{% endif %}</h6>
+                                <h2 class="fw-bold text-primary mb-0">{{ match.get_team1_score }}</h2>
+                            </div>
+                            <div class="col-4">
+                                <h4 class="text-muted fw-bold">VS</h4>
+                            </div>
+                            <div class="col-4">
+                                <h6 class="text-muted mb-2">{% if match.team2_name %}{{ match.team2_name }}{% else %}Team 2{% endif %}</h6>
+                                <h2 class="fw-bold text-primary mb-0">{{ match.get_team2_score }}</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Team 1 Players -->
+                <div class="card border-0 mb-3" style="border-radius: 12px; border-left: 4px solid var(--primary-color) !important;">
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-3">
+                            <i class="fas fa-users me-2 text-primary"></i>
+                            {% if match.team1_name %}{{ match.team1_name }}{% else %}Team 1{% endif %}
+                        </h6>
+                        <div class="row">
+                            <div class="{% if match.format == 'singles' %}col-12{% else %}col-md-6{% endif %}">
+                                {% if match.team1_player1 %}
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px; background: var(--primary-color); color: white;">
+                                        {{ match.team1_player1.username|first|upper }}
+                                    </div>
+                                    <span>{{ match.team1_player1.get_full_name|default:match.team1_player1.username }}</span>
+                                </div>
+                                {% else %}
+                                {% for g in match.guest_players.all %}
+                                    {% if g.team == 1 and g.player_number == 1 %}
+                                    <div class="d-flex align-items-center mb-2">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px; background: #ffc107; color: #856404;">
+                                            {{ g.full_name|first|upper }}
+                                        </div>
+                                        <span>{{ g.get_display_name }} <span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;">Guest</span></span>
+                                    </div>
+                                    {% endif %}
+                                {% empty %}
+                                <p class="text-muted small mb-0">Player 1 not assigned</p>
+                                {% endfor %}
+                                {% endif %}
+                            </div>
+                            {% if match.format != 'singles' %}
+                            <div class="col-md-6">
+                                {% if match.team1_player2 %}
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px; background: var(--primary-color); color: white;">
+                                        {{ match.team1_player2.username|first|upper }}
+                                    </div>
+                                    <span>{{ match.team1_player2.get_full_name|default:match.team1_player2.username }}</span>
+                                </div>
+                                {% else %}
+                                    {% for g in match.guest_players.all %}
+                                        {% if g.team == 1 and g.player_number == 2 %}
+                                        <div class="d-flex align-items-center mb-2">
+                                            <div class="rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px; background: #ffc107; color: #856404;">
+                                                {{ g.full_name|first|upper }}
+                                            </div>
+                                            <span>{{ g.get_display_name }} <span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;">Guest</span></span>
+                                        </div>
+                                        {% endif %}
+                                    {% empty %}
+                                    <p class="text-muted small mb-0">Player 2 not assigned</p>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Team 2 Players -->
+                <div class="card border-0 mb-3" style="border-radius: 12px; border-left: 4px solid var(--accent-color) !important;">
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-3">
+                            <i class="fas fa-users me-2 text-info"></i>
+                            {% if match.team2_name %}{{ match.team2_name }}{% else %}Team 2{% endif %}
+                        </h6>
+                        <div class="row">
+                            <div class="{% if match.format == 'singles' %}col-12{% else %}col-md-6{% endif %}">
+                                {% if match.team2_player1 %}
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px; background: var(--accent-color); color: white;">
+                                        {{ match.team2_player1.username|first|upper }}
+                                    </div>
+                                    <span>{{ match.team2_player1.get_full_name|default:match.team2_player1.username }}</span>
+                                </div>
+                                {% else %}
+                                    {% for g in match.guest_players.all %}
+                                        {% if g.team == 2 and g.player_number == 1 %}
+                                        <div class="d-flex align-items-center mb-2">
+                                            <div class="rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px; background: #ffc107; color: #856404;">
+                                                {{ g.full_name|first|upper }}
+                                            </div>
+                                            <span>{{ g.get_display_name }} <span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;">Guest</span></span>
+                                        </div>
+                                        {% endif %}
+                                    {% empty %}
+                                    <p class="text-muted small mb-0">Player 1 not assigned</p>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                            {% if match.format != 'singles' %}
+                            <div class="col-md-6">
+                                {% if match.team2_player2 %}
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px; background: var(--accent-color); color: white;">
+                                        {{ match.team2_player2.username|first|upper }}
+                                    </div>
+                                    <span>{{ match.team2_player2.get_full_name|default:match.team2_player2.username }}</span>
+                                </div>
+                                {% else %}
+                                    {% for g in match.guest_players.all %}
+                                        {% if g.team == 2 and g.player_number == 2 %}
+                                        <div class="d-flex align-items-center mb-2">
+                                            <div class="rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px; background: #ffc107; color: #856404;">
+                                                {{ g.full_name|first|upper }}
+                                            </div>
+                                            <span>{{ g.get_display_name }} <span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;">Guest</span></span>
+                                        </div>
+                                        {% endif %}
+                                    {% empty %}
+                                    <p class="text-muted small mb-0">Player 2 not assigned</p>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Match Details Sidebar -->
+    <div class="col-lg-4">
+        <!-- Actions -->
+        <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+            <div class="card-header bg-transparent border-0">
+                <h5 class="fw-bold mb-0"><i class="fas fa-cog text-primary me-2"></i>Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'match_list' %}" class="btn btn-outline-primary" style="border-radius: 10px;">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Matches
+                    </a>
+                    {% if match.status == 'ongoing' and user.is_staff_user or user.is_admin %}
+                    <a href="{% url 'match_live' match.id %}" class="btn btn-success" style="border-radius: 10px;">
+                        <i class="fas fa-play me-2"></i>Go to Live Scoring
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+            <div class="card-header bg-transparent border-0">
+                <h5 class="fw-bold mb-0"><i class="fas fa-clock text-primary me-2"></i>Timeline</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-3">
+                        <small class="text-muted d-block">Created</small>
+                        <strong>{{ match.created_at|date:"M d, Y H:i" }}</strong>
+                    </li>
+                    {% if match.started_at %}
+                    <li class="mb-3">
+                        <small class="text-muted d-block">Started</small>
+                        <strong>{{ match.started_at|date:"M d, Y H:i" }}</strong>
+                    </li>
+                    {% endif %}
+                    {% if match.ended_at %}
+                    <li class="mb-0">
+                        <small class="text-muted d-block">Ended</small>
+                        <strong>{{ match.ended_at|date:"M d, Y H:i" }}</strong>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+
+        {% if match.notes %}
+        <!-- Notes -->
+        <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+            <div class="card-header bg-transparent border-0">
+                <h5 class="fw-bold mb-0"><i class="fas fa-sticky-note text-primary me-2"></i>Notes</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-0 text-muted">{{ match.notes }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Games Breakdown -->
+<div class="card border-0 shadow-lg mb-4" style="border-radius: 15px;">
+    <div class="card-header bg-transparent border-0">
+        <h5 class="fw-bold mb-0"><i class="fas fa-gamepad text-primary me-2"></i>Games Breakdown</h5>
+    </div>
+    <div class="card-body">
+        {% if match.games.all %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Game #</th>
+                        <th>Team 1 Score</th>
+                        <th>Team 2 Score</th>
+                        <th>Winner</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for game in match.games.all %}
+                    <tr>
+                        <td data-label="Game #"><span class="badge bg-light text-dark border">{{ game.game_number }}</span></td>
+                        <td data-label="Team 1 Score" class="fw-bold">{{ game.team1_score }}</td>
+                        <td data-label="Team 2 Score" class="fw-bold">{{ game.team2_score }}</td>
+                        <td data-label="Winner">
+                            {% if game.winner == 1 %}
+                                <span class="badge bg-primary">Team 1</span>
+                            {% elif game.winner == 2 %}
+                                <span class="badge bg-info">Team 2</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Status">
+                            {% if game.ended_at %}
+                                <span class="badge bg-success">Completed</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">In Progress</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-gamepad fa-3x text-muted mb-3"></i>
+            <p class="text-muted mb-0">No games recorded yet</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+/* Minimal custom styles - base.css provides enhanced cards, tables, badges, buttons */
+</style>
+{% endblock %}
+

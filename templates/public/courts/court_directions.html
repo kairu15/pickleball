@@ -1,0 +1,1140 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Directions to {{ court.name }} - PickleSphere{% endblock %}
+{% block page_title %}Get Directions{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'user_dashboard' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'court_list' %}">Courts</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'court_detail' court.id %}">{{ court.name }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Directions</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+{% if not has_coordinates %}
+<div class="card border-0 shadow-sm" style="border-radius: 14px;">
+    <div class="card-body p-5 text-center">
+        <i class="fas fa-map-marked-alt fa-4x text-muted mb-3"></i>
+        <h5 class="fw-bold">Directions unavailable</h5>
+        <p class="text-muted mb-4">This court doesn't have location coordinates set up yet, so we can't provide directions.</p>
+        <a href="{% url 'court_detail' court.id %}" class="btn btn-primary"><i class="fas fa-arrow-left me-2"></i>Back to Court</a>
+    </div>
+</div>
+{% else %}
+
+<!-- ===== 1. Court Information ===== -->
+<div class="card border-0 shadow-sm overflow-hidden mb-4" style="border-radius: 16px;">
+    <div class="row g-0 align-items-stretch">
+        <div class="col-md-4 col-lg-3">
+            {% if court_image %}
+                <img src="{{ court_image.url }}" alt="{{ court.name }}" class="w-100 h-100" style="object-fit: cover; min-height: 220px;">
+            {% else %}
+                <div class="d-flex align-items-center justify-content-center bg-light w-100 h-100" style="min-height: 220px;">
+                    <i class="fas fa-table-tennis fa-4x text-muted"></i>
+                </div>
+            {% endif %}
+        </div>
+        <div class="col-md-8 col-lg-9">
+            <div class="card-body p-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                    <div>
+                        <h4 class="fw-bold mb-1">{{ court.name }}</h4>
+                        <span class="text-muted"><i class="fas fa-building me-1"></i>{{ court.site.name }}{% if org %} · {{ org.name }}{% endif %}</span>
+                    </div>
+                    <span class="badge" style="background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%); color:#fff; padding: 7px 14px; border-radius: 20px; font-weight: 600;"><i class="fas fa-directions me-1"></i>Directions</span>
+                </div>
+                <div class="row g-3">
+                    <div class="col-sm-6 col-lg-4">
+                        <div class="court-dir-detail">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <div>
+                                <small class="text-muted d-block">Address</small>
+                                <span class="fw-semibold small">{{ full_address }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-4">
+                        <div class="court-dir-detail">
+                            <i class="fas fa-clock"></i>
+                            <div>
+                                <small class="text-muted d-block">Operating Hours</small>
+                                {% if operating_hours %}
+                                <span class="fw-semibold small">{{ operating_hours.0.opening_time|time:"g:i A" }} – {{ operating_hours.0.closing_time|time:"g:i A" }}</span>
+                                <a href="#" class="d-block small" data-bs-toggle="modal" data-bs-target="#hoursModal">View full schedule</a>
+                                {% else %}
+                                <span class="fw-semibold small">Open daily</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-4">
+                        <div class="court-dir-detail">
+                            <i class="fas fa-phone"></i>
+                            <div>
+                                <small class="text-muted d-block">Contact</small>
+                                {% if org and org.contact_phone %}
+                                <span class="fw-semibold small">{{ org.contact_phone }}</span>
+                                {% elif org and org.contact_email %}
+                                <span class="fw-semibold small">{{ org.contact_email }}</span>
+                                {% else %}
+                                <span class="text-muted small">Not provided</span>
+                                {% endif %}
+                                {% if org and org.website %}
+                                <a href="{{ org.website }}" target="_blank" rel="noopener" class="d-block small">Visit website</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Operating Hours modal -->
+{% if operating_hours %}
+<div class="modal fade" id="hoursModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 16px;">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="fas fa-clock me-2 text-primary"></i>Operating Hours</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3">
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        {% for hour in operating_hours %}
+                        <tr>
+                            <td class="fw-semibold">
+                                {% if hour.day_of_week == 0 %}Monday
+                                {% elif hour.day_of_week == 1 %}Tuesday
+                                {% elif hour.day_of_week == 2 %}Wednesday
+                                {% elif hour.day_of_week == 3 %}Thursday
+                                {% elif hour.day_of_week == 4 %}Friday
+                                {% elif hour.day_of_week == 5 %}Saturday
+                                {% elif hour.day_of_week == 6 %}Sunday{% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if hour.is_closed %}
+                                <span class="badge bg-danger">Closed</span>
+                                {% else %}
+                                {{ hour.opening_time|time:"g:i A" }} – {{ hour.closing_time|time:"g:i A" }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row g-4">
+    <!-- ===== 2. Interactive Map (first in DOM: on top for mobile) ===== -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm overflow-hidden" style="border-radius: 16px;">
+            <div class="card-header bg-white py-3 px-4" style="border-bottom: 1px solid #eef0f2;">
+                <h6 class="fw-bold mb-0"><i class="fas fa-map me-2 text-primary"></i>Route Map</h6>
+            </div>
+            <div class="position-relative">
+                <div id="directionsMap" class="directions-map"></div>
+                <!-- Loading indicator -->
+                <div id="routeLoading" class="map-overlay d-none">
+                    <div class="map-overlay-card">
+                        <div class="spinner-border text-primary mb-2" role="status" aria-label="Loading"></div>
+                        <p class="mb-0 fw-semibold small">Calculating route…</p>
+                    </div>
+                </div>
+                <!-- Error banner -->
+                <div id="mapError" class="map-error d-none">
+                    <i class="fas fa-triangle-exclamation me-2"></i><span id="mapErrorText">Unable to calculate a route.</span>
+                </div>
+            </div>
+            <div class="card-footer bg-white py-2 px-4 small text-muted d-flex justify-content-between flex-wrap gap-2" style="border-top: 1px solid #eef0f2;">
+                <span><i class="fas fa-circle me-1" style="color:#2e7d32"></i> Court location</span>
+                <span><i class="fas fa-location-dot me-1" style="color:#d9534f"></i> Your location</span>
+                <span class="d-none d-md-inline">Map © OpenStreetMap · Routing © OSRM</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 3 & 6. Route info + Action buttons ===== -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm" style="border-radius: 16px;">
+            <div class="card-body p-4">
+                <h6 class="fw-bold mb-3"><i class="fas fa-route me-2 text-primary"></i>Route Information</h6>
+
+                <!-- Transportation mode -->
+                <label class="small text-muted fw-semibold d-block mb-2"><i class="fas fa-arrows-left-right me-1"></i>Transportation Mode</label>
+                <div class="d-flex gap-2 mb-3" role="group" aria-label="Transportation mode">
+                    <button type="button" class="dir-mode-btn active" data-mode="driving" title="Driving"><i class="fas fa-car"></i><span>Driving</span></button>
+                    <button type="button" class="dir-mode-btn" data-mode="walking" title="Walking"><i class="fas fa-person-walking"></i><span>Walking</span></button>
+                    <button type="button" class="dir-mode-btn" data-mode="motorcycle" title="Motorcycle"><i class="fas fa-motorcycle"></i><span>Motorcycle</span></button>
+                    <button type="button" class="dir-mode-btn" data-mode="bicycle" title="Bicycle"><i class="fas fa-bicycle"></i><span>Bicycle</span></button>
+                </div>
+
+                <!-- Location / route status -->
+                <div id="locationStatus" class="dir-status dir-status-locating mb-3">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span id="locationStatusText">Locating you…</span>
+                </div>
+
+                <!-- Manual starting location (shown when geolocation is denied) -->
+                <div id="manualOriginWrap" class="mb-3 d-none">
+                    <label for="manualOriginInput" class="small text-muted fw-semibold d-block mb-1"><i class="fas fa-keyboard me-1"></i>Enter a starting location</label>
+                    <div class="position-relative">
+                        <input type="text" id="manualOriginInput" class="form-control" placeholder="Search address or place…" autocomplete="off">
+                        <div id="manualOriginResults" class="list-group dir-autocomplete d-none"></div>
+                    </div>
+                </div>
+
+                <!-- Distance & travel time -->
+                <div id="routeSummary" class="dir-summary d-none mb-3">
+                    <div class="row g-2 text-center">
+                        <div class="col-6">
+                            <div class="dir-stat">
+                                <i class="fas fa-road text-primary"></i>
+                                <span class="dir-stat-value" id="routeDistance">—</span>
+                                <span class="dir-stat-label">Distance</span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="dir-stat">
+                                <i class="fas fa-stopwatch text-primary"></i>
+                                <span class="dir-stat-value" id="routeDuration">—</span>
+                                <span class="dir-stat-label">Est. Time</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center small text-muted mt-2">From <strong id="originLabel">your location</strong></div>
+                </div>
+
+                <!-- Action buttons -->
+                <div class="directions-actions d-grid gap-2">
+                    <div class="d-flex gap-2">
+                        <button type="button" id="refreshRouteBtn" class="btn btn-outline-primary flex-fill" title="Re-calculate the route"><i class="fas fa-rotate-right me-1"></i>Refresh Route</button>
+                        <button type="button" id="centerMeBtn" class="btn btn-outline-primary flex-fill" title="Center on my location"><i class="fas fa-location-crosshairs me-1"></i>My Location</button>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{{ google_maps_url }}" target="_blank" rel="noopener" class="btn btn-success flex-fill" title="Open in Google Maps"><i class="fab fa-google me-1"></i>Google Maps</a>
+                        <a href="{{ waze_url }}" target="_blank" rel="noopener" class="btn btn-info flex-fill text-white" title="Open in Waze"><i class="fab fa-waze me-1"></i>Waze</a>
+                    </div>
+                    <button type="button" id="printBtn" class="btn btn-outline-secondary" title="Print these directions"><i class="fas fa-print me-1"></i>Print Directions</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 4. Turn-by-Turn Directions ===== -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm" style="border-radius: 16px;">
+            <div class="card-header bg-white py-3 px-4 d-flex align-items-center justify-content-between flex-wrap gap-2" style="border-bottom: 1px solid #eef0f2;">
+                <h6 class="fw-bold mb-0"><i class="fas fa-list-ol me-2 text-primary"></i>Turn-by-Turn Directions</h6>
+                <span class="badge" style="background: #e8f1f4; color: #3B7A8C; padding: 6px 12px; border-radius: 20px; font-weight: 600;" id="stepCount">0 steps</span>
+            </div>
+            <div class="card-body p-0">
+                <div id="stepsEmpty" class="text-center py-5">
+                    <i class="fas fa-road fa-3x text-muted mb-3"></i>
+                    <p class="text-muted mb-0">Allow location access or enter a starting point to get step-by-step directions.</p>
+                </div>
+                <ol id="stepsList" class="dir-steps d-none"></ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        onerror="if(!window.L){document.write('<script src=\"https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js\"><\/script>')}"></script>
+
+<style>
+/* ===== Directions Page ===== */
+.directions-map {
+    height: 520px;
+    width: 100%;
+    background: #e9ecef;
+    z-index: 0;
+}
+.directions-map:fullscreen {
+    height: 100vh;
+    width: 100vw;
+}
+.map-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.75);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 500;
+}
+.map-overlay-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 18px 26px;
+    text-align: center;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+.map-error {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    background: #fff5f5;
+    border: 1px solid #f5c6cb;
+    color: #c62828;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    z-index: 500;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.court-dir-detail {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+.court-dir-detail > i {
+    color: #3B7A8C;
+    margin-top: 3px;
+    font-size: 0.95rem;
+    width: 18px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+/* Court marker (map pin) */
+.court-marker {
+    width: 34px;
+    height: 34px;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);
+    border: 3px solid #fff;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.court-marker i {
+    transform: rotate(45deg);
+    color: #fff;
+    font-size: 14px;
+}
+
+/* User location marker */
+.user-marker {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #d9534f;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 3px rgba(217,83,79,0.35), 0 3px 8px rgba(0,0,0,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: dir-pulse 2s infinite;
+}
+.user-marker i {
+    color: #fff;
+    font-size: 11px;
+}
+@keyframes dir-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(217,83,79,0.5); }
+    70% { box-shadow: 0 0 0 12px rgba(217,83,79,0); }
+    100% { box-shadow: 0 0 0 0 rgba(217,83,79,0); }
+}
+
+/* Fullscreen control */
+.leaflet-control-fs-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+.leaflet-control-fs {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: #3B7A8C;
+}
+
+/* Transportation mode buttons */
+.dir-mode-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    background: #fff;
+    border: 1.5px solid #dee2e6;
+    color: #6c757d;
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 9px 4px;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+.dir-mode-btn i { font-size: 1.05rem; }
+.dir-mode-btn:hover {
+    border-color: #3B7A8C;
+    color: #3B7A8C;
+    background: #f0f7f9;
+    transform: translateY(-1px);
+}
+.dir-mode-btn.active {
+    background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(59,122,140,0.35);
+}
+
+/* Location status pill */
+.dir-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+.dir-status-locating { background: #fff8e1; color: #b26a00; }
+.dir-status-ok { background: #e8f5e9; color: #2e7d32; }
+.dir-status-denied { background: #fff3e0; color: #c25e00; }
+.dir-status-error { background: #ffebee; color: #c62828; }
+
+/* Route summary stats */
+.dir-stat {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 14px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+.dir-stat-value { font-size: 1.15rem; font-weight: 800; color: #243b47; }
+.dir-stat-label { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.4px; color: #6c757d; }
+
+/* Manual origin autocomplete */
+.dir-autocomplete {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1050;
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0 0 10px 10px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+    background: #fff;
+}
+.dir-autocomplete .list-group-item {
+    border: none;
+    border-bottom: 1px solid #f1f3f5;
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+.dir-autocomplete .list-group-item:last-child { border-bottom: none; }
+.dir-autocomplete .list-group-item:hover { background: #f0f7f9; }
+
+/* Turn-by-turn steps */
+.dir-steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.direction-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 20px;
+    border-bottom: 1px solid #f1f3f5;
+    transition: background 0.2s ease;
+    animation: stepFade 0.25s ease;
+}
+.direction-step:last-child { border-bottom: none; }
+.direction-step:hover { background: #f8fafb; }
+@keyframes stepFade {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.step-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #f0f7f9;
+    color: #3B7A8C;
+    border: 1px solid #dce9ed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.85rem;
+}
+.direction-step.arrive .step-icon {
+    background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
+    color: #fff;
+    border: none;
+}
+.step-main { flex: 1; min-width: 0; }
+.step-text { font-weight: 600; font-size: 0.88rem; color: #243b47; }
+.step-road { font-size: 0.78rem; color: #6c757d; margin-top: 2px; }
+.step-meta {
+    display: flex;
+    gap: 14px;
+    font-size: 0.75rem;
+    color: #6c757d;
+    flex-shrink: 0;
+    text-align: right;
+}
+.step-meta span { white-space: nowrap; }
+
+/* Responsive */
+@media (max-width: 991.98px) {
+    .directions-map { height: 440px; }
+}
+@media (max-width: 575.98px) {
+    .directions-map { height: 360px; }
+    .step-meta { flex-direction: column; gap: 4px; }
+}
+
+/* Print: only the map + directions */
+@media print {
+    .sidebar, .header, .floating-toast-container, .breadcrumb,
+    .footer, .skip-link, .dir-mode-btn, .directions-actions,
+    #manualOriginWrap, .map-error, .map-overlay, .btn, .badge,
+    .court-dir-detail, .modal { display: none !important; }
+    .main-content { margin: 0 !important; padding: 0 !important; }
+    .page-content { padding: 0 !important; }
+    .directions-map { height: 420px !important; }
+    .card { box-shadow: none !important; border: 1px solid #dee2e6 !important; border-radius: 8px !important; }
+    .col-lg-8, .col-lg-4, .col-12 { flex: 0 0 100% !important; max-width: 100% !important; }
+    .row { display: block !important; }
+    .direction-step { break-inside: avoid; }
+    .d-none { display: none !important; }
+}
+</style>
+
+<script>
+(function() {
+'use strict';
+
+var COURT = {
+    name: "{{ court.name|escapejs }}",
+    lat: {{ latitude }},
+    lng: {{ longitude }},
+    address: "{{ full_address|escapejs }}",
+};
+
+var OSRM_BASE = 'https://router.project-osrm.org/route/v1';
+var PHOTON_BASE = 'https://photon.komoot.io/api/';
+
+// Motorcycle maps to the 'driving' profile — OSRM's public server has no
+// dedicated motorcycle profile, so driving is the closest match.
+var MODES = {
+    driving:    { label: 'Driving',    icon: 'fa-car',           profile: 'driving' },
+    walking:    { label: 'Walking',    icon: 'fa-person-walking', profile: 'walking' },
+    motorcycle: { label: 'Motorcycle', icon: 'fa-motorcycle',    profile: 'driving' },
+    bicycle:    { label: 'Bicycle',    icon: 'fa-bicycle',       profile: 'cycling' },
+};
+
+var state = {
+    mode: 'driving',
+    origin: null,        // [lat, lng] currently used for routing
+    originLabel: 'your location',
+    autoRoute: true,     // when true, re-route automatically as GPS moves
+    lastRouted: null,    // last origin that produced a route (for change detection)
+    userCoords: null,
+    userMarker: null,
+    routeGroup: null,
+    seq: 0,              // request sequence so only the latest route response is applied
+};
+
+// Local cache (localStorage) for external API responses so repeat requests
+// (page revisits, mode switches, same search) don't hit OSRM/Photon again.
+var CACHE_PREFIX = 'ps_directions_';
+var CACHE_MAX_ENTRIES = 80;              // oldest entries are evicted past this
+var CACHE_TTL = {
+    route: 24 * 60 * 60 * 1000,          // 24h — OSRM has no live traffic data
+    geocode: 7 * 24 * 60 * 60 * 1000,    // 7 days — place coordinates rarely change
+};
+
+var mapEl = document.getElementById('directionsMap');
+var originInput = document.getElementById('manualOriginInput');
+var originResults = document.getElementById('manualOriginResults');
+var locationStatus = document.getElementById('locationStatus');
+var locationStatusText = document.getElementById('locationStatusText');
+var manualOriginWrap = document.getElementById('manualOriginWrap');
+var routeSummary = document.getElementById('routeSummary');
+var stepsList = document.getElementById('stepsList');
+var stepsEmpty = document.getElementById('stepsEmpty');
+var stepCount = document.getElementById('stepCount');
+
+/* ================= Map ================= */
+var map = null;
+try {
+    map = L.map(mapEl, {
+        center: [COURT.lat, COURT.lng],
+        zoom: 15,
+        zoomControl: true,
+    });
+
+    var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19,
+    });
+    var satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri',
+        maxZoom: 19,
+    });
+    var topoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)',
+        maxZoom: 17,
+    });
+    osmLayer.addTo(map);
+
+    // Map type selector
+    L.control.layers(
+        { 'Streets': osmLayer, 'Satellite': satLayer, 'Topographic': topoLayer },
+        null,
+        { position: 'topright', collapsed: true }
+    ).addTo(map);
+
+    // Custom fullscreen control
+    var fsBtn = L.DomUtil.create('a', 'leaflet-control-fs');
+    fsBtn.href = '#';
+    fsBtn.innerHTML = '<i class="fas fa-expand"></i>';
+    fsBtn.title = 'Toggle fullscreen';
+    var fsControl = L.control({ position: 'topright' });
+    fsControl.onAdd = function() {
+        var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-fs-wrap');
+        container.appendChild(fsBtn);
+        L.DomEvent.on(fsBtn, 'click', function(e) {
+            L.DomEvent.preventDefault(e);
+            if (!document.fullscreenElement) {
+                if (mapEl.requestFullscreen) mapEl.requestFullscreen();
+            } else if (document.exitFullscreen) {
+                document.exitFullscreen();
+            }
+        });
+        return container;
+    };
+    fsControl.addTo(map);
+    document.addEventListener('fullscreenchange', function() {
+        fsBtn.innerHTML = document.fullscreenElement === mapEl
+            ? '<i class="fas fa-compress"></i>'
+            : '<i class="fas fa-expand"></i>';
+        setTimeout(function() { map.invalidateSize(); }, 120);
+    });
+
+    // Court marker
+    var courtIcon = L.divIcon({
+        className: '',
+        html: '<div class="court-marker"><i class="fas fa-table-tennis"></i></div>',
+        iconSize: [34, 34],
+        iconAnchor: [17, 34],
+        popupAnchor: [0, -30],
+    });
+    L.marker([COURT.lat, COURT.lng], { icon: courtIcon }).addTo(map)
+        .bindPopup('<strong>' + esc(COURT.name) + '</strong><br>' + esc(COURT.address));
+
+    // Keep the map sized correctly on load and when the window resizes
+    setTimeout(function() { map.invalidateSize(); }, 200);
+    window.addEventListener('resize', function() {
+        setTimeout(function() { map.invalidateSize(); }, 150);
+    });
+} catch (err) {
+    console.error('Map failed to initialize:', err);
+    showError('The map could not be loaded. Please check your connection and try again.');
+}
+
+/* ================= Helpers ================= */
+function fmtDistance(m) {
+    if (m == null) return '—';
+    if (m < 1000) return Math.round(m) + ' m';
+    return (m / 1000).toFixed(m < 10000 ? 1 : 0) + ' km';
+}
+function fmtDuration(s) {
+    if (s == null) return '—';
+    var mins = Math.round(s / 60);
+    if (mins < 60) return mins + ' min';
+    var h = Math.floor(mins / 60);
+    var m = mins % 60;
+    return m ? h + ' hr ' + m + ' min' : h + ' hr';
+}
+function haversine(a, b) {
+    var R = 6371000, toRad = Math.PI / 180;
+    var dLat = (b[0] - a[0]) * toRad;
+    var dLng = (b[1] - a[1]) * toRad;
+    var la1 = a[0] * toRad, la2 = b[0] * toRad;
+    var h = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(la1) * Math.cos(la2) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    return 2 * R * Math.asin(Math.sqrt(h));
+}
+// Escape HTML in strings coming from external services (OSRM, Photon) before
+// they are rendered into innerHTML, preventing XSS from untrusted OSM data.
+function esc(s) {
+    return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+function setLocationStatus(cls, text) {
+    locationStatus.className = 'dir-status dir-status-' + cls + ' mb-3';
+    locationStatusText.textContent = text;
+}
+// Friendly messages for the different geolocation failure reasons
+// (1 = permission denied, 2 = position unavailable, 3 = timeout)
+function locationErrorMessage(err) {
+    if (err) {
+        if (err.code === 1) return 'Location access denied — enter a starting address below.';
+        if (err.code === 2) return 'Your location is currently unavailable — enter a starting address below.';
+        if (err.code === 3) return 'Timed out while locating you — enter a starting address below.';
+    }
+    return 'Could not determine your location — enter a starting address below.';
+}
+function setLoading(on) {
+    document.getElementById('routeLoading').classList.toggle('d-none', !on);
+}
+function showError(msg) {
+    document.getElementById('mapErrorText').textContent = msg;
+    document.getElementById('mapError').classList.remove('d-none');
+}
+function hideError() {
+    document.getElementById('mapError').classList.add('d-none');
+}
+
+/* ================= Local cache (localStorage) ================= */
+function cacheGet(key) {
+    try {
+        var raw = localStorage.getItem(CACHE_PREFIX + key);
+        if (!raw) return null;
+        var entry = JSON.parse(raw);
+        if (Date.now() > entry.expires) {
+            localStorage.removeItem(CACHE_PREFIX + key);
+            return null;
+        }
+        return entry.value;
+    } catch (e) {
+        return null;   // storage unavailable or corrupt — treat as a miss
+    }
+}
+
+function cacheSet(key, value, ttlMs) {
+    try {
+        // Scan the namespace once: drop expired/corrupt entries and collect the rest.
+        // Iterate backwards so removals never shift unprocessed indices.
+        var keys = [];
+        for (var i = localStorage.length - 1; i >= 0; i--) {
+            var k = localStorage.key(i);
+            if (k && k.indexOf(CACHE_PREFIX) === 0) {
+                try {
+                    var entry = JSON.parse(localStorage.getItem(k));
+                    if (entry && Date.now() > entry.expires) {
+                        localStorage.removeItem(k);   // expired — purge
+                    } else {
+                        keys.push(k);
+                    }
+                } catch (e2) {
+                    localStorage.removeItem(k);       // corrupt — purge
+                }
+            }
+        }
+        // Evict the oldest entries when still at capacity
+        keys.sort(function(a, b) {
+            try {
+                return (JSON.parse(localStorage.getItem(a)).time || 0) -
+                       (JSON.parse(localStorage.getItem(b)).time || 0);
+            } catch (e2) {
+                return 0;
+            }
+        });
+        while (keys.length >= CACHE_MAX_ENTRIES) {
+            localStorage.removeItem(keys.shift());
+        }
+        localStorage.setItem(CACHE_PREFIX + key, JSON.stringify({
+            time: Date.now(),
+            expires: Date.now() + ttlMs,
+            value: value,
+        }));
+    } catch (e) {
+        // localStorage unavailable (private browsing / quota) — fail silently
+    }
+}
+
+/* ================= Routing (OSRM) ================= */
+function fetchRoute(origin, dest, profile, forceRefresh) {
+    var coords = origin[1] + ',' + origin[0] + ';' + dest[1] + ',' + dest[0];
+    var cacheKey = 'route|' + profile + '|' + coords;
+    if (!forceRefresh) {
+        var cached = cacheGet(cacheKey);
+        if (cached) return Promise.resolve(cached);
+    }
+    var url = OSRM_BASE + '/' + profile + '/' + coords + '?overview=full&geometries=geojson&steps=true';
+    return fetch(url).then(function(res) {
+        if (!res.ok) throw new Error('Routing service is temporarily unavailable.');
+        return res.json();
+    }).then(function(data) {
+        if (data.code !== 'Ok' || !data.routes || !data.routes.length) {
+            throw new Error('No route could be found for these points.');
+        }
+        var route = data.routes[0];
+        cacheSet(cacheKey, route, CACHE_TTL.route);
+        return route;
+    });
+}
+
+function calculateRoute(forceRefresh) {
+    if (!state.origin || !map) return;
+    var seq = ++state.seq;   // invalidates any earlier in-flight requests
+    setLoading(true);
+    hideError();
+    fetchRoute(state.origin, [COURT.lat, COURT.lng], MODES[state.mode].profile, forceRefresh)
+        .then(function(route) {
+            if (seq !== state.seq) return;   // stale response — ignore
+            state.lastRouted = state.origin;
+            drawRoute(route.geometry);
+            document.getElementById('routeDistance').textContent = fmtDistance(route.distance);
+            document.getElementById('routeDuration').textContent = fmtDuration(route.duration);
+            document.getElementById('originLabel').textContent = state.originLabel;
+            routeSummary.classList.remove('d-none');
+            renderSteps(route);
+        })
+        .catch(function(err) {
+            if (seq !== state.seq) return;
+            showError(err.message || 'Unable to calculate a route right now.');
+        })
+        .finally(function() {
+            if (seq === state.seq) setLoading(false);
+        });
+}
+
+function drawRoute(geometry) {
+    if (!map) return;
+    if (state.routeGroup) map.removeLayer(state.routeGroup);
+    state.routeGroup = L.layerGroup([
+        L.geoJSON(geometry, { style: { color: '#ffffff', weight: 8, opacity: 0.9 } }),
+        L.geoJSON(geometry, { style: { color: '#3B7A8C', weight: 4, opacity: 0.95 } }),
+    ]).addTo(map);
+    var bounds = L.geoJSON(geometry).getBounds();
+    if (bounds.isValid()) map.fitBounds(bounds, { padding: [40, 40] });
+}
+
+/* ================= Turn-by-turn steps ================= */
+function renderSteps(route) {
+    var legs = (route.legs && route.legs.length) ? route.legs : [];
+    var steps = [];
+    legs.forEach(function(leg) { steps = steps.concat(leg.steps || []); });
+
+    var total = steps.length;
+    stepCount.textContent = total + (total === 1 ? ' step' : ' steps');
+    stepsList.innerHTML = '';
+
+    if (!total) {
+        stepsEmpty.classList.remove('d-none');
+        stepsList.classList.add('d-none');
+        return;
+    }
+    stepsEmpty.classList.add('d-none');
+    stepsList.classList.remove('d-none');
+
+    steps.forEach(function(step) {
+        var li = document.createElement('li');
+        li.className = 'direction-step' +
+            ((step.maneuver && step.maneuver.type === 'arrive') ? ' arrive' : '');
+        var road = step.name
+            ? '<div class="step-road"><i class="fas fa-sign me-1"></i>' + esc(step.name) + '</div>'
+            : '';
+        li.innerHTML =
+            '<span class="step-icon"><i class="fas ' + stepIcon(step) + '"></i></span>' +
+            '<div class="step-main"><div class="step-text">' + stepText(step) + '</div>' + road + '</div>' +
+            '<div class="step-meta">' +
+                '<span><i class="fas fa-route me-1"></i>' + fmtDistance(step.distance) + '</span>' +
+                '<span><i class="fas fa-clock me-1"></i>' + fmtDuration(step.duration) + '</span>' +
+            '</div>';
+        stepsList.appendChild(li);
+    });
+}
+
+function stepIcon(step) {
+    var m = step.maneuver || {};
+    var type = m.type || '';
+    var mod = m.modifier || '';
+    if (type === 'depart') return 'fa-play';
+    if (type === 'arrive') return 'fa-flag-checkered';
+    if (type === 'roundabout' || type === 'rotary' || type === 'roundabout turn' ||
+        type === 'exit roundabout' || type === 'exit rotary') return 'fa-circle-notch';
+    if (mod === 'uturn') return 'fa-arrow-rotate-left';
+    if (mod.indexOf('left') !== -1) return 'fa-arrow-left';
+    if (mod.indexOf('right') !== -1) return 'fa-arrow-right';
+    if (type === 'merge' || type === 'fork') return 'fa-code-branch';
+    if (type.indexOf('ramp') !== -1) return 'fa-sign';
+    return 'fa-arrow-up';
+}
+
+function stepText(step) {
+    var m = step.maneuver || {};
+    var type = m.type || '';
+    var mod = m.modifier || '';
+    var name = esc(step.name || '');
+    var onto = name ? ' onto ' + name : '';
+    var turns = {
+        'uturn': 'Make a U-turn',
+        'sharp right': 'Turn sharp right',
+        'right': 'Turn right',
+        'slight right': 'Turn slight right',
+        'straight': 'Continue straight',
+        'slight left': 'Turn slight left',
+        'left': 'Turn left',
+        'sharp left': 'Turn sharp left',
+    };
+    switch (type) {
+        case 'depart':
+            return 'Head ' + (mod || 'north') + (onto || '');
+        case 'arrive':
+            return 'Arrive at ' + esc(COURT.name);
+        case 'roundabout':
+        case 'rotary':
+        case 'roundabout turn':
+            return 'Enter the roundabout and take the ' + (m.exit || 'next') + ' exit' + onto;
+        case 'exit roundabout':
+        case 'exit rotary':
+            return 'Exit the roundabout' + onto;
+        case 'fork':
+            return 'Keep ' + (mod || '') + ' at the fork' + onto;
+        case 'merge':
+            return 'Merge ' + (mod || '') + onto;
+        case 'on ramp':
+            return 'Take the ramp ' + (mod || '') + onto;
+        case 'off ramp':
+            return 'Take the exit ramp' + onto;
+        case 'end of road':
+            return 'At the end of the road, turn ' + (mod || '') + onto;
+        case 'new name':
+            return 'Continue onto ' + (name || 'the road');
+        case 'continue':
+            return 'Continue' + (name ? ' on ' + name : '');
+        case 'notification':
+            return 'Continue';
+        case 'turn':
+            return (turns[mod] || ('Turn ' + (mod || ''))) + onto;
+        default:
+            return 'Continue' + onto;
+    }
+}
+
+/* ================= Geolocation ================= */
+function setUserLocation(latlng) {
+    if (!map) return;
+    state.userCoords = latlng;
+    if (!state.userMarker) {
+        var userIcon = L.divIcon({
+            className: '',
+            html: '<div class="user-marker"><i class="fas fa-location-dot"></i></div>',
+            iconSize: [26, 26],
+            iconAnchor: [13, 13],
+        });
+        state.userMarker = L.marker(latlng, { icon: userIcon }).addTo(map).bindPopup('Your location');
+    } else {
+        state.userMarker.setLatLng(latlng);
+    }
+    // Recalculate automatically when the GPS fix moves a meaningful distance
+    if (state.autoRoute && (!state.lastRouted || haversine(state.lastRouted, latlng) > 50)) {
+        state.origin = latlng;
+        state.originLabel = 'your current location';
+        document.getElementById('originLabel').textContent = state.originLabel;
+        calculateRoute();
+    }
+}
+
+function initGeolocation() {
+    if (!navigator.geolocation) {
+        setLocationStatus('denied', 'Location is not supported by this browser — enter a starting address below.');
+        manualOriginWrap.classList.remove('d-none');
+        originInput.focus();
+        return;
+    }
+    setLocationStatus('locating', 'Locating you…');
+
+    navigator.geolocation.getCurrentPosition(
+        function(pos) {
+            setLocationStatus('ok', 'Routing from your current location');
+            setUserLocation([pos.coords.latitude, pos.coords.longitude]);
+        },
+        function(err) {
+            setLocationStatus('denied', locationErrorMessage(err));
+            manualOriginWrap.classList.remove('d-none');
+        },
+        { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+    );
+
+    // Watch for movement so the route updates automatically
+    navigator.geolocation.watchPosition(
+        function(pos) {
+            setUserLocation([pos.coords.latitude, pos.coords.longitude]);
+        },
+        function() {},
+        { enableHighAccuracy: true, maximumAge: 10000, timeout: 25000 }
+    );
+}
+
+/* ================= Manual origin (Photon) ================= */
+var geocodeTimer = null;
+originInput.addEventListener('input', function() {
+    clearTimeout(geocodeTimer);
+    var q = originInput.value.trim();
+    if (q.length < 3) {
+        originResults.classList.add('d-none');
+        return;
+    }
+    geocodeTimer = setTimeout(function() { geocode(q); }, 450);
+});
+
+function geocode(q) {
+    var cacheKey = 'geocode|' + q.toLowerCase();
+    var cached = cacheGet(cacheKey);
+    if (cached) {
+        renderGeocodeResults(cached);
+        return;
+    }
+    fetch(PHOTON_BASE + '?q=' + encodeURIComponent(q) + '&limit=5')
+        .then(function(res) {
+            if (!res.ok) throw new Error('Geocoding failed');
+            return res.json();
+        })
+        .then(function(data) {
+            var features = (data.features || []).map(function(f) {
+                var p = f.properties || {};
+                var label = [p.name, p.street, p.city, p.state, p.country].filter(Boolean).join(', ');
+                return {
+                    label: label,
+                    coords: [f.geometry.coordinates[1], f.geometry.coordinates[0]],
+                };
+            });
+            cacheSet(cacheKey, features, CACHE_TTL.geocode);
+            renderGeocodeResults(features);
+        })
+        .catch(function() {
+            originResults.innerHTML = '<div class="list-group-item text-muted">Could not search. Please try again.</div>';
+            originResults.classList.remove('d-none');
+        });
+}
+
+function renderGeocodeResults(features) {
+    originResults.innerHTML = '';
+    if (!features.length) {
+        originResults.innerHTML = '<div class="list-group-item text-muted">No places found.</div>';
+    } else {
+        features.forEach(function(f) {
+            var item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'list-group-item list-group-item-action';
+            item.innerHTML = '<i class="fas fa-map-marker-alt me-2 text-primary"></i>' + esc(f.label);
+            item.addEventListener('click', function() { useManualOrigin(f); });
+            originResults.appendChild(item);
+        });
+    }
+    originResults.classList.remove('d-none');
+}
+
+function useManualOrigin(f) {
+    if (!map) return;
+    state.origin = f.coords;
+    state.originLabel = f.label;
+    state.autoRoute = false;      // keep routing from the chosen place
+    state.lastRouted = null;
+    originInput.value = f.label;
+    originResults.classList.add('d-none');
+    document.getElementById('originLabel').textContent = f.label;
+    setLocationStatus('ok', 'Routing from ' + f.label);
+    calculateRoute();
+    map.flyTo(f.coords, 15);
+}
+
+// Close autocomplete when clicking elsewhere
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('#manualOriginWrap')) originResults.classList.add('d-none');
+});
+
+/* ================= Actions ================= */
+document.querySelectorAll('.dir-mode-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        if (btn.classList.contains('active')) return;
+        document.querySelectorAll('.dir-mode-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        state.mode = btn.dataset.mode;
+        state.lastRouted = null;   // force a recalc even if the origin is unchanged
+        calculateRoute();
+    });
+});
+
+document.getElementById('refreshRouteBtn').addEventListener('click', function() {
+    if (!state.origin) {
+        setLocationStatus('denied', 'No starting point yet — allow location access or enter an address below.');
+        manualOriginWrap.classList.remove('d-none');
+        return;
+    }
+    state.lastRouted = null;
+    calculateRoute(true);   // Refresh Route: bypass the cache for a fresh route
+});
+
+document.getElementById('centerMeBtn').addEventListener('click', function() {
+    if (!map) return;
+    if (state.userCoords) {
+        map.flyTo(state.userCoords, 15);
+        // Switch back to auto routing from the GPS position
+        state.autoRoute = true;
+        state.origin = state.userCoords;
+        state.originLabel = 'your current location';
+        state.lastRouted = null;
+        setLocationStatus('ok', 'Routing from your current location');
+        calculateRoute();
+    } else {
+        setLocationStatus('locating', 'Waiting for your location…');
+        navigator.geolocation.getCurrentPosition(
+            function(pos) {
+                setLocationStatus('ok', 'Routing from your current location');
+                setUserLocation([pos.coords.latitude, pos.coords.longitude]);
+            },
+            function(err) {
+                setLocationStatus('denied', locationErrorMessage(err));
+                manualOriginWrap.classList.remove('d-none');
+            },
+            { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+        );
+    }
+});
+
+document.getElementById('printBtn').addEventListener('click', function() {
+    window.print();
+});
+
+/* ================= Boot ================= */
+initGeolocation();
+
+})();
+</script>
+{% endif %}
+{% endblock %}

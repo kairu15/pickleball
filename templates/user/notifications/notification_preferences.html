@@ -1,0 +1,329 @@
+{% extends 'base/dashboard_base.html' %}
+{% load notification_tags %}
+
+{% block title %}Notification Preferences{% endblock %}
+{% block page_title %}Notification Preferences{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        {% if user.is_super_admin %}
+        <li class="breadcrumb-item"><a href="{% url 'super_admin_analytics' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        {% elif user.is_staff_member %}
+        <li class="breadcrumb-item"><a href="{% url 'staff_dashboard' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        {% else %}
+        <li class="breadcrumb-item"><a href="{% url 'user_dashboard' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        {% endif %}
+        <li class="breadcrumb-item"><a href="{% notification_url 'notification_list' %}"><i class="fas fa-bell me-1"></i>Notifications</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Preferences</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #3B7A8C, #1a3a42); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-cog text-white fa-lg"></i>
+            </div>
+            <div>
+                <h5 class="fw-bold mb-1">Notification Preferences</h5>
+                <p class="text-muted mb-0">Customize which notifications you receive and how they are delivered.</p>
+            </div>
+        </div>
+
+        <form method="post" action="{% notification_url 'notification_preferences' %}">
+            {% csrf_token %}
+
+            <!-- Category Toggles -->
+            <div class="card border-0 shadow-sm mb-4" style="border-radius: 16px; overflow: hidden;">
+                <div class="card-header bg-white border-bottom py-3 px-4">
+                    <h6 class="fw-bold mb-1"><i class="fas fa-bell text-primary me-2"></i>Notification Categories</h6>
+                    <small class="text-muted">Toggle which types of notifications you want to receive.</small>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        <!-- Reservations -->
+                        <div class="list-group-item px-4 py-3 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width: 36px; height: 36px; background: #3B7A8C; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-calendar-check text-white"></i></div>
+                                <div><div class="fw-medium">Reservations</div><small class="text-muted">New reservations, confirmations, and cancellations</small></div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="notify_reservation" id="notify_reservation" {% if prefs.notify_reservation %}checked{% endif %} style="cursor: pointer;">
+                                <label class="form-check-label" for="notify_reservation"></label>
+                            </div>
+                        </div>
+                        <!-- Payments -->
+                        <div class="list-group-item px-4 py-3 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width: 36px; height: 36px; background: #28a745; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-credit-card text-white"></i></div>
+                                <div><div class="fw-medium">Payments</div><small class="text-muted">Payment receipts, failures, and refunds</small></div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="notify_payment" id="notify_payment" {% if prefs.notify_payment %}checked{% endif %} style="cursor: pointer;">
+                                <label class="form-check-label" for="notify_payment"></label>
+                            </div>
+                        </div>
+                        <!-- Refunds -->
+                        <div class="list-group-item px-4 py-3 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width: 36px; height: 36px; background: #fd7e14; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-undo-alt text-white"></i></div>
+                                <div><div class="fw-medium">Refunds</div><small class="text-muted">Refund processing and status updates</small></div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="notify_refund" id="notify_refund" {% if prefs.notify_refund %}checked{% endif %} style="cursor: pointer;">
+                                <label class="form-check-label" for="notify_refund"></label>
+                            </div>
+                        </div>
+                        <!-- Cancellations -->
+                        <div class="list-group-item px-4 py-3 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width: 36px; height: 36px; background: #dc3545; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-times-circle text-white"></i></div>
+                                <div><div class="fw-medium">Cancellations</div><small class="text-muted">Cancellation requests and approvals</small></div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="notify_cancellation" id="notify_cancellation" {% if prefs.notify_cancellation %}checked{% endif %} style="cursor: pointer;">
+                                <label class="form-check-label" for="notify_cancellation"></label>
+                            </div>
+                        </div>
+                        <!-- Tournaments -->
+                        <div class="list-group-item px-4 py-3 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width: 36px; height: 36px; background: #ffc107; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-trophy text-white"></i></div>
+                                <div><div class="fw-medium">Tournaments</div><small class="text-muted">Tournament registrations, updates, and results</small></div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="notify_tournament" id="notify_tournament" {% if prefs.notify_tournament %}checked{% endif %} style="cursor: pointer;">
+                                <label class="form-check-label" for="notify_tournament"></label>
+                            </div>
+                        </div>
+                        <!-- Equipment -->
+                        <div class="list-group-item px-4 py-3 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width: 36px; height: 36px; background: #6f42c1; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-tools text-white"></i></div>
+                                <div><div class="fw-medium">Equipment</div><small class="text-muted">Equipment rentals, returns, and availability</small></div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="notify_equipment" id="notify_equipment" {% if prefs.notify_equipment %}checked{% endif %} style="cursor: pointer;">
+                                <label class="form-check-label" for="notify_equipment"></label>
+                            </div>
+                        </div>
+                        <!-- Organization -->
+                        <div class="list-group-item px-4 py-3 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width: 36px; height: 36px; background: #20c997; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-building text-white"></i></div>
+                                <div><div class="fw-medium">Organizations</div><small class="text-muted">Organization updates and membership notifications</small></div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="notify_organization" id="notify_organization" {% if prefs.notify_organization %}checked{% endif %} style="cursor: pointer;">
+                                <label class="form-check-label" for="notify_organization"></label>
+                            </div>
+                        </div>
+                        <!-- Staff -->
+                        <div class="list-group-item px-4 py-3 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width: 36px; height: 36px; background: #e83e8c; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-users-gear text-white"></i></div>
+                                <div><div class="fw-medium">Staff</div><small class="text-muted">Staff activity and updates</small></div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="notify_staff" id="notify_staff" {% if prefs.notify_staff %}checked{% endif %} style="cursor: pointer;">
+                                <label class="form-check-label" for="notify_staff"></label>
+                            </div>
+                        </div>
+                        <!-- User -->
+                        <div class="list-group-item px-4 py-3 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width: 36px; height: 36px; background: #17a2b8; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-user text-white"></i></div>
+                                <div><div class="fw-medium">Users</div><small class="text-muted">User management notifications</small></div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="notify_user" id="notify_user" {% if prefs.notify_user %}checked{% endif %} style="cursor: pointer;">
+                                <label class="form-check-label" for="notify_user"></label>
+                            </div>
+                        </div>
+                        <!-- Reports -->
+                        <div class="list-group-item px-4 py-3 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width: 36px; height: 36px; background: #6c757d; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-chart-bar text-white"></i></div>
+                                <div><div class="fw-medium">Reports</div><small class="text-muted">Report generation and exports</small></div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="notify_report" id="notify_report" {% if prefs.notify_report %}checked{% endif %} style="cursor: pointer;">
+                                <label class="form-check-label" for="notify_report"></label>
+                            </div>
+                        </div>
+                        <!-- System -->
+                        <div class="list-group-item px-4 py-3 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width: 36px; height: 36px; background: #343a40; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-cog text-white"></i></div>
+                                <div><div class="fw-medium">System</div><small class="text-muted">System announcements and important updates</small></div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="notify_system" id="notify_system" {% if prefs.notify_system %}checked{% endif %} style="cursor: pointer;">
+                                <label class="form-check-label" for="notify_system"></label>
+                            </div>
+                        </div>
+                        <!-- Security -->
+                        <div class="list-group-item px-4 py-3 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width: 36px; height: 36px; background: #dc3545; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-shield-alt text-white"></i></div>
+                                <div><div class="fw-medium">Security</div><small class="text-muted">Security alerts and login attempts</small></div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="notify_security" id="notify_security" {% if prefs.notify_security %}checked{% endif %} style="cursor: pointer;">
+                                <label class="form-check-label" for="notify_security"></label>
+                            </div>
+                        </div>
+                        <!-- Maintenance -->
+                        <div class="list-group-item px-4 py-3 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width: 36px; height: 36px; background: #ffc107; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-wrench text-white"></i></div>
+                                <div><div class="fw-medium">Maintenance</div><small class="text-muted">Scheduled maintenance and service alerts</small></div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="notify_maintenance" id="notify_maintenance" {% if prefs.notify_maintenance %}checked{% endif %} style="cursor: pointer;">
+                                <label class="form-check-label" for="notify_maintenance"></label>
+                            </div>
+                        </div>
+                        <!-- Announcements -->
+                        <div class="list-group-item px-4 py-3 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width: 36px; height: 36px; background: #0d6efd; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-bullhorn text-white"></i></div>
+                                <div><div class="fw-medium">Announcements</div><small class="text-muted">Platform announcements and news</small></div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="notify_announcement" id="notify_announcement" {% if prefs.notify_announcement %}checked{% endif %} style="cursor: pointer;">
+                                <label class="form-check-label" for="notify_announcement"></label>
+                            </div>
+                        </div>
+                        <!-- Promotions -->
+                        <div class="list-group-item px-4 py-3 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width: 36px; height: 36px; background: #fd7e14; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-tags text-white"></i></div>
+                                <div><div class="fw-medium">Promotions</div><small class="text-muted">Special offers and promotional content</small></div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="notify_promotion" id="notify_promotion" {% if prefs.notify_promotion %}checked{% endif %} style="cursor: pointer;">
+                                <label class="form-check-label" for="notify_promotion"></label>
+                            </div>
+                        </div>
+                        <!-- Messages -->
+                        <div class="list-group-item px-4 py-3 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width: 36px; height: 36px; background: #e83e8c; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-envelope text-white"></i></div>
+                                <div><div class="fw-medium">Messages</div><small class="text-muted">Direct messages and communications</small></div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="notify_message" id="notify_message" {% if prefs.notify_message %}checked{% endif %} style="cursor: pointer;">
+                                <label class="form-check-label" for="notify_message"></label>
+                            </div>
+                        </div>
+                        <!-- Account -->
+                        <div class="list-group-item px-4 py-3 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width: 36px; height: 36px; background: #17a2b8; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-user-circle text-white"></i></div>
+                                <div><div class="fw-medium">Account</div><small class="text-muted">Profile updates and account changes</small></div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="notify_account" id="notify_account" {% if prefs.notify_account %}checked{% endif %} style="cursor: pointer;">
+                                <label class="form-check-label" for="notify_account"></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delivery Methods -->
+            <div class="card border-0 shadow-sm mb-4" style="border-radius: 16px; overflow: hidden;">
+                <div class="card-header bg-white border-bottom py-3 px-4">
+                    <h6 class="fw-bold mb-1"><i class="fas fa-envelope text-primary me-2"></i>Delivery Methods</h6>
+                    <small class="text-muted">Choose how you receive your notifications.</small>
+                </div>
+                <div class="card-body px-4 py-3">
+                    <div class="mb-3">
+                        <div class="form-check form-switch d-flex align-items-center gap-3 py-2">
+                            <input type="checkbox" class="form-check-input" name="email_notifications" id="email_notifications" {% if prefs.email_notifications %}checked{% endif %} style="cursor: pointer; font-size: 1.2rem;">
+                            <label class="form-check-label fw-medium" for="email_notifications"><i class="fas fa-envelope-open-text me-2 text-muted"></i>Email Notifications</label>
+                        </div>
+                        <small class="text-muted ms-5">Receive notifications via email</small>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check form-switch d-flex align-items-center gap-3 py-2">
+                            <input type="checkbox" class="form-check-input" name="push_notifications" id="push_notifications" {% if prefs.push_notifications %}checked{% endif %} style="cursor: pointer; font-size: 1.2rem;">
+                            <label class="form-check-label fw-medium" for="push_notifications"><i class="fas fa-bell me-2 text-muted"></i>Push Notifications</label>
+                        </div>
+                        <small class="text-muted ms-5">Receive browser push notifications</small>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check form-switch d-flex align-items-center gap-3 py-2">
+                            <input type="checkbox" class="form-check-input" name="sms_notifications" id="sms_notifications" {% if prefs.sms_notifications %}checked{% endif %} style="cursor: pointer; font-size: 1.2rem;">
+                            <label class="form-check-label fw-medium" for="sms_notifications"><i class="fas fa-mobile-alt me-2 text-muted"></i>SMS Notifications</label>
+                        </div>
+                        <small class="text-muted ms-5">Receive text message notifications</small>
+                    </div>
+                    <div>
+                        <div class="form-check form-switch d-flex align-items-center gap-3 py-2">
+                            <input type="checkbox" class="form-check-input" name="in_app_notifications" id="in_app_notifications" {% if prefs.in_app_notifications %}checked{% endif %} style="cursor: pointer; font-size: 1.2rem;">
+                            <label class="form-check-label fw-medium" for="in_app_notifications"><i class="fas fa-bell me-2 text-muted"></i>In-App Notifications</label>
+                        </div>
+                        <small class="text-muted ms-5">Receive notifications within the application</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Frequency & Quiet Hours -->
+            <div class="card border-0 shadow-sm mb-4" style="border-radius: 16px; overflow: hidden;">
+                <div class="card-header bg-white border-bottom py-3 px-4">
+                    <h6 class="fw-bold mb-1"><i class="fas fa-clock text-primary me-2"></i>Frequency & Quiet Hours</h6>
+                    <small class="text-muted">Control when and how often you receive notifications.</small>
+                </div>
+                <div class="card-body px-4 py-3">
+                    <div class="mb-4">
+                        <label class="form-label fw-medium" for="frequency">Digest Frequency</label>
+                        <select name="frequency" id="frequency" class="form-select" style="border-radius: 10px; max-width: 250px;">
+                            <option value="instant" {% if prefs.frequency == 'instant' %}selected{% endif %}>Instant</option>
+                            <option value="hourly" {% if prefs.frequency == 'hourly' %}selected{% endif %}>Hourly Digest</option>
+                            <option value="daily" {% if prefs.frequency == 'daily' %}selected{% endif %}>Daily Digest</option>
+                            <option value="weekly" {% if prefs.frequency == 'weekly' %}selected{% endif %}>Weekly Digest</option>
+                        </select>
+                        <small class="text-muted d-block mt-1">How often you want to receive notification digests</small>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <label class="form-label fw-medium" for="quiet_hours_start">Quiet Hours Start</label>
+                            <input type="time" name="quiet_hours_start" id="quiet_hours_start" value="{{ prefs.quiet_hours_start|time:'H:i' }}" class="form-control" style="border-radius: 10px;">
+                            <small class="text-muted">Do not disturb after this time</small>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label fw-medium" for="quiet_hours_end">Quiet Hours End</label>
+                            <input type="time" name="quiet_hours_end" id="quiet_hours_end" value="{{ prefs.quiet_hours_end|time:'H:i' }}" class="form-control" style="border-radius: 10px;">
+                            <small class="text-muted">Resume notifications after this time</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="d-flex gap-3 justify-content-end mb-5">
+                <a href="{% notification_url 'notification_list' %}" class="btn btn-outline-secondary px-4 py-2" style="border-radius: 10px;">
+                    <i class="fas fa-arrow-left me-2"></i>Back
+                </a>
+                <button type="submit" class="btn px-4 py-2" style="border-radius: 10px; background: linear-gradient(135deg, #3B7A8C, #1a3a42); color: white; border: none; font-weight: 500;">
+                    <i class="fas fa-save me-2"></i>Save Preferences
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.form-switch .form-check-input { width: 3em; height: 1.5em; margin-top: 0; cursor: pointer; }
+.form-switch .form-check-input:checked { background-color: #3B7A8C; border-color: #3B7A8C; }
+.form-switch .form-check-input:focus { border-color: #3B7A8C; box-shadow: 0 0 0 0.2rem rgba(59,122,140,0.15); }
+.list-group-item { transition: background-color 0.2s ease; }
+.list-group-item:hover { background-color: rgba(59,122,140,0.03); }
+.form-select:focus, .form-control:focus { border-color: #3B7A8C; box-shadow: 0 0 0 0.2rem rgba(59,122,140,0.15); }
+</style>
+{% endblock %}

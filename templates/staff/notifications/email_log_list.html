@@ -1,0 +1,193 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Email Logs - PickleSphere Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1 fw-bold">Email Logs</h4>
+            <p class="text-muted mb-0">Track all sent emails and delivery status</p>
+        </div>
+        <a href="{% url 'super_admin_smtp_settings' %}" class="btn btn-outline-primary">
+            <i class="fas fa-cog me-1"></i> SMTP Settings
+        </a>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="fw-bold text-success mb-0">{{ total_sent }}</h3>
+                    <small class="text-muted">Sent Successfully</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="fw-bold text-danger mb-0">{{ total_failed }}</h3>
+                    <small class="text-muted">Failed</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="fw-bold text-warning mb-0">{{ total_pending }}</h3>
+                    <small class="text-muted">Pending</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="fw-bold text-info mb-0">{{ total_all }}</h3>
+                    <small class="text-muted">Total Emails</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small fw-medium">Status</label>
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="">All Statuses</option>
+                        <option value="sent" {% if status_filter == 'sent' %}selected{% endif %}>Sent</option>
+                        <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>Failed</option>
+                        <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-medium">Email Type</label>
+                    <select name="email_type" class="form-select form-select-sm">
+                        <option value="">All Types</option>
+                        <option value="welcome" {% if email_type_filter == 'welcome' %}selected{% endif %}>Welcome</option>
+                        <option value="password_reset" {% if email_type_filter == 'password_reset' %}selected{% endif %}>Password Reset</option>
+                        <option value="reservation_confirmed" {% if email_type_filter == 'reservation_confirmed' %}selected{% endif %}>Reservation</option>
+                        <option value="payment_confirmed" {% if email_type_filter == 'payment_confirmed' %}selected{% endif %}>Payment</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-medium">Search</label>
+                    <input type="text" name="search" class="form-control form-control-sm" 
+                           placeholder="Email, subject, type..." value="{{ search_query }}">
+                </div>
+                <div class="col-md-3 d-flex gap-1">
+                    <button type="submit" class="btn btn-primary btn-sm flex-grow-1">
+                        <i class="fas fa-search me-1"></i> Filter
+                    </button>
+                    <a href="{% url 'super_admin_email_logs' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-times"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Logs Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">Status</th>
+                            <th>Recipient</th>
+                            <th>Subject</th>
+                            <th>Type</th>
+                            <th>Date</th>
+                            <th class="text-center">Retries</th>
+                            <th class="text-end pe-3">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td class="ps-3">
+                                {% if log.status == 'sent' %}
+                                    <span class="badge bg-success-subtle text-success">Sent</span>
+                                {% elif log.status == 'failed' %}
+                                    <span class="badge bg-danger-subtle text-danger">Failed</span>
+                                {% else %}
+                                    <span class="badge bg-warning-subtle text-warning">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="fw-medium">{{ log.recipient }}</div>
+                                {% if log.recipient_name %}
+                                <small class="text-muted">{{ log.recipient_name }}</small>
+                                {% endif %}
+                            </td>
+                            <td class="text-truncate" style="max-width: 300px;">
+                                <span title="{{ log.subject }}">{{ log.subject|truncatechars:60 }}</span>
+                            </td>
+                            <td><code class="small">{{ log.email_type|default:'-' }}</code></td>
+                            <td>
+                                <small class="text-nowrap">{{ log.created_at|date:"M j, Y" }}</small>
+                                <br><small class="text-muted text-nowrap">{{ log.created_at|date:"g:i A" }}</small>
+                            </td>
+                            <td class="text-center">{{ log.retry_count }}/{{ log.max_retries }}</td>
+                            <td class="text-end pe-3">
+                                <a href="{% url 'super_admin_email_log_detail' log.id %}" 
+                                   class="btn btn-sm btn-outline-info" title="View details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-5">
+                                <i class="fas fa-envelope-open-text fa-3x text-muted mb-3 d-block"></i>
+                                <p class="text-muted mb-0">No email logs found</p>
+                                <small class="text-muted">Emails will appear here once you start sending.</small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% if is_paginated %}
+        <div class="card-footer bg-white">
+            {% include 'components/pagination.html' with page_obj=page_obj %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.table th {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #666;
+    border-bottom: 2px solid #e9ecef;
+}
+.table td {
+    vertical-align: middle;
+    font-size: 0.9rem;
+}
+code {
+    background: #f5f5f5;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #3B7A8C;
+}
+.badge {
+    font-weight: 500;
+}
+.bg-success-subtle { background: #d4edda; }
+.bg-danger-subtle { background: #f8d7da; }
+.bg-warning-subtle { background: #fff3cd; }
+.text-success { color: #155724 !important; }
+.text-danger { color: #721c24 !important; }
+.text-warning { color: #856404 !important; }
+</style>
+{% endblock %}

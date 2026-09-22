@@ -1,0 +1,57 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+{% block title %}Broadcast Details{% endblock %}
+{% block page_title %}Broadcast Details{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm" style="border-radius: 16px;">
+            <div class="card-header bg-white border-bottom py-3 px-4">
+                <div class="d-flex align-items-center gap-3">
+                    <div style="width: 44px; height: 44px; background: linear-gradient(135deg, #3B7A8C, #1a3a42); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-bullhorn text-white"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-1">{{ broadcast.title }}</h5>
+                        <small class="text-muted">Sent by {{ broadcast.sent_by.get_full_name|default:broadcast.sent_by.username }} on {{ broadcast.sent_at|date:"F d, Y g:i A" }}</small>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <div class="mb-4">
+                    <h6 class="fw-bold mb-2">Message</h6>
+                    <div class="p-4" style="background: #f8f9fa; border-radius: 12px; border-left: 4px solid #3B7A8C;">
+                        <p class="mb-0" style="line-height: 1.7;">{{ broadcast.message }}</p>
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="p-3" style="background: rgba(59,122,140,0.05); border-radius: 10px;">
+                            <small class="text-muted d-block">Target</small>
+                            <span class="fw-medium">{{ broadcast.get_target_type_display }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3" style="background: rgba(40,167,69,0.05); border-radius: 10px;">
+                            <small class="text-muted d-block">Recipients</small>
+                            <span class="fw-medium">{{ broadcast.recipient_count }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3" style="background: rgba(255,193,7,0.05); border-radius: 10px;">
+                            <small class="text-muted d-block">Priority</small>
+                            <span class="fw-medium">{{ broadcast.get_priority_display }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-white border-top py-3 px-4">
+                <a href="{% url 'super_admin_broadcast_list' %}" class="btn btn-outline-secondary px-4 py-2" style="border-radius: 10px;">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Broadcasts
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,334 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Contact Page Management{% endblock %}
+{% block page_title %}Contact Page Management{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'super_admin_analytics' %}"><i class="fas fa-home me-1"></i>Dashboard</a></li>
+        <li class="breadcrumb-item active">Contact Page Management</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<!-- Content Sections -->
+<div class="admin-card mb-4">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-file-alt text-primary"></i>
+            Content Sections
+        </h5>
+        <a href="{% url 'super_admin_contact_content_add' %}" class="btn btn-sm btn-primary">
+            <i class="fas fa-plus me-1"></i>Add Content
+        </a>
+    </div>
+    <div class="card-body p-0">
+        {% if content %}
+        <div class="admin-table-container">
+            <table class="table admin-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Section</th>
+                        <th>Content Preview</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in content %}
+                    <tr>
+                        <td class="fw-semibold">{{ item.get_section_display }}</td>
+                        <td class="text-muted">{{ item.content|truncatechars:60 }}</td>
+                        <td>
+                            {% if item.is_active %}
+                            <span class="status-badge active">Active</span>
+                            {% else %}
+                            <span class="status-badge inactive">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <div class="action-buttons justify-content-end">
+                                <a href="{% url 'super_admin_contact_content_edit' item.id %}" class="action-btn edit" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'super_admin_contact_content_delete' item.id %}" class="action-btn delete" title="Delete" data-confirm-message="Delete this content?" onclick="return customConfirm(this.dataset.confirmMessage, () => { window.location.href = this.href; })">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="fas fa-file-alt fa-2x text-muted"></i>
+            </div>
+            <h5 class="empty-state-title">No content sections created yet</h5>
+            <p class="empty-state-text">Add content sections to customize the Contact page.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Contact Information -->
+<div class="admin-card mb-4">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-address-card text-success"></i>
+            Contact Information
+        </h5>
+        <a href="{% url 'super_admin_contact_info' %}" class="btn btn-sm btn-success">
+            <i class="fas fa-edit me-1"></i>Edit Info
+        </a>
+    </div>
+    <div class="card-body">
+        {% if contact_info %}
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="d-flex align-items-center gap-2 p-3 bg-light rounded-3">
+                    <i class="fas fa-phone text-primary"></i>
+                    <div>
+                        <small class="text-muted d-block">Phone</small>
+                        <strong>{{ contact_info.phone }}</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex align-items-center gap-2 p-3 bg-light rounded-3">
+                    <i class="fas fa-envelope text-primary"></i>
+                    <div>
+                        <small class="text-muted d-block">Email</small>
+                        <strong>{{ contact_info.email }}</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex align-items-center gap-2 p-3 bg-light rounded-3">
+                    <i class="fas fa-map-marker-alt text-primary"></i>
+                    <div>
+                        <small class="text-muted d-block">Address</small>
+                        <strong>{{ contact_info.address }}</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex align-items-center gap-2 p-3 bg-light rounded-3">
+                    <i class="fas fa-globe text-primary"></i>
+                    <div>
+                        <small class="text-muted d-block">City/Country</small>
+                        <strong>{{ contact_info.city_country }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="fas fa-address-card fa-2x text-muted"></i>
+            </div>
+            <h5 class="empty-state-title">No contact info configured</h5>
+            <p class="empty-state-text">Add contact details to display on the Contact page.</p>
+            <a href="{% url 'super_admin_contact_info' %}" class="btn btn-success mt-3">
+                <i class="fas fa-plus me-2"></i>Add Contact Info
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Business Hours -->
+<div class="admin-card mb-4">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-clock text-info"></i>
+            Business Hours
+        </h5>
+        <a href="{% url 'super_admin_contact_hour_add' %}" class="btn btn-sm btn-info text-white">
+            <i class="fas fa-plus me-1"></i>Add Hours
+        </a>
+    </div>
+    <div class="card-body p-0">
+        {% if business_hours %}
+        <div class="admin-table-container">
+            <table class="table admin-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Day Range</th>
+                        <th>Hours</th>
+                        <th>Color</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for hour in business_hours %}
+                    <tr>
+                        <td class="fw-semibold">{{ hour.day_range }}</td>
+                        <td>{{ hour.hours }}</td>
+                        <td><span class="badge bg-{{ hour.icon_color }}">{{ hour.icon_color }}</span></td>
+                        <td>
+                            {% if hour.is_active %}
+                            <span class="status-badge active">Active</span>
+                            {% else %}
+                            <span class="status-badge inactive">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <div class="action-buttons justify-content-end">
+                                <a href="{% url 'super_admin_contact_hour_edit' hour.id %}" class="action-btn edit" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'super_admin_contact_hour_delete' hour.id %}" class="action-btn delete" title="Delete" data-confirm-message="Delete this entry?" onclick="return customConfirm(this.dataset.confirmMessage, () => { window.location.href = this.href; })">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="fas fa-clock fa-2x text-muted"></i>
+            </div>
+            <h5 class="empty-state-title">No business hours set</h5>
+            <p class="empty-state-text">Add operating hours to inform visitors when you're open.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- FAQs -->
+<div class="admin-card mb-4">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-question-circle text-warning"></i>
+            FAQs
+        </h5>
+        <a href="{% url 'super_admin_contact_faq_add' %}" class="btn btn-sm btn-warning text-white">
+            <i class="fas fa-plus me-1"></i>Add FAQ
+        </a>
+    </div>
+    <div class="card-body p-0">
+        {% if faqs %}
+        <div class="admin-table-container">
+            <table class="table admin-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Question</th>
+                        <th>Answer Preview</th>
+                        <th>Color</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for faq in faqs %}
+                    <tr>
+                        <td class="fw-semibold">{{ faq.question|truncatechars:40 }}</td>
+                        <td class="text-muted">{{ faq.answer|truncatechars:50 }}</td>
+                        <td><span class="badge bg-{{ faq.icon_color }}">{{ faq.icon_color }}</span></td>
+                        <td>
+                            {% if faq.is_active %}
+                            <span class="status-badge active">Active</span>
+                            {% else %}
+                            <span class="status-badge inactive">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <div class="action-buttons justify-content-end">
+                                <a href="{% url 'super_admin_contact_faq_edit' faq.id %}" class="action-btn edit" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'super_admin_contact_faq_delete' faq.id %}" class="action-btn delete" title="Delete" data-confirm-message="Delete this FAQ?" onclick="return customConfirm(this.dataset.confirmMessage, () => { window.location.href = this.href; })">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="fas fa-question-circle fa-2x text-muted"></i>
+            </div>
+            <h5 class="empty-state-title">No FAQs created yet</h5>
+            <p class="empty-state-text">Add frequently asked questions to help visitors.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Social Links -->
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-share-alt text-danger"></i>
+            Social Links
+        </h5>
+        <a href="{% url 'super_admin_contact_social_add' %}" class="btn btn-sm btn-danger">
+            <i class="fas fa-plus me-1"></i>Add Link
+        </a>
+    </div>
+    <div class="card-body p-0">
+        {% if social_links %}
+        <div class="admin-table-container">
+            <table class="table admin-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Platform</th>
+                        <th>URL</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for link in social_links %}
+                    <tr>
+                        <td class="fw-semibold">{{ link.get_platform_display }}</td>
+                        <td class="text-muted">{{ link.url|truncatechars:40 }}</td>
+                        <td>
+                            {% if link.is_active %}
+                            <span class="status-badge active">Active</span>
+                            {% else %}
+                            <span class="status-badge inactive">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <div class="action-buttons justify-content-end">
+                                <a href="{% url 'super_admin_contact_social_edit' link.id %}" class="action-btn edit" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'super_admin_contact_social_delete' link.id %}" class="action-btn delete" title="Delete" data-confirm-message="Delete this link?" onclick="return customConfirm(this.dataset.confirmMessage, () => { window.location.href = this.href; })">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="fas fa-share-alt fa-2x text-muted"></i>
+            </div>
+            <h5 class="empty-state-title">No social links created yet</h5>
+            <p class="empty-state-text">Add social media links to connect with your audience.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

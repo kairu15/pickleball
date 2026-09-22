@@ -1,0 +1,247 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Manage {{ tournament.name }} - PickleSphere{% endblock %}
+
+{% block page_title %}Manage: {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Tournament Header -->
+    <div class="card border-0 shadow-lg mb-4" style="border-radius: 15px; overflow: hidden;">
+        <div class="card-body p-4">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h4 class="fw-bold mb-3">{{ tournament.name }}</h4>
+                    <div class="mb-2">
+                        <span class="badge bg-white text-primary border border-primary px-3 py-2 me-2">
+                            <i class="fas fa-users me-1"></i>{{ tournament.get_category_display }}
+                        </span>
+                        <span class="badge bg-white text-info border border-info px-3 py-2 me-2">
+                            <i class="fas fa-sitemap me-1"></i>{{ tournament.get_format_display }}
+                        </span>
+                        <span class="badge bg-white text-warning border border-warning px-3 py-2 me-2">
+                            <i class="fas fa-signal me-1"></i>{{ tournament.get_skill_level_display }}
+                        </span>
+                        <span class="badge bg-secondary px-3 py-2">{{ tournament.get_status_display }}</span>
+                    </div>
+                    <p class="text-muted mb-0">{{ tournament.description|truncatechars:150 }}</p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <div class="d-flex gap-2 justify-content-md-end mb-2">
+                        <a href="{% url 'admin_change_status' tournament.pk %}" class="btn btn-warning px-3" style="border-radius: 8px;">
+                            <i class="fas fa-sync me-2"></i>Change Status
+                        </a>
+                        <a href="{% url 'admin_tournament_bracket' tournament.pk %}" class="btn btn-info px-3" style="border-radius: 8px;">
+                            <i class="fas fa-sitemap me-2"></i>Bracket
+                        </a>
+                    </div>
+                    <small class="text-muted"><i class="fas fa-calendar me-1"></i>Created: {{ tournament.created_at|date:"M d, Y" }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 15px;">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Pending</p>
+                            <h3 class="mb-0 fw-bold text-primary">{{ pending_count }}</h3>
+                        </div>
+                        <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-clock fa-lg text-white"></i>
+                        </div>
+                    </div>
+                    <a href="{% url 'admin_registration_list' tournament.pk %}" class="btn btn-sm btn-outline-primary mt-3 w-100" style="border-radius: 8px;">Review</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 15px;">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Approved</p>
+                            <h3 class="mb-0 fw-bold text-success">{{ approved_count }}</h3>
+                        </div>
+                        <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-check-circle fa-lg text-white"></i>
+                        </div>
+                    </div>
+                    <a href="{% url 'admin_registration_list' tournament.pk %}?status=approved" class="btn btn-sm btn-outline-success mt-3 w-100" style="border-radius: 8px;">View</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 15px;">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Matches</p>
+                            <h3 class="mb-0 fw-bold text-info">{{ matches|length }}</h3>
+                        </div>
+                        <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-gamepad fa-lg text-white"></i>
+                        </div>
+                    </div>
+                    <a href="{% url 'admin_match_list' tournament.pk %}" class="btn btn-sm btn-outline-info mt-3 w-100" style="border-radius: 8px;">Manage</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 15px;">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Teams</p>
+                            <h3 class="mb-0 fw-bold text-warning">{{ teams|length }}</h3>
+                        </div>
+                        <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-user-friends fa-lg text-white"></i>
+                        </div>
+                    </div>
+                    <a href="{% url 'admin_team_list' tournament.pk %}" class="btn btn-sm btn-outline-warning mt-3 w-100" style="border-radius: 8px;">View</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions Grid -->
+    <div class="row g-4">
+        <!-- Registration Management -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card border-0 shadow-sm h-100 hover-card" style="border-radius: 15px; overflow: hidden;">
+                <div class="card-header bg-transparent border-bottom p-4">
+                    <h6 class="fw-bold mb-0"><i class="fas fa-users me-2 text-primary"></i>Registration Management</h6>
+                </div>
+                <div class="card-body p-4">
+                    <p class="text-muted small">Review and approve player registrations</p>
+                    {% if pending_count > 0 %}
+                        <div class="alert alert-warning mb-0" style="border-radius: 10px;">
+                            <i class="fas fa-exclamation-circle me-2"></i><strong>{{ pending_count }}</strong> pending approval
+                        </div>
+                    {% else %}
+                        <div class="alert alert-success mb-0" style="border-radius: 10px;">
+                            <i class="fas fa-check-circle me-2"></i>All registrations reviewed
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-transparent border-0 p-4 pt-0">
+                    <a href="{% url 'admin_registration_list' tournament.pk %}" class="btn btn-primary w-100" style="border-radius: 10px;">
+                        <i class="fas fa-clipboard-check me-2"></i>Manage Registrations
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Generate Matches -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card border-0 shadow-sm h-100 hover-card" style="border-radius: 15px; overflow: hidden;">
+                <div class="card-header bg-transparent border-bottom p-4">
+                    <h6 class="fw-bold mb-0"><i class="fas fa-random me-2 text-success"></i>Match Generation</h6>
+                </div>
+                <div class="card-body p-4">
+                    <p class="text-muted small">Generate random match pairings using the tournament randomizer</p>
+                    {% if matches|length > 0 %}
+                        <div class="alert alert-info mb-0" style="border-radius: 10px;">
+                            <i class="fas fa-info-circle me-2"></i>{{ matches|length }} matches already generated
+                        </div>
+                    {% elif approved_count < tournament.min_participants %}
+                        <div class="alert alert-warning mb-0" style="border-radius: 10px;">
+                            <i class="fas fa-exclamation-circle me-2"></i>Need at least {{ tournament.min_participants }} approved players
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-transparent border-0 p-4 pt-0">
+                    <a href="{% url 'admin_generate_matches' tournament.pk %}" class="btn btn-success w-100 {% if approved_count < tournament.min_participants %}disabled{% endif %}" style="border-radius: 10px;">
+                        <i class="fas fa-magic me-2"></i>Generate Matches
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Schedule Matches -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card border-0 shadow-sm h-100 hover-card" style="border-radius: 15px; overflow: hidden;">
+                <div class="card-header bg-transparent border-bottom p-4">
+                    <h6 class="fw-bold mb-0"><i class="fas fa-calendar-alt me-2 text-info"></i>Scheduling</h6>
+                </div>
+                <div class="card-body p-4">
+                    <p class="text-muted small">Assign courts and times to matches</p>
+                </div>
+                <div class="card-footer bg-transparent border-0 p-4 pt-0">
+                    <a href="{% url 'admin_schedule_matches' tournament.pk %}" class="btn btn-info w-100" style="border-radius: 10px;">
+                        <i class="fas fa-clock me-2"></i>Schedule Matches
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leaderboard -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card border-0 shadow-sm h-100 hover-card" style="border-radius: 15px; overflow: hidden;">
+                <div class="card-header bg-transparent border-bottom p-4">
+                    <h6 class="fw-bold mb-0"><i class="fas fa-trophy me-2 text-warning"></i>Leaderboard</h6>
+                </div>
+                <div class="card-body p-4">
+                    <p class="text-muted small">View and manage tournament standings</p>
+                </div>
+                <div class="card-footer bg-transparent border-0 p-4 pt-0">
+                    <a href="{% url 'admin_leaderboard' tournament.pk %}" class="btn btn-warning w-100" style="border-radius: 10px;">
+                        <i class="fas fa-chart-bar me-2"></i>View Leaderboard
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Teams -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card border-0 shadow-sm h-100 hover-card" style="border-radius: 15px; overflow: hidden;">
+                <div class="card-header bg-transparent border-bottom p-4">
+                    <h6 class="fw-bold mb-0"><i class="fas fa-user-friends me-2 text-secondary"></i>Teams</h6>
+                </div>
+                <div class="card-body p-4">
+                    <p class="text-muted small">Manage doubles teams and player assignments</p>
+                </div>
+                <div class="card-footer bg-transparent border-0 p-4 pt-0">
+                    <a href="{% url 'admin_team_list' tournament.pk %}" class="btn btn-secondary w-100" style="border-radius: 10px;">
+                        <i class="fas fa-users-cog me-2"></i>Manage Teams
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- View Public Page -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card border-0 shadow-sm h-100 hover-card" style="border-radius: 15px; overflow: hidden;">
+                <div class="card-header bg-transparent border-bottom p-4">
+                    <h6 class="fw-bold mb-0"><i class="fas fa-eye me-2 text-primary"></i>Public View</h6>
+                </div>
+                <div class="card-body p-4">
+                    <p class="text-muted small">View the tournament as players see it</p>
+                </div>
+                <div class="card-footer bg-transparent border-0 p-4 pt-0">
+                    <a href="{% url 'tournament_detail' tournament.pk %}" class="btn btn-outline-primary w-100" target="_blank" style="border-radius: 10px;">
+                        <i class="fas fa-external-link-alt me-2"></i>View Public Page
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.hover-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.hover-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 1rem 2rem rgba(0,0,0,0.12) !important;
+}
+</style>
+{% endblock %}
+

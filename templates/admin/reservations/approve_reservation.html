@@ -1,0 +1,138 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Approve Reservation - PickleSphere{% endblock %}
+{% block page_title %}Approve Reservation #{{ reservation.id }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-lg" style="border-radius: 15px; overflow: hidden;">
+            <div class="card-header text-white p-4" style="background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <div style="width: 45px; height: 45px; background: rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-check-circle fa-lg text-white"></i>
+                        </div>
+                        <div class="ms-3">
+                            <h5 class="mb-0 fw-bold">Reservation Details</h5>
+                            <p class="mb-0 opacity-75">Review and approve reservation</p>
+                        </div>
+                    </div>
+                    <a href="{% url 'staff_reservations' %}" class="btn btn-outline-light btn-sm" style="border-radius: 8px;">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Reservations
+                    </a>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <div class="card border-0 mb-4" style="background: linear-gradient(135deg, #e7f3ff 0%, #f0f9ff 100%); border-radius: 12px;">
+                    <div class="card-body p-4">
+                        <h6 class="fw-bold mb-3"><i class="fas fa-info-circle me-2 text-primary"></i>Reservation Information</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center">
+                                    <div style="width: 30px; height: 30px; background: rgba(59,122,140,0.1); border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                                        <i class="fas fa-user text-primary"></i>
+                                    </div>
+                                    <strong class="ms-2">User:</strong> {{ reservation.user.username }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center">
+                                    <div style="width: 30px; height: 30px; background: rgba(59,122,140,0.1); border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                                        <i class="fas fa-map-marker-alt text-primary"></i>
+                                    </div>
+                                    <strong class="ms-2">Court:</strong> {{ reservation.court.name }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center">
+                                    <div style="width: 30px; height: 30px; background: rgba(59,122,140,0.1); border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                                        <i class="fas fa-calendar text-primary"></i>
+                                    </div>
+                                    <strong class="ms-2">Date:</strong> {{ reservation.date }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center">
+                                    <div style="width: 30px; height: 30px; background: rgba(59,122,140,0.1); border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                                        <i class="fas fa-clock text-primary"></i>
+                                    </div>
+                                    <strong class="ms-2">Time:</strong> {{ reservation.start_time }} - {{ reservation.end_time }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center">
+                                    <div style="width: 30px; height: 30px; background: rgba(59,122,140,0.1); border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                                        <i class="fas fa-tag text-primary"></i>
+                                    </div>
+                                    <strong class="ms-2">Status:</strong> 
+                                    <span class="badge px-3 py-2 {% if reservation.status == 'confirmed' %}bg-success{% elif reservation.status == 'pending' %}bg-warning text-dark{% elif reservation.status == 'completed' %}bg-secondary{% elif reservation.status == 'cancelled' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                        {{ reservation.get_status_display }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center">
+                                    <div style="width: 30px; height: 30px; background: rgba(59,122,140,0.1); border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                                        <i class="fas fa-clock text-primary"></i>
+                                    </div>
+                                    <strong class="ms-2">Created:</strong> {{ reservation.created_at }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                <div>{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label for="id_status" class="form-label fw-bold"><i class="fas fa-check-circle me-2 text-primary"></i>Status</label>
+                        {{ form.status }}
+                        {% for error in form.status.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_notes" class="form-label fw-bold"><i class="fas fa-sticky-note me-2 text-primary"></i>Notes</label>
+                        {{ form.notes }}
+                        {% for error in form.notes.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="d-flex justify-content-between pt-2">
+                        <a href="{% url 'staff_reservations' %}" class="btn btn-outline-secondary px-4" style="border-radius: 10px;">
+                            <i class="fas fa-arrow-left me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary px-5" style="border-radius: 10px;">
+                            <i class="fas fa-check me-2"></i>Submit
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('select').forEach(function(select) {
+    select.classList.add('form-select');
+    select.style.borderRadius = '10px';
+});
+document.querySelectorAll('textarea').forEach(function(textarea) {
+    textarea.style.borderRadius = '10px';
+});
+</script>
+{% endblock %}
+

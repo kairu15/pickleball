@@ -1,0 +1,102 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}{% if edit_user %}Edit User{% else %}Create User{% endif %}{% endblock %}
+{% block page_title %}{% if edit_user %}Edit User{% else %}Create New User{% endif %}{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'super_admin_analytics' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'super_admin_user_list' %}">Users</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{% if edit_user %}Edit{% else %}Create{% endif %}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="admin-card">
+    <div class="admin-card-header bg-gradient-light">
+        <h5 class="admin-card-title">
+            <i class="fas fa-user text-primary"></i>
+            {% if edit_user %}Update User Details{% else %}New User Account{% endif %}
+        </h5>
+        <a href="{% url 'super_admin_user_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back
+        </a>
+    </div>
+    <div class="admin-card-body">
+        <form method="post">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                {% for error in form.non_field_errors %}
+                    <div>{{ error }}</div>
+                {% endfor %}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endif %}
+
+            <div class="admin-form-section">
+                <h6 class="admin-form-section-title">
+                    <i class="fas fa-info-circle text-primary"></i>
+                    Account Information
+                </h6>
+                <div class="row g-3">
+                    {% for field in form %}
+                        <div class="{% if field.name in 'is_active' %}col-12{% else %}col-md-6{% endif %}">
+                            {% if field.field.widget.input_type == 'checkbox' %}
+                                <div class="form-check form-switch mt-3">
+                                    {{ field }}
+                                    <label class="form-check-label fw-semibold" for="{{ field.id_for_label }}">
+                                        {{ field.label }}
+                                    </label>
+                                </div>
+                            {% else %}
+                                <label for="{{ field.id_for_label }}" class="admin-form-label">
+                                    {{ field.label }}
+                                    {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+                                </label>
+                                {{ field }}
+                            {% endif %}
+
+                            {% if field.help_text %}
+                                <div class="form-text text-muted small">{{ field.help_text }}</div>
+                            {% endif %}
+
+                            {% for error in field.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center pt-4 border-top">
+                <a href="{% url 'super_admin_user_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    {% if edit_user %}
+                        <i class="fas fa-save me-2"></i>Save Changes
+                    {% else %}
+                        <i class="fas fa-user-plus me-2"></i>Create User
+                    {% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('input:not([type="checkbox"]), select, textarea').forEach(function(input) {
+    input.classList.add('form-control', 'admin-form-control');
+});
+
+document.querySelectorAll('select').forEach(function(select) {
+    select.classList.add('form-select');
+});
+</script>
+{% endblock %}
+

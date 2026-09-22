@@ -1,0 +1,29 @@
+{% extends 'emails/base_email.html' %}
+
+{% block email_content %}
+    {% if status == 'overdue' %}
+        <span class="notification-badge error">⚠️ Overdue</span>
+        <h2>Equipment Overdue</h2>
+        <p>Hi <strong>{{ user.get_full_name|default:user.username }}</strong>, your rental for <strong>{{ equipment_name }}</strong> is now overdue. Please return it as soon as possible to avoid additional charges.</p>
+    {% elif status == 'rented' %}
+        <span class="notification-badge success">✅ Ready</span>
+        <h2>Equipment Ready for Pickup</h2>
+        <p>Hi <strong>{{ user.get_full_name|default:user.username }}</strong>, your rental for <strong>{{ equipment_name }}</strong> is now active. Enjoy your game!</p>
+    {% elif status == 'returned' %}
+        <span class="notification-badge success">↩️ Returned</span>
+        <h2>Equipment Returned</h2>
+        <p>Hi <strong>{{ user.get_full_name|default:user.username }}</strong>, your rental for <strong>{{ equipment_name }}</strong> has been returned successfully. Thank you!</p>
+    {% elif status == 'cancelled' %}
+        <span class="notification-badge error">❌ Cancelled</span>
+        <h2>Equipment Rental Cancelled</h2>
+        <p>Hi <strong>{{ user.get_full_name|default:user.username }}</strong>, your rental for <strong>{{ equipment_name }}</strong> has been cancelled.</p>
+    {% else %}
+        <span class="notification-badge">⏳ Reserved</span>
+        <h2>Equipment Reserved</h2>
+        <p>Hi <strong>{{ user.get_full_name|default:user.username }}</strong>, your rental for <strong>{{ equipment_name }}</strong> has been reserved.</p>
+    {% endif %}
+    
+    <div style="text-align: center;">
+        <a href="{{ action_url }}" class="cta-button">{{ action_text }}</a>
+    </div>
+{% endblock %}

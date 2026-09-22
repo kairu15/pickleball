@@ -1,0 +1,103 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}View Message{% endblock %}
+{% block page_title %}View Contact Message{% endblock %}
+
+{% block content %}
+<!-- Back Button -->
+<div class="mb-4">
+    <a href="{% url 'contact_messages' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to Messages
+    </a>
+</div>
+
+<!-- Message Details -->
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                <h5 class="mb-0"><i class="fas fa-envelope text-primary me-2"></i>Message Details</h5>
+                <span class="badge {{ message.status_badge_class }}">{{ message.get_status_display }}</span>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong>From:</strong> {{ message.name }}</p>
+                        <p class="mb-1"><strong>Email:</strong> {{ message.email }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong>Subject:</strong> {{ message.get_subject_display }}</p>
+                        <p class="mb-1"><strong>Date:</strong> {{ message.created_at|date:"F d, Y H:i" }}</p>
+                    </div>
+                </div>
+                <hr>
+                <div class="mt-3">
+                    <h6 class="fw-semibold mb-2">Message:</h6>
+                    <div class="bg-light p-3 rounded">
+                        {{ message.message|linebreaks }}
+                    </div>
+                </div>
+                
+                {% if message.admin_reply %}
+                <div class="mt-4">
+                    <h6 class="fw-semibold mb-2 text-success">Admin Reply:</h6>
+                    <div class="bg-success bg-opacity-10 p-3 rounded">
+                        {{ message.admin_reply|linebreaks }}
+                    </div>
+                    <p class="text-muted small mt-2">
+                        Replied by {{ message.replied_by.username }} on {{ message.replied_at|date:"F d, Y H:i" }}
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0"><i class="fas fa-reply text-success me-2"></i>Reply to Sender</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="reply" class="form-label">Your Reply</label>
+                        <textarea class="form-control" id="reply" name="reply" rows="6" required placeholder="Type your reply here..."></textarea>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" name="action" value="reply" class="btn btn-success flex-grow-1">
+                            <i class="fas fa-paper-plane me-1"></i>Send Reply
+                        </button>
+                        <button type="submit" name="action" value="close" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-1"></i>Close
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0"><i class="fas fa-info-circle text-info me-2"></i>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="mailto:{{ message.email }}" class="btn btn-outline-primary">
+                        <i class="fas fa-external-link-alt me-2"></i>Open in Email Client
+                    </a>
+                    {% if message.status != 'closed' %}
+                    <form method="post" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" name="action" value="close" class="btn btn-outline-secondary w-100">
+                            <i class="fas fa-archive me-2"></i>Mark as Closed
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

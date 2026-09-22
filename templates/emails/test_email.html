@@ -1,0 +1,10 @@
+{% extends 'emails/base_email.html' %}
+
+{% block email_content %}
+    <span class="notification-badge success">✅ Test</span>
+    <h2>{{ title }}</h2>
+    <p>{{ message }}</p>
+    <p style="font-size: 14px; color: #888;">
+        Sent at: {{ user.date_joined|date:"F j, Y g:i A" }}
+    </p>
+{% endblock %}

@@ -1,0 +1,191 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Payment Settings - PickleSphere Admin{% endblock %}
+{% block page_title %}Payment Settings{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'super_admin_analytics' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'super_admin_payments' %}">Payments</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Payment Settings</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1 fw-bold">System Payment Settings</h4>
+            <p class="text-muted mb-0">Configure the payment account details shown to users at checkout</p>
+        </div>
+        <div>
+            <span class="badge {% if settings and settings.is_active and settings.is_configured %}bg-success{% else %}bg-secondary{% endif %} fs-6 px-3 py-2">
+                {% if settings and settings.is_active and settings.is_configured %}✅ Active &amp; Configured{% elif settings and settings.is_active %}✅ Enabled (incomplete){% else %}⛔ Disabled{% endif %}
+            </span>
+        </div>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="row">
+            <!-- Left column: account details -->
+            <div class="col-lg-8">
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0 fw-semibold">
+                            <i class="fas fa-wallet me-2 text-primary"></i>GCash
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-medium">GCash Number</label>
+                                <input type="text" name="gcash_number" class="form-control"
+                                       value="{{ settings.gcash_number|default:'' }}"
+                                       placeholder="e.g. 09XX XXX XXXX">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-medium">GCash Account Name</label>
+                                <input type="text" name="gcash_account_name" class="form-control"
+                                       value="{{ settings.gcash_account_name|default:'' }}"
+                                       placeholder="Registered name">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0 fw-semibold">
+                            <i class="fas fa-mobile-alt me-2 text-primary"></i>Maya
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-medium">Maya Number</label>
+                                <input type="text" name="maya_number" class="form-control"
+                                       value="{{ settings.maya_number|default:'' }}"
+                                       placeholder="e.g. 09XX XXX XXXX">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-medium">Maya Account Name</label>
+                                <input type="text" name="maya_account_name" class="form-control"
+                                       value="{{ settings.maya_account_name|default:'' }}"
+                                       placeholder="Registered name">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0 fw-semibold">
+                            <i class="fas fa-university me-2 text-primary"></i>Bank Transfer
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-medium">Bank Name</label>
+                                <input type="text" name="bank_name" class="form-control"
+                                       value="{{ settings.bank_name|default:'' }}"
+                                       placeholder="e.g. BDO, BPI, UnionBank">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-medium">Account Name</label>
+                                <input type="text" name="bank_account_name" class="form-control"
+                                       value="{{ settings.bank_account_name|default:'' }}">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-medium">Account Number</label>
+                                <input type="text" name="bank_account_number" class="form-control"
+                                       value="{{ settings.bank_account_number|default:'' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0 fw-semibold">
+                            <i class="fas fa-qrcode me-2 text-primary"></i>QR Code
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-4 text-center mb-3 mb-md-0">
+                                {% if settings and settings.qr_code %}
+                                    <img src="{{ settings.qr_code.url }}" alt="Payment QR Code"
+                                         class="img-thumbnail" style="max-height: 160px;">
+                                {% else %}
+                                    <div class="border rounded d-flex align-items-center justify-content-center text-muted" style="height: 160px;">
+                                        <i class="fas fa-qrcode fa-3x"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label fw-medium">Upload QR Code Image</label>
+                                <input type="file" name="qr_code" class="form-control" accept="image/*">
+                                <div class="form-text">Shown on the checkout page for easy scanning. Leave blank to keep the current image.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right column: options & instructions -->
+            <div class="col-lg-4">
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0 fw-semibold">
+                            <i class="fas fa-toggle-on me-2 text-primary"></i>Settings
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" name="is_active" id="isActive"
+                                   {% if settings and settings.is_active %}checked{% endif %}>
+                            <label class="form-check-label fw-medium" for="isActive">Enable Online Payments</label>
+                        </div>
+                        <div class="form-text mb-3">When disabled, online payment submissions are hidden at checkout.</div>
+
+                        <label class="form-label fw-medium">Accepted Payment Methods</label>
+                        <div class="mb-2">
+                            {% for method in settings.PAYMENT_METHOD_CHOICES %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="accepted_payment_methods"
+                                       value="{{ method.0 }}" id="method_{{ method.0 }}"
+                                       {% if settings and method.0 in settings.accepted_payment_methods %}checked{% endif %}>
+                                <label class="form-check-label" for="method_{{ method.0 }}">{{ method.1 }}</label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0 fw-semibold">
+                            <i class="fas fa-list-ol me-2 text-primary"></i>Payment Instructions
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <textarea name="payment_instructions" class="form-control" rows="8"
+                                  placeholder="Step-by-step instructions shown to users when paying...">{{ settings.payment_instructions|default:'' }}</textarea>
+                        <div class="form-text mt-2">These instructions are shown on the checkout page.</div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 btn-lg">
+                    <i class="fas fa-save me-2"></i>Save Settings
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends 'emails/base_email.html' %}
+
+{% block email_content %}
+    <span class="notification-badge">👤 Account</span>
+    <h2>Account Updated</h2>
+    <p>Hi <strong>{{ user.get_full_name|default:user.username }}</strong>,</p>
+    <p>{{ message_text }}</p>
+    
+    <p>If you did not make this change, please contact support immediately.</p>
+    
+    <div style="text-align: center;">
+        <a href="{{ action_url }}" class="cta-button">{{ action_text }}</a>
+    </div>
+{% endblock %}

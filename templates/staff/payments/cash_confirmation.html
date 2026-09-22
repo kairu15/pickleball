@@ -1,0 +1,603 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Cash Counter Confirmation{% endblock %}
+{% block page_title %}Cash Payment Counter{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+/* ===== CONFIRMATION CARD ===== */
+.confirm-card {
+    border-radius: 16px;
+    overflow: hidden;
+    border: none;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+    transition: box-shadow 0.3s ease;
+}
+.confirm-card:hover {
+    box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+}
+
+/* ===== RECEIPT ===== */
+.receipt {
+    background: #fff;
+    border: 2px dashed #dee2e6;
+    border-radius: 12px;
+    padding: 1.5rem;
+    position: relative;
+    max-width: 380px;
+    margin: 0 auto;
+}
+.receipt::before,
+.receipt::after {
+    content: '';
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    background: #f8f9fa;
+    border-radius: 50%;
+    left: -13px;
+    top: 50%;
+    margin-top: -12px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+}
+.receipt::after {
+    left: auto;
+    right: -13px;
+}
+.receipt-header {
+    text-align: center;
+    border-bottom: 1px dashed #dee2e6;
+    padding-bottom: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+.receipt-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #1a3a42;
+}
+.receipt-divider {
+    border: none;
+    border-top: 1px dashed #dee2e6;
+    margin: 0.75rem 0;
+}
+.receipt-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.3rem 0;
+    font-size: 0.85rem;
+}
+.receipt-row.total {
+    border-top: 2px solid #1a3a42;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    font-weight: 700;
+    font-size: 1rem;
+}
+.receipt-row.total .receipt-value {
+    color: #3B7A8C;
+    font-size: 1.15rem;
+}
+.receipt-label {
+    color: #6c757d;
+}
+.receipt-value {
+    font-weight: 600;
+    text-align: right;
+}
+
+/* ===== AMOUNT DISPLAY ===== */
+.amount-display {
+    text-align: center;
+    padding: 1.5rem;
+}
+.amount-label {
+    font-size: 0.85rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+}
+.amount-value {
+    font-size: 3rem;
+    font-weight: 800;
+    color: #1a3a42;
+    line-height: 1.2;
+}
+.amount-currency {
+    font-size: 1.5rem;
+    vertical-align: super;
+}
+
+/* ===== ACTION BUTTONS ===== */
+.btn-confirm {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+    border: none;
+    border-radius: 12px;
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: white;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(40,167,69,0.35);
+    width: 100%;
+}
+.btn-confirm:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(40,167,69,0.45);
+    color: white;
+}
+.btn-confirm:active {
+    transform: translateY(0);
+}
+.btn-confirm i {
+    font-size: 1.2rem;
+}
+.btn-reject {
+    background: #fff;
+    border: 2px solid #dc3545;
+    border-radius: 12px;
+    padding: 1rem 2rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #dc3545;
+    transition: all 0.3s ease;
+    width: 100%;
+}
+.btn-reject:hover {
+    background: #dc3545;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(220,53,69,0.3);
+}
+
+/* ===== STATUS BADGE OVERLAY ===== */
+.cash-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+.cash-badge.pending {
+    background: rgba(255,152,0,0.12);
+    color: #e65100;
+}
+.cash-badge i {
+    font-size: 0.75rem;
+}
+
+/* ===== TIMER ===== */
+.timer-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    background: rgba(220,53,69,0.08);
+    color: #c62828;
+}
+
+/* ===== DETAIL CARDS ===== */
+.detail-icon-box {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1rem;
+}
+.detail-icon-box.primary {
+    background: rgba(59,122,140,0.1);
+    color: #3B7A8C;
+}
+.detail-icon-box.success {
+    background: rgba(40,167,69,0.1);
+    color: #28a745;
+}
+.detail-icon-box.warning {
+    background: rgba(255,152,0,0.12);
+    color: #e65100;
+}
+.detail-icon-box.info {
+    background: rgba(23,162,184,0.1);
+    color: #17a2b8;
+}
+.detail-icon-box.purple {
+    background: rgba(102,51,153,0.08);
+    color: #663399;
+}
+
+/* ===== MODAL ===== */
+.confirm-modal .modal-content {
+    border-radius: 16px;
+    border: none;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+.confirm-modal .modal-header {
+    border: none;
+    padding: 1.5rem 1.5rem 0;
+}
+.confirm-modal .modal-body {
+    padding: 1rem 1.5rem 1.5rem;
+}
+.confirm-modal .modal-footer {
+    border: none;
+    padding: 0 1.5rem 1.5rem;
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-in {
+    animation: fadeSlideIn 0.4s ease forwards;
+}
+.animate-in-d1 { animation-delay: 0.05s; }
+.animate-in-d2 { animation-delay: 0.1s; }
+.animate-in-d3 { animation-delay: 0.15s; }
+.animate-in-d4 { animation-delay: 0.2s; }
+.animate-in-d5 { animation-delay: 0.25s; }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 576px) {
+    .amount-value {
+        font-size: 2.2rem;
+    }
+    .receipt {
+        padding: 1rem;
+    }
+    .btn-confirm, .btn-reject {
+        padding: 0.85rem 1.5rem;
+        font-size: 1rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'staff_dashboard' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'staff_payments' %}">Payments</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Cash Counter</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <!-- ===== HEADER ===== -->
+        <div class="card confirm-card mb-4 animate-in">
+            <div class="card-header text-white p-4" style="background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <div class="d-flex align-items-center">
+                        <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px);">
+                            <i class="fas fa-money-bill-wave fa-lg text-white"></i>
+                        </div>
+                        <div class="ms-3">
+                            <h5 class="mb-0 fw-bold">Cash Payment Confirmation</h5>
+                            <p class="mb-0 opacity-75">Confirm cash payment received at the counter</p>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="cash-badge pending">
+                            <i class="fas fa-clock"></i> Pending Confirmation
+                        </span>
+                        <span class="timer-badge" id="age-timer">
+                            <i class="fas fa-hourglass-half"></i>
+                            <span id="age-text">Just now</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- ===== LEFT: Customer & Reservation Info ===== -->
+            <div class="col-lg-7">
+                <div class="card confirm-card animate-in animate-in-d1">
+                    <div class="card-header bg-white border-bottom py-3 px-4">
+                        <h6 class="fw-bold mb-0"><i class="fas fa-user me-2 text-primary"></i>Customer Information</h6>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="detail-icon-box primary">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted d-block">Customer Name</small>
+                                        <span class="fw-semibold">{{ reservation.user.get_full_name|default:reservation.user.username }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="detail-icon-box primary">
+                                        <i class="fas fa-envelope"></i>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted d-block">Email</small>
+                                        <span class="fw-semibold small">{{ reservation.user.email }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card confirm-card animate-in animate-in-d2 mt-4">
+                    <div class="card-header bg-white border-bottom py-3 px-4">
+                        <h6 class="fw-bold mb-0"><i class="fas fa-calendar-check me-2 text-primary"></i>Reservation Details</h6>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <div class="d-flex align-items-center gap-3 mb-3">
+                                    <div class="detail-icon-box success">
+                                        <i class="fas fa-hashtag"></i>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted d-block">Reservation ID</small>
+                                        <span class="fw-semibold font-monospace">#{{ reservation.id }}</span>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-3 mb-3">
+                                    <div class="detail-icon-box primary">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted d-block">Court</small>
+                                        <span class="fw-semibold">{{ reservation.court.name }}</span>
+                                        {% if reservation.court.site %}
+                                        <small class="text-muted d-block">{{ reservation.court.site.name }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="detail-icon-box success">
+                                        <i class="fas fa-calendar"></i>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted d-block">Date</small>
+                                        <span class="fw-semibold">{{ reservation.date|date:"l, M d, Y" }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="d-flex align-items-center gap-3 mb-3">
+                                    <div class="detail-icon-box warning">
+                                        <i class="fas fa-clock"></i>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted d-block">Time Slot</small>
+                                        <span class="fw-semibold">{{ reservation.start_time|time:"g:i A" }} — {{ reservation.end_time|time:"g:i A" }}</span>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-3 mb-3">
+                                    <div class="detail-icon-box info">
+                                        <i class="fas fa-hourglass-half"></i>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted d-block">Duration</small>
+                                        <span class="fw-semibold">{{ reservation.duration_hours|floatformat:0 }} hour{{ reservation.duration_hours|floatformat:0|pluralize }}</span>
+                                    </div>
+                                </div>
+                                {% if reservation.rented_equipment.all %}
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="detail-icon-box purple">
+                                        <i class="fas fa-tools"></i>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted d-block">Equipment</small>
+                                        <div>
+                                            {% for eq in reservation.rented_equipment.all %}
+                                            <span class="badge bg-light text-dark me-1" style="font-size: 0.7rem;">
+                                                {{ eq.equipment.name }} × {{ eq.quantity }}
+                                            </span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== RIGHT: Amount & Receipt ===== -->
+            <div class="col-lg-5">
+                <!-- Amount Display -->
+                <div class="card confirm-card animate-in animate-in-d3">
+                    <div class="card-body p-4">
+                        <div class="amount-display">
+                            <div class="amount-label">Total Amount Due</div>
+                            <div class="amount-value">
+                                <span class="amount-currency">₱</span>{{ payment.amount|floatformat:0 }}
+                                <small style="font-size: 1rem; color: #6c757d;">.{{ payment.amount|floatformat:2|slice:'-2:' }}</small>
+                            </div>
+                        </div>
+
+                        <!-- Receipt Preview -->
+                        <div class="receipt mt-3">
+                            <div class="receipt-header">
+                                <div class="receipt-title">PICKLESPHERE</div>
+                                <small class="text-muted">Cash Payment Receipt</small>
+                            </div>
+                            <div class="receipt-row">
+                                <span class="receipt-label">Receipt #</span>
+                                <span class="receipt-value font-monospace">RCP-{{ payment.id }}</span>
+                            </div>
+                            <div class="receipt-row">
+                                <span class="receipt-label">Date</span>
+                                <span class="receipt-value">{{ payment.created_at|date:"M d, Y" }}</span>
+                            </div>
+                            <div class="receipt-row">
+                                <span class="receipt-label">Customer</span>
+                                <span class="receipt-value">{{ reservation.user.get_full_name|default:reservation.user.username }}</span>
+                            </div>
+                            <hr class="receipt-divider">
+                            <div class="receipt-row">
+                                <span class="receipt-label">Court Fee</span>
+                                <span class="receipt-value">₱{{ reservation.subtotal|floatformat:2 }}</span>
+                            </div>
+                            <div class="receipt-row">
+                                <span class="receipt-label">Equipment Fee</span>
+                                <span class="receipt-value">₱{{ reservation.equipment_fee|floatformat:2 }}</span>
+                            </div>
+                            <hr class="receipt-divider">
+                            <div class="receipt-row total">
+                                <span class="receipt-label">Total Paid</span>
+                                <span class="receipt-value">₱{{ payment.amount|floatformat:2 }}</span>
+                            </div>
+                            <div class="receipt-row">
+                                <span class="receipt-label">Payment</span>
+                                <span class="receipt-value" style="color: #e65100;">Cash</span>
+                            </div>
+                            <hr class="receipt-divider">
+                            <div style="text-align: center; font-size: 0.7rem; color: #adb5bd; margin-top: 0.5rem;">
+                                <i class="fas fa-check-circle me-1"></i>Official Receipt — Staff Confirmation Required
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="card confirm-card animate-in animate-in-d4 mt-4">
+                    <div class="card-body p-4">
+                        <form method="post" id="confirm-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" id="action-input" value="">
+
+                            <button type="button" class="btn-confirm mb-3" data-bs-toggle="modal" data-bs-target="#confirmModal">
+                                <i class="fas fa-check-circle me-2"></i>Confirm Cash Received
+                            </button>
+
+                            <button type="button" class="btn-reject" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                                <i class="fas fa-times-circle me-2"></i>Mark as Not Received
+                            </button>
+                        </form>
+
+                        <div class="text-center mt-3">
+                            <a href="{% url 'staff_payments' %}" class="btn btn-link text-muted small">
+                                <i class="fas fa-arrow-left me-1"></i>Back to Payments
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Confirm Modal ===== -->
+<div class="modal fade confirm-modal" id="confirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header text-center d-block">
+                <div style="width: 64px; height: 64px; background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 0.5rem;">
+                    <i class="fas fa-check-circle fa-2x" style="color: #2e7d32;"></i>
+                </div>
+                <h5 class="fw-bold mb-1">Confirm Cash Payment</h5>
+                <p class="text-muted mb-0">Are you sure you have received the cash payment of <strong>₱{{ payment.amount|floatformat:2 }}</strong> from <strong>{{ reservation.user.get_full_name|default:reservation.user.username }}</strong>?</p>
+            </div>
+            <div class="modal-body text-center">
+                <div class="p-3 rounded" style="background: #fff8e1;">
+                    <i class="fas fa-info-circle text-warning me-2"></i>
+                    <span class="small">This will confirm the reservation and notify the customer.</span>
+                </div>
+            </div>
+            <div class="modal-footer d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary flex-fill" style="border-radius: 10px;" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-success flex-fill" style="border-radius: 10px;" onclick="submitAction('confirm')">
+                    <i class="fas fa-check-circle me-1"></i>Yes, Confirm Payment
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Reject Modal ===== -->
+<div class="modal fade confirm-modal" id="rejectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header text-center d-block">
+                <div style="width: 64px; height: 64px; background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 0.5rem;">
+                    <i class="fas fa-exclamation-triangle fa-2x" style="color: #c62828;"></i>
+                </div>
+                <h5 class="fw-bold mb-1">Mark as Not Received</h5>
+                <p class="text-muted mb-0">This will mark the payment as <strong>failed</strong> and the reservation will not be confirmed. Are you sure?</p>
+            </div>
+            <div class="modal-footer d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary flex-fill" style="border-radius: 10px;" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-danger flex-fill" style="border-radius: 10px;" onclick="submitAction('reject')">
+                    <i class="fas fa-check-circle me-1"></i>Yes, Mark as Failed
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    'use strict';
+
+    // ===== Submit action =====
+    window.submitAction = function(action) {
+        document.getElementById('action-input').value = action;
+        document.getElementById('confirm-form').submit();
+    };
+
+    // ===== Payment Age Timer =====
+    const createdDate = new Date('{{ payment.created_at|date:"c" }}');
+    const ageText = document.getElementById('age-text');
+
+    function updateAge() {
+        const now = new Date();
+        const diffMs = now - createdDate;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMins / 60);
+
+        if (diffMins < 1) {
+            ageText.textContent = 'Just now';
+        } else if (diffMins < 60) {
+            ageText.textContent = `${diffMins} min${diffMins !== 1 ? 's' : ''} ago`;
+        } else if (diffHours < 24) {
+            const mins = diffMins % 60;
+            ageText.textContent = `${diffHours}h ${mins}m ago`;
+        } else {
+            const days = Math.floor(diffHours / 24);
+            ageText.textContent = `${days} day${days !== 1 ? 's' : ''} ago`;
+        }
+    }
+
+    updateAge();
+    setInterval(updateAge, 30000);
+
+    // ===== Style form controls =====
+    document.querySelectorAll('select, input, textarea').forEach(el => {
+        el.style.borderRadius = '10px';
+    });
+
+})();
+</script>
+{% endblock %}

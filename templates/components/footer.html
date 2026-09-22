@@ -1,0 +1,523 @@
+{% load static cache %}
+
+{% cache 300 footer_component %}
+<style>
+/* Footer Styles */
+.site-footer {
+    background: {% if footer_settings %}linear-gradient(135deg, {{ footer_settings.background_gradient_start|default:'#1a3a42' }} 0%, {{ footer_settings.background_gradient_end|default:'#0d1f23' }} 100%){% else %}linear-gradient(135deg, #1a3a42 0%, #0d1f23 100%){% endif %};
+    color: #fff;
+    padding: 4rem 0 0;
+}
+
+.footer-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.footer-logo {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.footer-brand-title {
+    font-weight: 600;
+    font-size: 1.25rem;
+    margin: 0;
+}
+
+.footer-description {
+    color: rgba(255,255,255,0.7);
+    font-size: 0.875rem;
+    line-height: 1.6;
+    margin-bottom: 1.25rem;
+}
+
+.footer-social {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.footer-social-link {
+    width: 40px;
+    height: 40px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.footer-social-link:hover {
+    background: #3B7A8C;
+    color: #fff;
+    transform: translateY(-3px);
+}
+
+.footer-section-title {
+    font-weight: 600;
+    font-size: 0.875rem;
+    margin-bottom: 1.25rem;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.footer-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-links li {
+    margin-bottom: 0.75rem;
+}
+
+.footer-link {
+    color: rgba(255,255,255,0.7);
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+}
+
+.footer-link:hover {
+    color: #fff;
+    transform: translateX(3px);
+}
+
+.footer-contact-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-contact-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.footer-contact-icon {
+    color: #3B7A8C;
+    font-size: 1rem;
+    margin-top: 0.125rem;
+}
+
+.footer-contact-text {
+    color: rgba(255,255,255,0.7);
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.footer-newsletter-text {
+    color: rgba(255,255,255,0.7);
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+}
+
+.footer-newsletter-form {
+    display: flex;
+}
+
+.footer-newsletter-input {
+    flex: 1;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-right: none;
+    color: #fff;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    border-radius: 6px 0 0 6px;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.footer-newsletter-input::placeholder {
+    color: rgba(255,255,255,0.5);
+}
+
+.footer-newsletter-input:focus {
+    background: rgba(255,255,255,0.15);
+    border-color: rgba(255,255,255,0.3);
+}
+
+.footer-newsletter-btn {
+    background: #3B7A8C;
+    color: #fff;
+    border: none;
+    padding: 0.75rem 1.25rem;
+    font-size: 0.875rem;
+    border-radius: 0 6px 6px 0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.footer-newsletter-btn:hover {
+    background: #2a5a66;
+}
+
+.footer-bottom {
+    border-top: 1px solid rgba(255,255,255,0.1);
+    margin-top: 3rem;
+    padding: 1.5rem 0;
+}
+
+.footer-copyright {
+    color: rgba(255,255,255,0.6);
+    font-size: 0.75rem;
+    margin: 0;
+}
+
+.footer-legal {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: flex-end;
+}
+
+.footer-legal-link {
+    color: rgba(255,255,255,0.6);
+    text-decoration: none;
+    font-size: 0.75rem;
+    transition: color 0.3s ease;
+}
+
+.footer-legal-link:hover {
+    color: #fff;
+}
+
+.footer-credit {
+    padding-bottom: 1.5rem;
+    text-align: center;
+}
+
+.footer-credit-text {
+    color: rgba(255,255,255,0.4);
+    font-size: 0.75rem;
+    margin: 0;
+}
+
+/* Back to Top Button */
+.back-to-top {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 48px;
+    height: 48px;
+    background: #3B7A8C;
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.back-to-top.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.back-to-top:hover {
+    background: #2a5a66;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+}
+
+/* Responsive */
+@media (max-width: 767.98px) {
+    .site-footer {
+        padding: 2.5rem 0 0;
+    }
+    
+    .footer-brand {
+        justify-content: center;
+    }
+    
+    .footer-description {
+        text-align: center;
+    }
+    
+    .footer-social {
+        justify-content: center;
+    }
+    
+    .footer-section-title {
+        text-align: center;
+        margin-top: 0.5rem;
+    }
+    
+    .footer-links {
+        text-align: center;
+    }
+    
+    .footer-links li {
+        margin-bottom: 0.5rem;
+    }
+    
+    .footer-link {
+        justify-content: center;
+    }
+    
+    .footer-contact-item {
+        justify-content: center;
+    }
+    
+    .footer-legal {
+        justify-content: center;
+        margin-top: 1rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .footer-bottom {
+        text-align: center;
+        margin-top: 2rem;
+        padding: 1rem 0;
+    }
+    
+    .footer-newsletter-form {
+        max-width: 320px;
+        margin: 0 auto;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .site-footer {
+        padding: 2rem 0 0;
+    }
+    
+    .footer-brand-title {
+        font-size: 1.125rem;
+    }
+    
+    .footer-logo {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .footer-description {
+        font-size: 0.8125rem;
+    }
+    
+    .footer-section-title {
+        font-size: 0.8125rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .footer-link {
+        font-size: 0.8125rem;
+    }
+    
+    .footer-contact-text {
+        font-size: 0.8125rem;
+    }
+    
+    .footer-newsletter-input {
+        padding: 0.625rem 0.75rem;
+        font-size: 0.8125rem;
+    }
+    
+    .footer-newsletter-btn {
+        padding: 0.625rem 1rem;
+        font-size: 0.8125rem;
+    }
+    
+    .footer-legal-link {
+        font-size: 0.6875rem;
+    }
+    
+    .footer-copyright {
+        font-size: 0.6875rem;
+    }
+    
+    .footer-credit-text {
+        font-size: 0.6875rem;
+    }
+    
+    .back-to-top {
+        bottom: 16px;
+        right: 16px;
+        width: 40px;
+        height: 40px;
+    }
+}
+</style>
+
+{% if not footer_settings or footer_settings.is_visible %}
+<footer class="site-footer">
+    <div class="container">
+        <div class="row g-4">
+            <!-- Brand Column -->
+            <div class="col-lg-3 col-md-6">
+                <div class="footer-brand">
+                    {% if site_branding and site_branding.footer_logo %}
+                        <img src="{{ site_branding.footer_logo.url }}?_v={{ site_branding.cache_buster }}" alt="{{ footer_settings.organization_name|default:'PickleSphere' }}" class="footer-logo">
+                    {% else %}
+                        <img src="{% static 'PickleSphereLogo.png' %}" alt="PickleSphere" class="footer-logo">
+                    {% endif %}
+                    <h5 class="footer-brand-title">{{ footer_settings.organization_name|default:'PickleSphere' }}</h5>
+                </div>
+                <p class="footer-description">
+                    {{ footer_settings.short_description|default:'The ultimate platform connecting pickleball players with courts, organizations, and tournaments nationwide. Find, book, and play — all in one place.' }}
+                </p>
+                {% if not footer_settings or footer_settings.show_social_media %}
+                {% if footer_social_platforms %}
+                <div class="footer-social">
+                    {% for platform in footer_social_platforms %}
+                    <a href="{{ platform.url }}" class="footer-social-link" aria-label="{{ platform.get_platform_display }}" {% if platform.open_in_new_tab %}target="_blank" rel="noopener"{% endif %}>
+                        <i class="{{ platform.icon_class }}"></i>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% endif %}
+            </div>
+
+            <!-- Quick Links -->
+            {% if not footer_settings or footer_settings.show_quick_links %}
+            <div class="col-lg-2 col-md-6">
+                <h6 class="footer-section-title">Quick Links</h6>
+                <ul class="footer-links">
+                    {% if footer_quick_links %}
+                        {% for link in footer_quick_links %}
+                        <li>
+                            <a href="{{ link.get_url }}" class="footer-link" {% if link.open_in_new_tab %}target="_blank" rel="noopener"{% endif %}>
+                                {% if link.icon_class %}<i class="{{ link.icon_class }} me-1"></i>{% endif %}
+                                {{ link.title }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    {% else %}
+                        <li><a href="{% url 'court_list' %}" class="footer-link">Book a Court</a></li>
+                        <li><a href="{% url 'tournament_list' %}" class="footer-link">Tournaments</a></li>
+                        <li><a href="{% url 'equipment_list' %}" class="footer-link">Equipment</a></li>
+                        <li><a href="{% url 'leaderboard' %}" class="footer-link">Leaderboard</a></li>
+                        <li><a href="{% url 'about' %}" class="footer-link">About Us</a></li>
+                        <li><a href="{% url 'contact' %}" class="footer-link">Contact</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <!-- Contact Us -->
+            {% if not footer_settings or footer_settings.show_contact_details %}
+            <div class="col-lg-3 col-md-6">
+                <h6 class="footer-section-title">Contact Us</h6>
+                <ul class="footer-contact-list">
+                    <li class="footer-contact-item">
+                        <i class="fas fa-map-marker-alt footer-contact-icon"></i>
+                        <span class="footer-contact-text">{{ site_contact_info.address }}<br>{{ site_contact_info.city_country }}</span>
+                    </li>
+                    <li class="footer-contact-item">
+                        <i class="fas fa-phone footer-contact-icon"></i>
+                        <span class="footer-contact-text">{{ site_contact_info.phone }}</span>
+                    </li>
+                    <li class="footer-contact-item">
+                        <i class="fas fa-envelope footer-contact-icon"></i>
+                        <span class="footer-contact-text">{{ site_contact_info.email }}</span>
+                    </li>
+                    <li class="footer-contact-item">
+                        <i class="fas fa-clock footer-contact-icon"></i>
+                        <span class="footer-contact-text">{{ topbar_settings.office_hours|default:'Open Daily: 6AM - 10PM' }}</span>
+                    </li>
+                </ul>
+            </div>
+            {% endif %}
+
+            <!-- Newsletter -->
+            {% if not footer_settings or footer_settings.show_newsletter %}
+            <div class="col-lg-4 col-md-6">
+                <h6 class="footer-section-title">{{ footer_settings.newsletter_heading|default:'Newsletter' }}</h6>
+                <p class="footer-newsletter-text">
+                    {{ footer_settings.newsletter_description|default:'Subscribe to receive special offers, tournament updates, and exclusive deals.' }}
+                </p>
+                <form class="footer-newsletter-form" onsubmit="event.preventDefault(); alert('Thank you for subscribing!');">
+                    <input type="email" class="footer-newsletter-input" placeholder="Your email address" required>
+                    <button type="submit" class="footer-newsletter-btn" aria-label="{{ footer_settings.newsletter_button_text|default:'Subscribe' }}">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Bottom Bar -->
+        <div class="footer-bottom">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <p class="footer-copyright">
+                        {{ footer_settings.copyright_text|default:'© PickleSphere. All rights reserved.' }}
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <div class="footer-legal">
+                        <a href="{% url 'privacy_policy' %}" class="footer-legal-link">Privacy Policy</a>
+                        <a href="{% url 'terms_of_service' %}" class="footer-legal-link">Terms of Service</a>
+                        <a href="{% url 'faq' %}" class="footer-legal-link">FAQ</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Developer Credit -->
+        <div class="footer-credit">
+            <p class="footer-credit-text">
+                {% if footer_settings and footer_settings.developer_credit %}
+                    Developed by <strong>{{ footer_settings.developer_credit }}</strong>
+                    {% if footer_settings.developer_contact %} &bull; Contact: {{ footer_settings.developer_contact }}{% endif %}
+                    {% if footer_settings.version_text %} &bull; Version: {{ footer_settings.version_text }}{% endif %}
+                {% else %}
+                    Developed by <strong>Kylle Ian D. Acibron</strong> &bull; Contact: kylleacibron@gmail.com &bull; Version: 1.0.0
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    {% if not scroll_to_top_settings or not scroll_to_top_settings.is_visible or not scroll_to_top_settings.is_active %}
+    <!-- Fallback Back to Top Button (shown when CMS ScrollToTop is not active) -->
+    <button class="back-to-top" id="backToTop" aria-label="Back to top">
+        <i class="fas fa-chevron-up"></i>
+    </button>
+    {% endif %}
+</footer>
+{% endif %}
+
+<script>
+    // Back to Top Button (fallback if CMS settings not active)
+    {% if not scroll_to_top_settings or not scroll_to_top_settings.is_visible or not scroll_to_top_settings.is_active %}
+    (function() {
+        const backToTopBtn = document.getElementById('backToTop');
+        if (!backToTopBtn) return;
+        
+        function toggleBackToTop() {
+            if (window.scrollY > 300) {
+                backToTopBtn.classList.add('visible');
+            } else {
+                backToTopBtn.classList.remove('visible');
+            }
+        }
+        
+        window.addEventListener('scroll', toggleBackToTop, { passive: true });
+        
+        backToTopBtn.addEventListener('click', function() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    })();
+    {% endif %}
+</script>
+{% endcache %}

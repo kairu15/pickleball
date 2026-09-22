@@ -1,0 +1,35 @@
+{% extends 'emails/base_email.html' %}
+
+{% block email_content %}
+    <span class="notification-badge warning">🎾 Match Reminder</span>
+    <h2>Match Reminder!</h2>
+    <p>Hi <strong>{{ user.get_full_name|default:user.username }}</strong>,</p>
+    <p>This is a reminder for your upcoming match in <strong>{{ tournament_name }}</strong>. Get ready to play!</p>
+    
+    <div class="details-card">
+        <table cellpadding="0" cellspacing="0">
+            <tr>
+                <td class="label">Tournament</td>
+                <td class="value">{{ tournament_name }}</td>
+            </tr>
+            <tr>
+                <td class="label">Court</td>
+                <td class="value">{{ court_name }}</td>
+            </tr>
+            <tr>
+                <td class="label">Date</td>
+                <td class="value">{{ scheduled_date }}</td>
+            </tr>
+            <tr>
+                <td class="label">Time</td>
+                <td class="value">{{ scheduled_time }}</td>
+            </tr>
+        </table>
+    </div>
+    
+    <p style="font-size: 14px; color: #888;"><strong>💡 Tip:</strong> Arrive 15 minutes early to warm up and check in at the court.</p>
+    
+    <div style="text-align: center;">
+        <a href="{{ action_url }}" class="cta-button">{{ action_text }}</a>
+    </div>
+{% endblock %}

@@ -1,0 +1,149 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}{% if edit_mode %}Edit{% else %}Create{% endif %} Match Settings{% endblock %}
+{% block page_title %}{% if edit_mode %}Edit{% else %}Create{% endif %} Match Settings{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        {% if user.is_authenticated %}
+            {% if user.is_super_admin %}
+            <li class="breadcrumb-item"><a href="{% url 'super_admin_analytics' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+            {% endif %}
+        {% endif %}
+        <li class="breadcrumb-item"><a href="{% url 'match_settings_list' %}">Match Settings</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{% if edit_mode %}Edit{% else %}Create{% endif %}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="admin-card">
+            <div class="admin-card-header bg-gradient-light">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-cog text-primary"></i>
+                    {% if edit_mode %}Edit{% else %}Create{% endif %} Match Settings
+                </h5>
+            </div>
+            <div class="admin-card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        {% for error in form.non_field_errors %}
+                            <div>{{ error }}</div>
+                        {% endfor %}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="admin-form-section">
+                        <h6 class="admin-form-section-title">
+                            <i class="fas fa-info-circle text-primary"></i>
+                            Basic Settings
+                        </h6>
+                        <div class="mb-3">
+                            <label class="admin-form-label">
+                                Name <span class="text-danger">*</span>
+                            </label>
+                            {{ form.name }}
+                            {% if form.name.errors %}<div class="invalid-feedback d-block">{{ form.name.errors }}</div>{% endif %}
+                        </div>
+                        <div class="form-check form-switch">
+                            {{ form.is_active }}
+                            <label class="form-check-label fw-semibold" for="{{ form.is_active.id_for_label }}">
+                                Active
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="admin-form-section">
+                        <h6 class="admin-form-section-title">
+                            <i class="fas fa-gamepad text-primary"></i>
+                            Match Format
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="admin-form-label">
+                                    Format <span class="text-danger">*</span>
+                                </label>
+                                {{ form.format }}
+                                {% if form.format.errors %}<div class="invalid-feedback d-block">{{ form.format.errors }}</div>{% endif %}
+                                <div class="form-text text-muted small">
+                                    Singles: 1 vs 1 | Doubles: 2 vs 2 | Mixed: 1M + 1F
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="admin-form-label">
+                                    Game Type <span class="text-danger">*</span>
+                                </label>
+                                {{ form.game_type }}
+                                {% if form.game_type.errors %}<div class="invalid-feedback d-block">{{ form.game_type.errors }}</div>{% endif %}
+                                <div class="form-text text-muted small">
+                                    Friendly | Ranked | Practice
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="admin-form-section">
+                        <h6 class="admin-form-section-title">
+                            <i class="fas fa-trophy text-primary"></i>
+                            Scoring Configuration
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="admin-form-label">Scoring Format</label>
+                                {{ form.scoring_format }}
+                                {% if form.scoring_format.errors %}<div class="invalid-feedback d-block">{{ form.scoring_format.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="admin-form-label">Points per Game</label>
+                                {{ form.points_per_game }}
+                                {% if form.points_per_game.errors %}<div class="invalid-feedback d-block">{{ form.points_per_game.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="admin-form-label">Games to Win</label>
+                                {{ form.games_to_win }}
+                                {% if form.games_to_win.errors %}<div class="invalid-feedback d-block">{{ form.games_to_win.errors }}</div>{% endif %}
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <div class="form-check form-switch">
+                                {{ form.win_by_two }}
+                                <label class="form-check-label fw-semibold" for="{{ form.win_by_two.id_for_label }}">
+                                    Win by 2 points
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center pt-4 border-top">
+                        <a href="{% url 'match_settings_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Save Settings
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('input:not([type="checkbox"]), select, textarea').forEach(function(input) {
+    input.classList.add('form-control', 'admin-form-control');
+});
+
+document.querySelectorAll('select').forEach(function(select) {
+    select.classList.add('form-select');
+});
+</script>
+{% endblock %}
+

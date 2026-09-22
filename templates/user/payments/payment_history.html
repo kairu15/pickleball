@@ -1,0 +1,206 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Payment History{% endblock %}
+{% block page_title %}Payment History{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <p class="text-muted mb-0">View your complete payment history</p>
+    </div>
+    <a href="{% url 'reservation_list' %}" class="btn btn-primary" style="border-radius: 10px; font-weight: 500; box-shadow: 0 4px 12px rgba(59,122,140,0.25);">
+        <i class="fas fa-plus me-2"></i>New Reservation
+    </a>
+</div>
+
+<!-- Stats Summary -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+            <div class="card-body p-3">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon success" style="width: 44px; height: 44px; font-size: 1.125rem;">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h5 class="mb-0 fw-bold">₱{{ total_spent|floatformat:0 }}</h5>
+                        <small class="text-muted">Total Spent</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+            <div class="card-body p-3">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon info" style="width: 44px; height: 44px; font-size: 1.125rem;">
+                        <i class="fas fa-check-double"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h5 class="mb-0 fw-bold">{{ paid_count }}</h5>
+                        <small class="text-muted">Paid Payments</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+            <div class="card-body p-3">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon warning" style="width: 44px; height: 44px; font-size: 1.125rem;">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h5 class="mb-0 fw-bold">{{ pending_count }}</h5>
+                        <small class="text-muted">Pending Payments</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-lg payment-history-card" style="border-radius: 16px; overflow: hidden;">
+    <div class="card-header bg-white border-bottom py-4 px-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <h5 class="fw-bold mb-0 d-flex align-items-center">
+                <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px; box-shadow: 0 4px 12px rgba(59,122,140,0.25);">
+                    <i class="fas fa-receipt text-white"></i>
+                </div>
+                Payment History
+            </h5>
+            <div class="d-flex gap-2">
+                <span class="badge bg-light text-dark border px-3 py-2" style="font-size: 0.8rem;">
+                    <i class="fas fa-list me-1 text-primary"></i>{{ payments|length }} total
+                </span>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        {% if payments %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 payment-table">
+                <thead style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
+                    <tr>
+                        <th class="py-3 px-4 fw-semibold text-muted" style="font-size: 0.85rem;">Payment ID</th>
+                        <th class="py-3 px-4 fw-semibold text-muted" style="font-size: 0.85rem;">Reservation</th>
+                        <th class="py-3 px-4 fw-semibold text-muted" style="font-size: 0.85rem;">Date</th>
+                        <th class="py-3 px-4 fw-semibold text-muted" style="font-size: 0.85rem;">Amount</th>
+                        <th class="py-3 px-4 fw-semibold text-muted" style="font-size: 0.85rem;">Method</th>
+                        <th class="py-3 px-4 fw-semibold text-muted" style="font-size: 0.85rem;">Status</th>
+                        <th class="py-3 px-4 fw-semibold text-muted" style="font-size: 0.85rem; text-align: center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in payments %}
+                    <tr class="payment-row">
+                        <td data-label="Payment ID" class="py-3 px-4">
+                            <span class="badge bg-light text-dark border px-3 py-2" style="font-family: monospace; font-size: 0.8rem;">
+                                #{{ payment.id }}
+                            </span>
+                        </td>
+                        <td data-label="Reservation" class="py-3 px-4">
+                            <div class="d-flex align-items-center gap-2">
+                                <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #6c757d 0%, #545b62 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-map-marker-alt text-white" style="font-size: 0.75rem;"></i>
+                                </div>
+                                <div>
+                                    <span class="fw-semibold d-block">{{ payment.reservation.court.name }}</span>
+                                    <small class="text-muted">{{ payment.reservation.date|date:"M d, Y" }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td data-label="Date" class="py-3 px-4">
+                            <span class="fw-medium">{{ payment.created_at|date:"M d, Y" }}</span>
+                            <small class="text-muted d-block">{{ payment.created_at|time:"g:i A" }}</small>
+                        </td>
+                        <td data-label="Amount" class="py-3 px-4">
+                            <span class="fw-bold fs-5" style="color: #3B7A8C;">₱{{ payment.amount|floatformat:2 }}</span>
+                        </td>
+                        <td data-label="Method" class="py-3 px-4">
+                            <span class="badge bg-light text-dark border px-3 py-2" style="font-size: 0.8rem;">
+                                {% if payment.method == 'gcash' %}
+                                    <i class="fas fa-mobile-alt me-1 text-primary"></i>
+                                {% elif payment.method == 'maya' %}
+                                    <i class="fas fa-wallet me-1 text-primary"></i>
+                                {% elif payment.method == 'bank_transfer' %}
+                                    <i class="fas fa-university me-1 text-success"></i>
+                                {% elif payment.method == 'cash' %}
+                                    <i class="fas fa-money-bill-wave me-1 text-success"></i>
+                                {% elif payment.method == 'card' %}
+                                    <i class="fas fa-credit-card me-1 text-info"></i>
+                                {% else %}
+                                    <i class="fas fa-question me-1 text-muted"></i>
+                                {% endif %}
+                                {{ payment.get_method_display|default:"N/A" }}
+                            </span>
+                        </td>
+                        <td data-label="Status" class="py-3 px-4">
+                            <span class="badge px-3 py-2 payment-status-badge {% if payment.status == 'paid' %}bg-success{% elif payment.status == 'pending' %}bg-warning text-dark{% elif payment.status == 'refunded' %}bg-info{% else %}bg-secondary{% endif %}" style="font-size: 0.8rem; border-radius: 8px;">
+                                {% if payment.status == 'paid' %}
+                                    <i class="fas fa-check-circle me-1"></i>
+                                {% elif payment.status == 'pending' %}
+                                    <i class="fas fa-clock me-1"></i>
+                                {% elif payment.status == 'refunded' %}
+                                    <i class="fas fa-undo me-1"></i>
+                                {% else %}
+                                    <i class="fas fa-question-circle me-1"></i>
+                                {% endif %}
+                                {{ payment.get_status_display }}
+                            </span>
+                        </td>
+                        <td data-label="Actions" class="py-3 px-4 text-center">
+                            <a href="{% url 'payment_status' payment.id %}" class="btn btn-sm btn-outline-primary" style="border-radius: 8px; padding: 8px 16px;">
+                                <i class="fas fa-eye me-1"></i>View
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="fas fa-receipt fa-2x text-muted"></i>
+            </div>
+            <h5 class="empty-state-title">No payment history</h5>
+            <p class="empty-state-text">You haven't made any payments yet. Start by reserving a court!</p>
+            <a href="{% url 'court_list' %}" class="btn btn-primary mt-3">
+                <i class="fas fa-calendar-plus me-2"></i>Reserve a Court
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.payment-history-card {
+    transition: all 0.3s ease;
+}
+.payment-history-card:hover {
+    box-shadow: 0 12px 35px rgba(0,0,0,0.12) !important;
+}
+.payment-table thead th {
+    border-bottom: 2px solid #dee2e6;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.payment-row {
+    transition: all 0.25s ease;
+}
+.payment-row:hover {
+    background-color: #f8f9fa;
+}
+.payment-status-badge {
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+}
+</style>
+{% endblock %}
+

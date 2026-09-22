@@ -1,0 +1,103 @@
+{% extends 'base/dashboard_base.html' %}
+{% block title %}Privacy Policy CMS{% endblock %}
+{% block page_title %}<i class="fas fa-shield-alt me-2"></i>Privacy Policy CMS{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="admin-card mb-4">
+            <div class="admin-card-header"><h5 class="admin-card-title"><i class="fas fa-cog me-2"></i>Page Content Sections</h5></div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="table-responsive">
+                        <table class="table admin-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Section</th>
+                                    <th>Content</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in content %}
+                                <tr>
+                                    <td><span class="badge bg-primary">{{ item.get_section_display }}</span></td>
+                                    <td><small class="text-muted">{{ item.content|truncatechars:80 }}</small></td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#editContent{{ item.id }}">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr class="collapse" id="editContent{{ item.id }}">
+                                    <td colspan="3" class="bg-light">
+                                        <div class="p-3">
+                                            <input type="hidden" name="section" value="{{ item.section }}">
+                                            <textarea name="content" class="form-control mb-2" rows="2">{{ item.content }}</textarea>
+                                            <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save me-1"></i>Save</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted py-4">No content sections yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="admin-card mb-4">
+            <div class="admin-card-header d-flex justify-content-between align-items-center">
+                <h5 class="admin-card-title mb-0"><i class="fas fa-list-ol me-2"></i>Privacy Sections (Clauses)</h5>
+                <a href="{% url 'super_admin_privacy_section_add' %}" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i></a>
+            </div>
+            <div class="card-body p-0">
+                {% for sec in sections %}
+                <div class="d-flex justify-content-between align-items-start p-3 border-bottom">
+                    <div>
+                        <strong>{{ sec.section_number }}. {{ sec.title }}</strong>
+                        <small class="d-block text-muted">{{ sec.content|truncatechars:120 }}</small>
+                        <small class="d-block mt-1"><span class="badge bg-{{ sec.icon_color }}"><i class="fas {{ sec.icon }}"></i></span></small>
+                    </div>
+                    <div class="d-flex gap-1 flex-shrink-0">
+                        <a href="{% url 'super_admin_privacy_section_edit' sec.id %}" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></a>
+                        <a href="{% url 'super_admin_privacy_section_delete' sec.id %}" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></a>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="p-4 text-center text-muted">No sections yet. Add your first clause!</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="admin-card mb-4">
+            <div class="admin-card-header"><h5 class="admin-card-title"><i class="fas fa-link me-2"></i>Quick Actions</h5></div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'super_admin_privacy_section_add' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Add Clause
+                    </a>
+                    <a href="{% url 'privacy_policy' %}" target="_blank" class="btn btn-outline-primary">
+                        <i class="fas fa-eye me-2"></i>View Live Page
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="admin-card">
+            <div class="admin-card-header"><h5 class="admin-card-title"><i class="fas fa-chart-simple me-2"></i>Stats</h5></div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Clauses:</span>
+                    <strong>{{ sections|length }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

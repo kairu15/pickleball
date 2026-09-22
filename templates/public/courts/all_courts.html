@@ -1,0 +1,309 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}All Courts{% endblock %}
+
+{% block body %}
+{% include 'components/header.html' %}
+
+<!-- Hero Section -->
+<section class="hero-section" style="background: linear-gradient(rgba(26, 58, 66, 0.8), rgba(59, 122, 140, 0.9)), url('https://images.unsplash.com/photo-1622163642998-1ea36b1ade5b?w=1920') center/cover; padding: 100px 0 80px; position: relative;">
+    <div class="container">
+        <div class="row justify-content-center text-center">
+            <div class="col-lg-8">
+                <span class="badge mb-3 px-4 py-2" style="background: var(--bg-white); color: var(--primary-color); font-size: 0.875rem; letter-spacing: 1px; text-transform: uppercase; font-weight: 600;">Find Your Perfect Court</span>
+                <h1 class="display-3 fw-bold mb-4 text-white" style="text-shadow: 2px 4px 8px rgba(0,0,0,0.4); letter-spacing: -1px;">All Courts</h1>
+                <p class="lead mb-0" style="color: rgba(255,255,255,0.85); text-shadow: 1px 2px 4px rgba(0,0,0,0.3); max-width: 600px; margin: 0 auto;">Browse pickleball courts from all organizations across the platform</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Court Categories -->
+<section class="py-4 marketing-section" style="background: var(--bg-light);">
+    <div class="container">
+        <div class="row g-3">
+            <div class="col-md-3 col-6">
+                <a href="?type=indoor" class="text-decoration-none">
+                    <div class="card border-0 h-100 hover-card" style="border-radius: var(--border-radius-lg); box-shadow: var(--card-shadow); background: var(--bg-white);">
+                        <div class="card-body text-center p-3">
+                            <div class="mb-2" style="width: 50px; height: 50px; background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+                                <i class="fas fa-home fa-lg text-white"></i>
+                            </div>
+                            <h6 class="mb-0 fw-bold" style="color: var(--text-dark);">Indoor Courts</h6>
+                            <small style="color: var(--text-muted);">Climate controlled</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-3 col-6">
+                <a href="?type=outdoor" class="text-decoration-none">
+                    <div class="card border-0 h-100 hover-card" style="border-radius: var(--border-radius-lg); box-shadow: var(--card-shadow); background: var(--bg-white);">
+                        <div class="card-body text-center p-3">
+                            <div class="mb-2" style="width: 50px; height: 50px; background: linear-gradient(135deg, var(--success-color) 0%, #1e7e34 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+                                <i class="fas fa-sun fa-lg text-white"></i>
+                            </div>
+                            <h6 class="mb-0 fw-bold" style="color: var(--text-dark);">Outdoor Courts</h6>
+                            <small style="color: var(--text-muted);">Natural lighting</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-3 col-6">
+                <a href="?type=premium" class="text-decoration-none">
+                    <div class="card border-0 h-100 hover-card" style="border-radius: var(--border-radius-lg); box-shadow: var(--card-shadow); background: var(--bg-white);">
+                        <div class="card-body text-center p-3">
+                            <div class="mb-2" style="width: 50px; height: 50px; background: linear-gradient(135deg, var(--warning-color) 0%, #e0a800 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+                                <i class="fas fa-star fa-lg text-white"></i>
+                            </div>
+                            <h6 class="mb-0 fw-bold" style="color: var(--text-dark);">Premium Courts</h6>
+                            <small style="color: var(--text-muted);">Elite facilities</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-3 col-6">
+                <a href="{% url 'all_courts' %}" class="text-decoration-none">
+                    <div class="card border-0 h-100 hover-card" style="border-radius: var(--border-radius-lg); box-shadow: var(--card-shadow); background: var(--bg-white);">
+                        <div class="card-body text-center p-3">
+                            <div class="mb-2" style="width: 50px; height: 50px; background: linear-gradient(135deg, var(--info-color) 0%, #138496 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+                                <i class="fas fa-th-large fa-lg text-white"></i>
+                            </div>
+                            <h6 class="mb-0 fw-bold" style="color: var(--text-dark);">All Courts</h6>
+                            <small style="color: var(--text-muted);">View everything</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Courts Grid -->
+<section class="py-5 marketing-section" style="background: var(--bg-light);">
+    <div class="container">
+        <!-- Results Header -->
+        <!-- Filter Bar -->
+        <form method="get" class="card border-0 shadow-sm mb-4" style="border-radius: var(--border-radius-lg);">
+            <div class="card-body p-3">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-muted">Organization</label>
+                        <select name="organization" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="">All Organizations</option>
+                            {% for org in organizations %}
+                            <option value="{{ org.slug }}" {% if selected_org == org.slug %}selected{% endif %}>{{ org.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-muted">Site/Location</label>
+                        <select name="site" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="">All Locations</option>
+                            {% for site in sites %}
+                            <option value="{{ site.id }}" {% if selected_site == site.id|stringformat:"s" %}selected{% endif %}>{{ site.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold text-muted">Type</label>
+                        <select name="type" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="">All Types</option>
+                            <option value="indoor" {% if selected_type == 'indoor' %}selected{% endif %}>Indoor</option>
+                            <option value="outdoor" {% if selected_type == 'outdoor' %}selected{% endif %}>Outdoor</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold text-muted">Date</label>
+                        <input type="date" name="date" class="form-control form-control-sm" value="{{ selected_date }}" min="{% now 'Y-m-d' %}">
+                    </div>
+                    <div class="col-md-2 d-flex gap-1">
+                        <button type="submit" class="btn btn-sm btn-primary w-100"><i class="fas fa-search"></i></button>
+                        <a href="{% url 'all_courts' %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-undo"></i></a>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h4 class="fw-bold mb-0" style="color: var(--text-dark);">Available Courts</h4>
+                <small class="text-muted">Showing {{ courts|length }} court{{ courts|length|pluralize }}</small>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            {% for court in courts %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 hover-card" style="border-radius: var(--border-radius-lg); overflow: hidden; box-shadow: var(--card-shadow); background: var(--bg-white); transition: all var(--transition-slow);">
+                    <div class="position-relative">
+                        {% if court.image %}
+                            <img src="{{ court.image.url }}" class="card-img-top" alt="{{ court.name }}" style="height: 200px; object-fit: cover;" loading="lazy">
+                        {% elif court.organization and court.organization.latitude and court.organization.longitude %}
+                            <div class="card-img-top" style="height: 200px; overflow: hidden; background: var(--bg-light);">
+                                <img src="{% url 'static_map' %}?lat={{ court.organization.latitude }}&lng={{ court.organization.longitude }}&width=400&height=200&zoom=14" alt="Map of {{ court.organization.name }}" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy">
+                            </div>
+                        {% else %}
+                            <div class="card-img-top d-flex align-items-center justify-content-center" style="height: 200px; background: var(--bg-light);">
+                                <i class="fas fa-table-tennis fa-4x" style="color: var(--primary-light);"></i>
+                            </div>
+                        {% endif %}
+                        <div class="position-absolute top-0 end-0 m-2">
+                            {% if court.status == 'available' %}
+                            <span class="badge px-2 py-1" style="border-radius: var(--border-radius-sm); font-weight: 500; background: var(--success-color); color: white; font-size: 0.7rem;">
+                                <i class="fas fa-check-circle me-1"></i>
+                            {% else %}
+                            <span class="badge px-2 py-1" style="border-radius: var(--border-radius-sm); font-weight: 500; background: var(--warning-color); color: var(--text-dark); font-size: 0.7rem;">
+                                <i class="fas fa-clock me-1"></i>
+                            {% endif %}
+                                {{ court.get_status_display }}
+                            </span>
+                        </div>
+                        <div class="position-absolute top-0 start-0 m-2">
+                            <span class="badge px-2 py-1" style="background: var(--primary-color); border-radius: var(--border-radius-sm); font-weight: 500; font-size: 0.7rem;">
+                                <i class="fas fa-cloud me-1"></i>{{ court.get_court_type_display }}
+                            </span>
+                        </div>
+                        {% if court.organization %}
+                        <div class="position-absolute bottom-0 start-0 m-2">
+                            <a href="{% url 'organization_public_detail' court.organization.slug %}" class="badge px-2 py-1 text-decoration-none" style="background: rgba(0,0,0,0.6); color: white; font-size: 0.7rem; border-radius: var(--border-radius-sm);">
+                                <i class="fas fa-building me-1"></i>{{ court.organization.name }}
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <h6 class="card-title fw-bold mb-0" style="color: var(--text-dark);">{{ court.name }}</h6>
+                        </div>
+                        <!-- Rating Stars + Surface Type -->
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            {% if court.rating_avg %}
+                                <div style="color: #ffc107; font-size: 0.7rem;">
+                                    {% for i in "12345" %}
+                                        <i class="{% if forloop.counter <= court.rating_avg %}fas{% else %}far{% endif %} fa-star"></i>
+                                    {% endfor %}
+                                </div>
+                                <small class="text-muted" style="font-size:0.7rem;">{{ court.rating_avg|floatformat:1 }}</small>
+                            {% else %}
+                                <small class="text-muted" style="font-size:0.7rem;">No ratings</small>
+                            {% endif %}
+                            {% if court.surface_type %}
+                                <span class="badge" style="background: #e9ecef; color: #495057; font-size:0.62rem; font-weight:500;">{{ court.get_surface_type_display }}</span>
+                            {% endif %}
+                        </div>
+                        <p class="small mb-2" style="color: var(--text-muted);">
+                            <i class="fas fa-map-marker-alt me-1" style="color: var(--primary-color);"></i>{{ court.site.name }}
+                        </p>
+                        <p class="card-text" style="color: var(--text-body); font-size: 0.95rem;">{{ court.description|truncatewords:12|default:"Premium pickleball court with professional amenities." }}</p>
+
+                        
+                        <hr class="my-2" style="border-color: var(--border-color);">
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="small" style="color: var(--text-muted);">From</span>
+                                <h5 class="fw-bold mb-0" style="color: var(--primary-color);">₱{{ court.hourly_rate|floatformat:0 }}<small style="color: var(--text-muted); font-weight: 400; font-size: 0.75rem;">/hr</small></h5>
+                            </div>
+                            <div class="d-flex gap-1">
+                                {% if court.organization and court.organization.latitude and court.organization.longitude %}
+                                <a href="{% url 'court_directions' court.id %}" class="btn btn-sm btn-success" style="border-radius: var(--border-radius-sm);" title="Get Directions">
+                                    <i class="fas fa-directions"></i>
+                                </a>
+                                {% endif %}
+                                <a href="{% url 'court_view' court.id %}" class="btn btn-sm btn-outline-primary" style="border-radius: var(--border-radius-sm);">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% if court.status == 'available' %}
+                                <a href="{% url 'reservation_create' %}?court={{ court.id }}" class="btn btn-sm btn-primary" style="border-radius: var(--border-radius-sm);">
+                                    <i class="fas fa-calendar-plus"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="card border-0" style="border-radius: var(--border-radius-lg); box-shadow: var(--card-shadow); background: var(--bg-white);">
+                    <div class="card-body text-center py-5">
+                        <div class="mb-4">
+                            <div style="width: 80px; height: 80px; background: var(--bg-light); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-search fa-3x" style="color: var(--primary-light);"></i>
+                            </div>
+                        </div>
+                        <h3 class="fw-bold mb-2" style="color: var(--text-dark);">No courts found</h3>
+                        <p class="mb-4" style="color: var(--text-muted);">Try adjusting your filters or search criteria to find available courts.</p>
+                        <a href="{% url 'all_courts' %}" class="btn btn-primary btn-lg px-5" style="border-radius: var(--border-radius-sm);">
+                            <i class="fas fa-undo me-2"></i>Clear Filters
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination (if available) -->
+        {% if courts.has_other_pages %}
+        <nav class="mt-5">
+            <ul class="pagination justify-content-center">
+                {% if courts.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ courts.previous_page_number }}">Previous</a>
+                </li>
+                {% endif %}
+                {% for num in courts.paginator.page_range %}
+                <li class="page-item {% if courts.number == num %}active{% endif %}">
+                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                </li>
+                {% endfor %}
+                {% if courts.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ courts.next_page_number }}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-5" style="background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-color) 100%);">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8 text-center text-lg-start mb-4 mb-lg-0">
+                <h2 class="display-5 fw-bold text-white mb-3">Can't Find What You're Looking For?</h2>
+                <p class="lead mb-0" style="color: rgba(255,255,255,0.85);">Contact us for special arrangements or group bookings</p>
+            </div>
+            <div class="col-lg-4 text-center text-lg-end">
+                <a href="{% url 'contact' %}" class="btn btn-light btn-lg px-5" style="border-radius: var(--border-radius-sm); font-weight: 600;">
+                    <i class="fas fa-phone me-2"></i>Contact Us
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+/* Custom scrollbar for filters */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: var(--bg-light);
+}
+::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-dark);
+}
+</style>
+
+{% include 'components/footer.html' %}
+{% endblock %}
+

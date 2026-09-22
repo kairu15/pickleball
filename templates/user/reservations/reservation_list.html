@@ -1,0 +1,321 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}My Reservations{% endblock %}
+{% block page_title %}My Reservations{% endblock %}
+
+{% block content %}
+<!-- Quick Stats Summary -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+        <div class="card border-0 shadow-sm stat-card-sm" style="border-radius: 12px;">
+            <div class="card-body p-3">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon primary" style="width: 40px; height: 40px; font-size: 1rem;">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h5 class="mb-0 fw-bold">{{ reservations|length }}</h5>
+                        <small class="text-muted">Total</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card border-0 shadow-sm stat-card-sm" style="border-radius: 12px;">
+            <div class="card-body p-3">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon success" style="width: 40px; height: 40px; font-size: 1rem;">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h5 class="mb-0 fw-bold">{{ confirmed_count|default:"0" }}</h5>
+                        <small class="text-muted">Confirmed</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card border-0 shadow-sm stat-card-sm" style="border-radius: 12px;">
+            <div class="card-body p-3">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon warning" style="width: 40px; height: 40px; font-size: 1rem;">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h5 class="mb-0 fw-bold">{{ pending_count|default:"0" }}</h5>
+                        <small class="text-muted">Pending</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card border-0 shadow-sm stat-card-sm" style="border-radius: 12px;">
+            <div class="card-body p-3">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon info" style="width: 40px; height: 40px; font-size: 1rem;">
+                        <i class="fas fa-check-double"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h5 class="mb-0 fw-bold">{{ completed_count|default:"0" }}</h5>
+                        <small class="text-muted">Completed</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include 'components/filter_bar_start.html' %}
+            <div class="col-md-3">
+                <label class="filter-label"><i class="fas fa-search me-1 text-primary"></i>Search</label>
+                <input type="text" name="search" class="filter-input" placeholder="Search by ID or court..." value="{{ search_query|default:'' }}">
+            </div>
+            <div class="col-md-2">
+                <label class="filter-label"><i class="fas fa-filter me-1 text-primary"></i>Status</label>
+                <select name="status" class="filter-select">
+                    <option value="">All Statuses</option>
+                    <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="confirmed" {% if status_filter == 'confirmed' %}selected{% endif %}>Confirmed</option>
+                    <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+                    <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="filter-label"><i class="fas fa-calendar me-1 text-primary"></i>From</label>
+                <input type="date" name="date_from" class="filter-input" value="{{ date_from|default:'' }}">
+            </div>
+            <div class="col-md-2">
+                <label class="filter-label"><i class="fas fa-calendar me-1 text-primary"></i>To</label>
+                <input type="date" name="date_to" class="filter-input" value="{{ date_to|default:'' }}">
+            </div>
+            <div class="col-md-2">
+                <label class="filter-label"><i class="fas fa-sort me-1 text-primary"></i>Sort</label>
+                <select name="sort_by" class="filter-select">
+                    <option value="-created_at" {% if sort_by == '-created_at' %}selected{% endif %}>Newest First</option>
+                    <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Oldest First</option>
+                    <option value="-date" {% if sort_by == '-date' %}selected{% endif %}>Date (Newest)</option>
+                    <option value="date" {% if sort_by == 'date' %}selected{% endif %}>Date (Oldest)</option>
+                    <option value="-total_amount" {% if sort_by == '-total_amount' %}selected{% endif %}>Amount (High)</option>
+                    <option value="total_amount" {% if sort_by == 'total_amount' %}selected{% endif %}>Amount (Low)</option>
+                </select>
+            </div>
+            <div class="col-md-1">
+                <div class="filter-btn-row">
+                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search"></i></button>
+                    {% if search_query or status_filter or date_from or date_to %}
+                    <a href="{% url 'reservation_list' %}" class="btn btn-outline-secondary" title="Clear filters"><i class="fas fa-times"></i></a>
+                    {% endif %}
+                </div>
+            </div>
+{% include 'components/filter_bar_end.html' %}
+
+<!-- Page Header & Action -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <p class="text-muted mb-0">
+        {% if search_query or status_filter or date_from or date_to %}
+        <a href="{% url 'reservation_list' %}" class="text-decoration-none me-2"><i class="fas fa-times-circle text-danger"></i> Clear filters</a>
+        {% endif %}
+        <span class="text-muted">{{ total_count|default:reservations|length }} reservation(s) found</span>
+    </p>
+    <a href="{% url 'reservation_create' %}" class="btn btn-primary" style="border-radius: 10px; font-weight: 500; box-shadow: 0 4px 12px rgba(59,122,140,0.25);">
+        <i class="fas fa-plus me-2"></i>New Reservation
+    </a>
+</div>
+
+<!-- Reservations Table -->
+<div class="card border-0 shadow-lg reservations-card" style="border-radius: 16px; overflow: hidden;">
+    <div class="card-header bg-white border-bottom py-4 px-4">
+        <h5 class="fw-bold mb-0 d-flex align-items-center">
+            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px; box-shadow: 0 4px 12px rgba(59,122,140,0.25);">
+                <i class="fas fa-calendar-check text-white"></i>
+            </div>
+            My Reservations
+            <span class="badge bg-secondary ms-2" style="font-size: 0.75rem;">{{ total_count|default:reservations|length }}</span>
+        </h5>
+    </div>
+    <div class="card-body p-0">
+        {% if reservations %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 reservation-table">
+                <thead style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
+                    <tr>
+                        <th class="py-3 px-4 fw-semibold text-muted" style="font-size: 0.85rem;">ID</th>
+                        <th class="py-3 px-4 fw-semibold text-muted" style="font-size: 0.85rem;">Court</th>
+                        <th class="py-3 px-4 fw-semibold text-muted" style="font-size: 0.85rem;">Date & Time</th>
+                        <th class="py-3 px-4 fw-semibold text-muted" style="font-size: 0.85rem;">Duration</th>
+                        <th class="py-3 px-4 fw-semibold text-muted" style="font-size: 0.85rem;">Amount</th>
+                        <th class="py-3 px-4 fw-semibold text-muted" style="font-size: 0.85rem;">Status</th>
+                        <th class="py-3 px-4 fw-semibold text-muted" style="font-size: 0.85rem; text-align: center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reservation in reservations %}
+                    <tr class="reservation-row">
+                        <td data-label="ID" class="py-3 px-4">
+                            <span class="badge bg-light text-dark border px-3 py-2" style="font-family: monospace; font-size: 0.8rem;">#{{ reservation.id }}</span>
+                        </td>
+                        <td data-label="Court" class="py-3 px-4">
+                            <div class="d-flex align-items-center gap-2">
+                                <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #6c757d 0%, #545b62 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-map-marker-alt text-white" style="font-size: 0.75rem;"></i>
+                                </div>
+                                <span class="fw-semibold">{{ reservation.court.name }}</span>
+                            </div>
+                        </td>
+                        <td data-label="Date/Time" class="py-3 px-4">
+                            <span class="fw-medium">{{ reservation.date|date:"M d, Y" }}</span>
+                            <small class="text-muted d-block">{{ reservation.start_time|time:"g:i A" }} - {{ reservation.end_time|time:"g:i A" }}</small>
+                        </td>
+                        <td data-label="Duration" class="py-3 px-4">
+                            <span class="badge bg-light text-dark border" style="font-size: 0.8rem; padding: 6px 12px; border-radius: 8px;">
+                                <i class="fas fa-clock me-1 text-primary"></i>{{ reservation.duration_hours|floatformat:1 }} hrs
+                            </span>
+                        </td>
+                        <td data-label="Amount" class="py-3 px-4">
+                            <span class="fw-bold fs-5" style="color: #3B7A8C;">₱{{ reservation.total_amount|floatformat:2 }}</span>
+                        </td>
+                        <td data-label="Status" class="py-3 px-4">
+                            <span class="badge px-3 py-2 reservation-status-badge {% if reservation.status == 'confirmed' %}bg-success{% elif reservation.status == 'pending' %}bg-warning text-dark{% elif reservation.status == 'completed' %}bg-secondary{% elif reservation.status == 'cancelled' %}bg-danger{% else %}bg-secondary{% endif %}" style="font-size: 0.8rem; border-radius: 8px;">
+                                {% if reservation.status == 'confirmed' %}<i class="fas fa-check-circle me-1"></i>{% elif reservation.status == 'pending' %}<i class="fas fa-clock me-1"></i>{% elif reservation.status == 'completed' %}<i class="fas fa-check-double me-1"></i>{% elif reservation.status == 'cancelled' %}<i class="fas fa-times-circle me-1"></i>{% endif %}
+                                {{ reservation.get_status_display }}
+                            </span>
+                        </td>
+                        <td data-label="Actions" class="py-3 px-4 text-center">
+                            <div class="d-flex gap-1 justify-content-center">
+                                <a href="{% url 'reservation_detail' reservation.id %}" class="btn btn-sm btn-outline-primary" style="border-radius: 8px; padding: 8px 14px;" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% if reservation.status == 'pending' and reservation.can_edit %}
+                                <a href="{% url 'reservation_edit' reservation.id %}" class="btn btn-sm btn-outline-primary" style="border-radius: 8px; padding: 8px 14px;" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'cancel_reservation' reservation.id %}" class="btn btn-sm btn-outline-danger" style="border-radius: 8px; padding: 8px 14px;" title="Cancel">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="d-flex justify-content-center py-4 border-top">
+            <nav aria-label="Reservation pagination">
+                <ul class="pagination mb-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}" style="border-radius: 8px;">&laquo; First</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}" style="border-radius: 8px;">Prev</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link" style="border-radius: 8px; background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%); border: none;">{{ num }}</span>
+                        </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}" style="border-radius: 8px;">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}" style="border-radius: 8px;">Next</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}" style="border-radius: 8px;">Last &raquo;</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+        
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="fas fa-calendar-times fa-2x text-muted"></i>
+            </div>
+            <h5 class="empty-state-title">No reservations found</h5>
+            <p class="empty-state-text">
+                {% if search_query or status_filter or date_from or date_to %}
+                No reservations match your filters. <a href="{% url 'reservation_list' %}" class="text-decoration-none">Clear all filters</a>
+                {% else %}
+                You haven't made any reservations yet. Start by booking a court!
+                {% endif %}
+            </p>
+            <a href="{% url 'court_list' %}" class="btn btn-primary mt-3">
+                <i class="fas fa-calendar-plus me-2"></i>Reserve a Court
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.reservations-card {
+    transition: all 0.3s ease;
+}
+.reservations-card:hover {
+    box-shadow: 0 12px 35px rgba(0,0,0,0.12) !important;
+}
+.reservation-table thead th {
+    border-bottom: 2px solid #dee2e6;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.reservation-row {
+    transition: all 0.25s ease;
+}
+.reservation-row:hover {
+    background-color: #f8f9fa;
+}
+.reservation-status-badge {
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+}
+.stat-card-sm {
+    transition: all 0.3s ease;
+}
+.stat-card-sm:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1) !important;
+}
+.filter-card {
+    transition: all 0.3s ease;
+}
+.filter-card:hover {
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08) !important;
+}
+.page-link {
+    color: #3B7A8C;
+    border: 1px solid #dee2e6;
+    margin: 0 2px;
+    transition: all 0.2s ease;
+}
+.page-link:hover {
+    color: #1a3a42;
+    background: #f8f9fa;
+    border-color: #3B7A8C;
+}
+.page-item.active .page-link {
+    background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);
+    border-color: transparent;
+    box-shadow: 0 4px 10px rgba(59,122,140,0.3);
+}
+</style>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Match Settings{% endblock %}
+{% block page_title %}Match Settings{% endblock %}
+
+{% block content %}
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-cog text-primary"></i>
+            Match Settings
+        </h5>
+        <a href="{% url 'match_settings_create' %}" class="btn btn-success">
+            <i class="fas fa-plus me-2"></i>Add New
+        </a>
+    </div>
+    <div class="card-body p-0">
+        <div class="admin-table-container">
+            <table class="table admin-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Setting</th>
+                        <th>Format</th>
+                        <th>Game Type</th>
+                        <th>Scoring</th>
+                        <th>Games to Win</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in settings %}
+                    <tr>
+                        <td data-label="Setting">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar avatar-sm avatar-placeholder me-2">
+                                    <i class="fas fa-cog"></i>
+                                </div>
+                                <span class="fw-semibold">{{ s.name }}</span>
+                            </div>
+                        </td>
+                        <td data-label="Format">{{ s.get_format_display }}</td>
+                        <td data-label="Game Type">{{ s.get_game_type_display }}</td>
+                        <td data-label="Scoring">{{ s.get_scoring_format_display }}</td>
+                        <td data-label="Games to Win">{{ s.games_to_win }}</td>
+                        <td data-label="Status">
+                            {% if s.is_active %}
+                            <span class="status-badge active">Active</span>
+                            {% else %}
+                            <span class="status-badge inactive">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Actions">
+                            <div class="action-buttons justify-content-end">
+                                <a href="{% url 'match_settings_edit' s.id %}" class="action-btn edit" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form method="post" action="{% url 'match_settings_delete' s.id %}" class="d-inline" data-confirm-message="Delete this match setting?">
+                                    {% csrf_token %}
+                                    <button type="submit" class="action-btn delete" title="Delete" onclick="event.preventDefault(); customConfirm(this.closest('form').dataset.confirmMessage, () => { this.closest('form').submit(); })">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">
+                                    <i class="fas fa-cog fa-2x text-muted"></i>
+                                </div>
+                                <h5 class="empty-state-title">No match settings found</h5>
+                                <p class="empty-state-text">Create your first match settings configuration.</p>
+                                <a href="{% url 'match_settings_create' %}" class="btn btn-primary mt-3">
+                                    <i class="fas fa-plus me-2"></i>Add Setting
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

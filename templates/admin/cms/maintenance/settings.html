@@ -1,0 +1,76 @@
+{% extends 'base/dashboard_base.html' %}
+{% block title %}Maintenance Mode{% endblock %}
+{% block page_title %}<i class="fas fa-tools me-2"></i>Maintenance Mode{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="admin-card mb-4">
+            <div class="admin-card-header d-flex justify-content-between align-items-center">
+                <h5 class="admin-card-title mb-0"><i class="fas fa-power-off me-2"></i>Status</h5>
+                <span class="badge {% if maintenance.is_active %}bg-danger{% else %}bg-success{% endif %} px-3 py-2" style="font-size: 0.9rem;">
+                    <i class="fas {% if maintenance.is_active %}fa-exclamation-triangle{% else %}fa-check-circle{% endif %} me-1"></i>
+                    {{ maintenance.is_active|yesno:"ACTIVE,INACTIVE" }}
+                </span>
+            </div>
+            <div class="card-body">
+                <form method="post" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="toggle">
+                    <button type="submit" class="btn {% if maintenance.is_active %}btn-success{% else %}btn-danger{% endif %} btn-lg">
+                        <i class="fas {% if maintenance.is_active %}fa-check{% else %}fa-exclamation-triangle{% endif %} me-2"></i>
+                        {% if maintenance.is_active %}Disable Maintenance Mode{% else %}Enable Maintenance Mode{% endif %}
+                    </button>
+                </form>
+                {% if maintenance.last_enabled_at %}
+                <p class="text-muted mt-2 small">Last enabled: {{ maintenance.last_enabled_at|date:"M d, Y h:i A" }}{% if maintenance.last_enabled_by %} by {{ maintenance.last_enabled_by.username }}{% endif %}</p>
+                {% endif %}
+                {% if maintenance.last_disabled_at %}
+                <p class="text-muted small">Last disabled: {{ maintenance.last_disabled_at|date:"M d, Y h:i A" }}{% if maintenance.last_disabled_by %} by {{ maintenance.last_disabled_by.username }}{% endif %}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="admin-card mb-4">
+            <div class="admin-card-header"><h5 class="admin-card-title"><i class="fas fa-cog me-2"></i>Maintenance Page Settings</h5></div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update">
+                    <div class="row g-3">
+                        <div class="col-md-6"><label class="form-label fw-semibold">Title</label><input type="text" name="title" class="form-control" value="{{ maintenance.title }}"></div>
+                        <div class="col-md-6"><label class="form-label fw-semibold">Banner Image</label><input type="file" name="banner_image" class="form-control"></div>
+                        <div class="col-12"><label class="form-label fw-semibold">Message</label><textarea name="message" class="form-control" rows="3">{{ maintenance.message }}</textarea></div>
+                        <div class="col-md-6"><label class="form-label fw-semibold">Estimated Return</label><input type="datetime-local" name="estimated_return" class="form-control" value="{{ maintenance.estimated_return|date:'Y-m-d\\TH:i'|default:'' }}"></div>
+                        <div class="col-12"><hr><h6 class="fw-bold">Contact Information</h6></div>
+                        <div class="col-md-6"><label class="form-label fw-semibold">Contact Email</label><input type="email" name="contact_email" class="form-control" value="{{ maintenance.contact_email }}"></div>
+                        <div class="col-md-6"><label class="form-label fw-semibold">Contact Phone</label><input type="text" name="contact_phone" class="form-control" value="{{ maintenance.contact_phone }}"></div>
+                        <div class="col-md-6"><div class="form-check form-switch mt-2"><input type="checkbox" name="show_contact_info" class="form-check-input" id="showContact" {% if maintenance.show_contact_info %}checked{% endif %}><label class="form-check-label fw-semibold" for="showContact">Show Contact Info</label></div></div>
+                        <div class="col-12"><hr><h6 class="fw-bold">Scheduled Maintenance</h6></div>
+                        <div class="col-md-6"><label class="form-label fw-semibold">Scheduled Start</label><input type="datetime-local" name="scheduled_start" class="form-control" value="{{ maintenance.scheduled_start|date:'Y-m-d\\TH:i'|default:'' }}"></div>
+                        <div class="col-md-6"><label class="form-label fw-semibold">Scheduled End</label><input type="datetime-local" name="scheduled_end" class="form-control" value="{{ maintenance.scheduled_end|date:'Y-m-d\\TH:i'|default:'' }}"></div>
+                        <div class="col-12"><small class="text-muted">If scheduled end is set, maintenance will auto-disable when the end time is reached.</small></div>
+                    </div>
+                    <div class="mt-4"><button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Save Settings</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="admin-card">
+            <div class="admin-card-header"><h5 class="admin-card-title"><i class="fas fa-history me-2"></i>Audit Log</h5></div>
+            <div class="card-body p-0" style="max-height: 500px; overflow-y: auto;">
+                {% for log in logs %}
+                <div class="p-3 border-bottom">
+                    <div class="d-flex justify-content-between">
+                        <span class="badge bg-{% if log.action == 'enabled' %}danger{% elif log.action == 'disabled' %}success{% elif log.action == 'auto_disabled' %}warning{% else %}info{% endif %}">{{ log.get_action_display }}</span>
+                        <small class="text-muted">{{ log.created_at|date:"M d, h:i A" }}</small>
+                    </div>
+                    {% if log.performed_by %}<small class="text-muted d-block mt-1">by {{ log.performed_by.username }}</small>{% endif %}
+                    {% if log.details %}<small class="text-muted d-block">{{ log.details }}</small>{% endif %}
+                </div>
+                {% empty %}<div class="p-4 text-center text-muted">No audit logs yet.</div>{% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

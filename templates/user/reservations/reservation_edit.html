@@ -1,0 +1,910 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Edit Reservation #{{ reservation.id }}{% endblock %}
+{% block page_title %}Edit Reservation #{{ reservation.id }}{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'user_dashboard' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'reservation_list' %}">Reservations</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'reservation_detail' reservation.id %}">Reservation #{{ reservation.id }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Edit</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <!-- Editing Pending Reservation Banner -->
+        <div class="card border-0 shadow-sm mb-4 edit-banner-card">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="edit-banner-icon">
+                        <i class="fas fa-pen-nib text-warning"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold mb-1" style="color: #664d03;"><i class="fas fa-info-circle me-1"></i>Editing Pending Reservation</h6>
+                        <p class="mb-0 small text-dark">
+                            You are editing reservation <strong>#{{ reservation.id }}</strong> — currently
+                            <span class="badge bg-warning text-dark">Pending</span>.
+                            Only pending reservations can be edited. Changes will recalculate pricing and require re-approval if already submitted.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Form Card -->
+        <div class="card border-0 shadow-lg edit-form-card">
+            <div class="card-header text-white p-4">
+                <div class="d-flex align-items-center">
+                    <div class="summary-header-icon">
+                        <i class="fas fa-edit fa-lg text-white"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h5 class="mb-0 fw-bold">Edit Reservation Details</h5>
+                        <p class="mb-0 opacity-75">Modify your court, date, time, or equipment</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-4 p-md-5">
+                <form method="post" action="{% url 'reservation_edit' reservation.id %}" id="edit-reservation-form">
+                    {% csrf_token %}
+
+                    <!-- Current Booking Summary -->
+                    <div class="alert alert-info d-flex align-items-start mb-4 current-booking-alert" role="alert">
+                        <i class="fas fa-info-circle me-3 mt-1"></i>
+                        <div>
+                            <small class="text-uppercase fw-bold d-block mb-1" style="letter-spacing: 0.5px; font-size: 0.7rem;">Current booking</small>
+                            <strong>{{ reservation.court.name }}</strong> on {{ reservation.date|date:"M d, Y" }} at {{ reservation.start_time|time:"g:i A" }} – {{ reservation.end_time|time:"g:i A" }}
+                        </div>
+                    </div>
+
+                    <!-- ===== Editing Window Timer (mirrors Cancellation styling) ===== -->
+                    <div class="timer-container mb-4" style="background: linear-gradient(135deg, #fffce3 0%, #fff8d6 100%);" id="edit-timer-container">
+                        <div class="timer-icon">
+                            <i class="fas fa-hourglass-half"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold small" style="color: #856404;">Editing Window</div>
+                            <div class="small text-muted">
+                                Edit within <strong>{{ time_limit_minutes }} minutes</strong> of creation
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="countdown-number" id="edit-countdown-display">--:--</div>
+                            <div class="small text-muted" style="font-size: 0.65rem;">remaining</div>
+                        </div>
+                    </div>
+
+                    <!-- Hidden time slot field -->
+                    {{ form.time_slot }}
+
+                    <!-- Court Selection -->
+                    <div class="form-section">
+                        <div class="form-section-header">
+                            <div class="form-section-icon" style="color: #3B7A8C; background: rgba(59,122,140,0.1);">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div>
+                                <label class="form-label fw-bold mb-0" for="{{ form.court.id_for_label }}">Court <span class="text-danger">*</span></label>
+                                <small class="text-muted d-block">Select a different court if needed.</small>
+                            </div>
+                        </div>
+                        {{ form.court }}
+                        {% if form.court.errors %}
+                        <div class="text-danger small mt-1">{{ form.court.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Date Selection -->
+                    <div class="form-section">
+                        <div class="form-section-header">
+                            <div class="form-section-icon" style="color: #28a745; background: rgba(40,167,69,0.1);">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <div>
+                                <label class="form-label fw-bold mb-0" for="{{ form.date.id_for_label }}">Date <span class="text-danger">*</span></label>
+                                <small class="text-muted d-block">Current: {{ reservation.date|date:"M d, Y" }}</small>
+                            </div>
+                        </div>
+                        {{ form.date }}
+                        {% if form.date.errors %}
+                        <div class="text-danger small mt-1">{{ form.date.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Time Slot Selection -->
+                    <div class="form-section">
+                        <div class="form-section-header">
+                            <div class="form-section-icon" style="color: #ff9800; background: rgba(255,152,0,0.12);">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div>
+                                <label class="form-label fw-bold mb-0" for="{{ form.time_slot.id_for_label }}">Time Slot</label>
+                                <small class="text-muted d-block">Current: {{ reservation.start_time|time:"g:i A" }} – {{ reservation.end_time|time:"g:i A" }}</small>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-3 mb-3 flex-wrap" aria-label="Time slot legend">
+                            <div class="d-flex align-items-center gap-1">
+                                <span class="legend-dot" style="background:#4caf50;"></span>
+                                <small class="text-muted">Available</small>
+                            </div>
+                            <div class="d-flex align-items-center gap-1">
+                                <span class="legend-dot" style="background:#3B7A8C;"></span>
+                                <small class="text-muted">Selected</small>
+                            </div>
+                            <div class="d-flex align-items-center gap-1">
+                                <span class="legend-dot" style="background:#e53935;"></span>
+                                <small class="text-muted">Booked</small>
+                            </div>
+                            <div class="d-flex align-items-center gap-1">
+                                <span class="legend-dot" style="background:#e0e0e0;"></span>
+                                <small class="text-muted">Unavailable</small>
+                            </div>
+                        </div>
+
+                        <div id="edit-time-slots-container" class="mb-3">
+                            <div class="text-center py-3 text-muted">
+                                <i class="fas fa-spinner fa-spin me-2"></i>Loading available slots...
+                            </div>
+                        </div>
+
+                        <!-- Selected slot display -->
+                        <div id="edit-selected-slot-display" class="d-none mb-2">
+                            <div class="alert alert-success py-2 d-flex align-items-center justify-content-between" style="border-radius: 10px;">
+                                <span><i class="fas fa-check-circle me-2"></i>Selected: <strong id="edit-selected-slot-label"></strong></span>
+                                <button type="button" class="btn btn-sm btn-outline-success" id="edit-clear-slot-btn" style="border-radius: 8px;">
+                                    <i class="fas fa-times me-1"></i>Clear
+                                </button>
+                            </div>
+                        </div>
+
+                        {{ form.start_time }}
+                        {{ form.end_time }}
+                        {% if form.time_slot.errors %}
+                        <div class="text-danger small mt-1">{{ form.time_slot.errors.0 }}</div>
+                        {% endif %}
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger mt-2 py-2 small">{{ form.non_field_errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Equipment (Optional) -->
+                    <div class="form-section">
+                        <div class="form-section-header">
+                            <div class="form-section-icon" style="color: #17a2b8; background: rgba(23,162,184,0.1);">
+                                <i class="fas fa-tools"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-0">Equipment (Optional)</h6>
+                                <small class="text-muted d-block">Add equipment rentals to your booking</small>
+                            </div>
+                        </div>
+
+                        {% if reservation.rented_equipment.all %}
+                        <div class="alert alert-info small py-2 mb-3" style="border-radius: 8px;">
+                            <i class="fas fa-info-circle me-1"></i>Currently rented equipment will be returned if deselected.
+                        </div>
+                        {% endif %}
+
+                        {% if equipment_list %}
+                        <div class="equipment-grid">
+                            {% for equipment in equipment_list %}
+                            <div class="equipment-card{% if equipment.id in current_equipment_ids %} selected{% endif %}">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-semibold">{{ equipment.name }}</div>
+                                        <small class="text-muted">{{ equipment.get_type_display }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="fw-bold" style="color: #3B7A8C;">₱{{ equipment.rental_price|floatformat:0 }}</div>
+                                        <small class="equipment-check text-success"><i class="fas fa-check-circle"></i></small>
+                                    </div>
+                                </div>
+                                <input type="checkbox" name="equipment" value="{{ equipment.id }}" class="equipment-check-input" id="eq{{ equipment.id }}" {% if equipment.id in current_equipment_ids %}checked{% endif %} hidden>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="equipment-empty-state">
+                            <div class="equipment-empty-icon">
+                                <i class="fas fa-box-open"></i>
+                            </div>
+                            <h6 class="fw-bold mb-1">No Equipment Available</h6>
+                            <p class="text-muted mb-0">There are no equipment rentals available for this court at the moment. You can still book the court and rent equipment at the venue.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="form-section mb-0">
+                        <div class="form-section-header">
+                            <div class="form-section-icon" style="color: #6c757d; background: rgba(108,117,125,0.1);">
+                                <i class="fas fa-sticky-note"></i>
+                            </div>
+                            <div>
+                                <label class="form-label fw-bold mb-0" for="{{ form.notes.id_for_label }}">Notes</label>
+                                <small class="text-muted d-block">Optional notes or special requests</small>
+                            </div>
+                        </div>
+                        {{ form.notes }}
+                        {% if form.notes.errors %}
+                        <div class="text-danger small mt-1">{{ form.notes.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Non-field errors -->
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger mt-4">{{ form.non_field_errors.0 }}</div>
+                    {% endif %}
+
+                    <!-- Actions -->
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 pt-4 border-top mt-4">
+                        <a href="{% url 'reservation_detail' reservation.id %}" class="btn btn-outline-secondary px-4 py-2" style="border-radius: 10px; font-weight: 500;">
+                            <i class="fas fa-arrow-left me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary px-5 py-2" style="border-radius: 10px; background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%); border: none; box-shadow: 0 4px 15px rgba(59,122,140,0.3); font-weight: 500;">
+                            <i class="fas fa-save me-2"></i>Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+/* ===== BREADCRUMB ===== */
+.breadcrumb {
+    background: transparent;
+    padding: 0;
+    font-size: 0.9rem;
+}
+.breadcrumb-item a {
+    color: #3B7A8C;
+    transition: color 0.2s ease;
+    text-decoration: none;
+}
+.breadcrumb-item a:hover {
+    color: #1a3a42;
+    text-decoration: underline;
+}
+
+/* ===== EDIT BANNER ===== */
+.edit-banner-card {
+    border-radius: 14px;
+    background: linear-gradient(135deg, #fff8e1 0%, #fff3cd 100%);
+    border: 1px solid #ffe69c;
+}
+.edit-banner-icon {
+    width: 44px;
+    height: 44px;
+    background: rgba(255,193,7,0.2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1.1rem;
+}
+
+/* ===== EDIT FORM CARD ===== */
+.edit-form-card {
+    border-radius: 16px;
+    overflow: hidden;
+}
+.edit-form-card .card-header {
+    background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);
+}
+.summary-header-icon {
+    width: 45px;
+    height: 45px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+    flex-shrink: 0;
+}
+.current-booking-alert {
+    border-radius: 12px;
+}
+
+/* ===== FORM SECTIONS ===== */
+.form-section {
+    background: #fafcfd;
+    border: 1px solid #eef1f4;
+    border-radius: 14px;
+    padding: 1.25rem 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.form-section:focus-within {
+    border-color: rgba(59,122,140,0.4);
+    box-shadow: 0 4px 18px rgba(59,122,140,0.08);
+}
+.form-section-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.8rem;
+    margin-bottom: 1rem;
+}
+.form-section-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.9rem;
+}
+
+/* ===== FORM CONTROLS ===== */
+.form-control, .form-select, .form-control:focus, .form-select:focus {
+    border-radius: 10px;
+    border: 2px solid #dee2e6;
+    padding: 0.55rem 0.9rem;
+    box-shadow: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    font-size: 0.92rem;
+}
+.form-control:focus, .form-select:focus {
+    border-color: #3B7A8C;
+    box-shadow: 0 0 0 3px rgba(59,122,140,0.1);
+}
+textarea#{{ form.notes.id_for_label }} {
+    min-height: 150px;
+    resize: vertical;
+}
+
+/* ===== TIME SLOT GROUPS (AM / PM) ===== */
+.time-slot-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    align-items: start;
+}
+.time-slot-group {
+    margin-bottom: 1.25rem;
+}
+.time-slot-group:last-child {
+    margin-bottom: 0;
+}
+.time-slot-group-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.6rem;
+}
+.time-slot-group-header::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(59,122,140,0.35), rgba(59,122,140,0));
+}
+.time-slot-group-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    padding: 0.3rem 0.9rem;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+.time-slots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.5rem;
+    max-height: 460px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+.time-slots-grid::-webkit-scrollbar {
+    width: 4px;
+}
+.time-slots-grid::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+.time-slot-card {
+    position: relative;
+    border: 2px solid #e8f5e9;
+    border-radius: 12px;
+    padding: 0.75rem 0.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: #f1f8e9;
+    user-select: none;
+    -webkit-user-select: none;
+}
+.time-slot-card.status-available {
+    border-color: #a5d6a7;
+    background: #f1f8e9;
+}
+.time-slot-card.status-available:hover {
+    transform: translateY(-2px);
+    border-color: #4caf50;
+    background: #e8f5e9;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
+}
+.time-slot-card.status-available:active {
+    transform: translateY(0) scale(0.97);
+}
+.time-slot-card.status-booked {
+    border-color: #ffcdd2;
+    background: #ffebee;
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+.time-slot-card.status-unavailable {
+    border-color: #e0e0e0;
+    background: #f5f5f5;
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+.time-slot-card.status-booked:hover,
+.time-slot-card.status-unavailable:hover {
+    transform: none;
+    box-shadow: none;
+}
+.time-slot-card.selected {
+    border-color: #3B7A8C;
+    background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(59, 122, 140, 0.35);
+    transform: translateY(-2px);
+    animation: slotSelectedPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes slotSelectedPop {
+    from { transform: scale(0.96); }
+    to { transform: translateY(-2px) scale(1); }
+}
+.time-slot-time {
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+.time-slot-status {
+    font-size: 0.7rem;
+    margin-top: 3px;
+}
+.time-slot-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.18rem 0.55rem;
+    border-radius: 20px;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    text-transform: uppercase;
+}
+.time-slot-badge.available {
+    background: rgba(76, 175, 80, 0.12);
+    color: #2e7d32;
+}
+.time-slot-badge.booked {
+    background: rgba(229, 57, 53, 0.12);
+    color: #c62828;
+}
+.time-slot-badge.unavailable {
+    background: rgba(117, 117, 117, 0.12);
+    color: #616161;
+}
+.time-slot-badge.selected {
+    background: rgba(255, 255, 255, 0.22);
+    color: #fff;
+}
+
+/* ===== AVAILABILITY LEGEND ===== */
+.legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+/* ===== EQUIPMENT SELECTION ===== */
+.equipment-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.5rem;
+}
+.equipment-card {
+    border: 2px solid #dee2e6;
+    border-radius: 10px;
+    padding: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.equipment-card:hover {
+    border-color: #3B7A8C;
+    box-shadow: 0 2px 8px rgba(59,122,140,0.1);
+}
+.equipment-card.selected {
+    border-color: #3B7A8C;
+    background: rgba(59,122,140,0.05);
+    box-shadow: 0 2px 8px rgba(59,122,140,0.15);
+}
+.equipment-check {
+    display: none;
+}
+.equipment-card.selected .equipment-check {
+    display: inline;
+}
+
+/* ===== EQUIPMENT EMPTY STATE ===== */
+.equipment-empty-state {
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+    border: 2px dashed #dee2e6;
+    border-radius: 14px;
+    background: #fafcfd;
+}
+.equipment-empty-icon {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 0.9rem;
+    background: rgba(23,162,184,0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    color: #17a2b8;
+}
+.equipment-empty-state h6 {
+    color: #1a3a42;
+}
+.equipment-empty-state p {
+    max-width: 420px;
+    margin-left: auto;
+    margin-right: auto;
+    font-size: 0.85rem;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .edit-form-card .card-body {
+        padding: 1.25rem !important;
+    }
+    .form-section {
+        padding: 1rem 0.9rem 1.2rem;
+    }
+    .time-slot-columns {
+        grid-template-columns: 1fr;
+    }
+    .time-slots-grid {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    }
+}
+@media (max-width: 480px) {
+    .time-slots-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .equipment-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* ===== EDITING WINDOW TIMER (mirrors Cancellation) ===== */
+.timer-container {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-radius: 12px;
+    border: 1px solid #ffc107;
+    transition: all 0.3s ease;
+}
+.timer-container.urgent {
+    border-color: #dc3545;
+    background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%) !important;
+}
+.timer-container.urgent .countdown-number {
+    color: #dc3545;
+}
+.timer-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: rgba(255,193,7,0.15);
+    color: #ff9800;
+}
+.timer-container.urgent .timer-icon {
+    background: rgba(220,53,69,0.15);
+    color: #dc3545;
+    animation: pulseWarning 1.2s ease-in-out infinite;
+}
+.countdown-number {
+    font-size: 1.4rem;
+    font-weight: 800;
+    font-family: 'Courier New', monospace;
+    color: #856404;
+    min-width: 50px;
+    display: inline-block;
+    text-align: center;
+}
+@keyframes pulseWarning {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+@media (max-width: 576px) {
+    .countdown-number { font-size: 1.1rem; min-width: 40px; }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    'use strict';
+
+    // ===== Editing Window Countdown (mirrors the Cancellation timer) =====
+    {% if time_remaining and is_within_time_limit %}
+    const editTotalSeconds = {{ time_remaining.total_seconds }};
+    const editPageLoadTime = new Date();
+    const editCountdownDisplay = document.getElementById('edit-countdown-display');
+    const editTimerContainer = document.getElementById('edit-timer-container');
+
+    function updateEditCountdown() {
+        const elapsed = (Date.now() - editPageLoadTime.getTime()) / 1000;
+        const remaining = Math.max(0, editTotalSeconds - elapsed);
+
+        const mins = Math.floor(remaining / 60);
+        const secs = Math.floor(remaining % 60);
+        editCountdownDisplay.textContent = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+
+        if (remaining <= 60) {
+            editTimerContainer.classList.add('urgent');
+        }
+
+        if (remaining <= 0) {
+            editCountdownDisplay.textContent = '00:00';
+            editTimerContainer.classList.add('urgent');
+            // Editing window expired — take the user back to the reservation
+            window.location.href = "{% url 'reservation_detail' reservation.id %}?expired=1";
+        }
+    }
+
+    updateEditCountdown();
+    setInterval(updateEditCountdown, 1000);
+    {% else %}
+    document.getElementById('edit-countdown-display').textContent = '--:--';
+    {% endif %}
+
+    const courtSelect = document.getElementById('{{ form.court.id_for_label }}');
+    const dateInput = document.getElementById('{{ form.date.id_for_label }}');
+    const timeSlotInput = document.getElementById('{{ form.time_slot.id_for_label }}');
+    const startTimeInput = document.getElementById('{{ form.start_time.id_for_label }}');
+    const endTimeInput = document.getElementById('{{ form.end_time.id_for_label }}');
+
+    // Current values from reservation
+    const currentStart = '{{ reservation.start_time|time:"H:i" }}';
+    const currentEnd = '{{ reservation.end_time|time:"H:i" }}';
+    const currentDate = '{{ reservation.date|date:"Y-m-d" }}';
+
+    // Status metadata for the time-slot badges
+    const STATUS_META = {
+        available: { icon: 'fas fa-check-circle', label: 'Available' },
+        booked: { icon: 'fas fa-times-circle', label: 'Booked' },
+        unavailable: { icon: 'fas fa-ban', label: 'Unavailable' },
+        selected: { icon: 'fas fa-check', label: 'Selected' },
+    };
+
+    function setCardStatus(card, status) {
+        card.dataset.status = status;
+        card.dataset.available = status === 'available';
+        card.classList.remove('status-available', 'status-booked', 'status-unavailable', 'selected');
+        if (status === 'selected') {
+            card.classList.add('selected');
+        } else {
+            card.classList.add('status-' + status);
+        }
+        const badge = card.querySelector('.time-slot-badge');
+        if (badge) {
+            const meta = STATUS_META[status] || STATUS_META.available;
+            badge.className = `time-slot-badge ${status}`;
+            badge.innerHTML = `<i class="${meta.icon} me-1"></i>${meta.label}`;
+        }
+    }
+
+    function formatTimeDisplay(timeStr) {
+        if (!timeStr) return '—';
+        const [h, m] = timeStr.split(':').map(Number);
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const hour12 = h % 12 || 12;
+        return `${hour12}:${String(m).padStart(2, '0')} ${ampm}`;
+    }
+
+    function loadTimeSlots() {
+        const courtId = courtSelect.value;
+        const date = dateInput.value;
+        const container = document.getElementById('edit-time-slots-container');
+        const selectedDisplay = document.getElementById('edit-selected-slot-display');
+
+        if (!courtId || !date) {
+            container.innerHTML = '<div class="text-center py-3 text-muted"><i class="fas fa-info-circle me-2"></i>Please select a court and date first.</div>';
+            return;
+        }
+
+        container.innerHTML = '<div class="text-center py-3"><div class="spinner-border text-primary spinner-border-sm" role="status"></div> <span class="text-muted ms-2">Loading slots...</span></div>';
+
+        // exclude_reservation keeps the user's own booking out of the "booked" count
+        fetch(`/reservations/api/time-slots/?court_id=${courtId}&date=${date}&exclude_reservation={{ reservation.id }}`)
+            .then(resp => resp.json())
+            .then(data => {
+                if (!data.slots || data.slots.length === 0) {
+                    container.innerHTML = '<div class="alert alert-warning mb-0 py-2"><i class="fas fa-exclamation-triangle me-2"></i>No time slots available for this date.</div>';
+                    return;
+                }
+
+                // Group slots into AM (before noon) and PM (noon or later)
+                const amSlots = data.slots.filter(slot => (parseInt(slot.start, 10) || 0) < 12);
+                const pmSlots = data.slots.filter(slot => (parseInt(slot.start, 10) || 0) >= 12);
+
+                function buildSlotCard(slot) {
+                    const status = slot.status || (slot.available ? 'available' : 'booked');
+                    const card = document.createElement('div');
+                    card.className = `time-slot-card status-${status}`;
+                    card.dataset.start = slot.start;
+                    card.dataset.end = slot.end;
+                    card.dataset.label = slot.label;
+                    card.dataset.status = status;
+                    card.dataset.available = status === 'available';
+
+                    // Keep the user's current reservation selected — even if it would be booked
+                    const isCurrentSlot = slot.start === currentStart && slot.end === currentEnd && date === currentDate;
+                    if (isCurrentSlot) {
+                        setCardStatus(card, 'selected');
+                    }
+
+                    // Restore previously selected slot from hidden fields (only if still available —
+                    // never auto-select a slot that is now booked or otherwise unavailable)
+                    const storedVal = timeSlotInput.value;
+                    if (!card.classList.contains('selected') && card.dataset.status === 'available' && storedVal === `${slot.start}-${slot.end}`) {
+                        setCardStatus(card, 'selected');
+                        document.getElementById('edit-selected-slot-label').textContent = slot.label;
+                        selectedDisplay.classList.remove('d-none');
+                    }
+
+                    const meta = STATUS_META[card.dataset.status] || STATUS_META.available;
+                    card.innerHTML = `
+                        <div class="time-slot-time">${formatTimeDisplay(slot.start)}</div>
+                        <div class="time-slot-status">
+                            <span class="time-slot-badge ${card.dataset.status}">
+                                <i class="${meta.icon} me-1"></i>${meta.label}
+                            </span>
+                        </div>
+                    `;
+
+                    if (card.dataset.status === 'available' || card.dataset.status === 'selected') {
+                        card.addEventListener('click', function() {
+                            // Deselect all other slots
+                            document.querySelectorAll('#edit-time-slots-container .time-slot-card').forEach(c => {
+                                if (c === card) return;
+                                if (c.dataset.status === 'selected') {
+                                    setCardStatus(c, 'available');
+                                } else {
+                                    c.classList.remove('selected');
+                                }
+                            });
+
+                            // Select this card
+                            setCardStatus(card, 'selected');
+
+                            // Update hidden fields
+                            timeSlotInput.value = `${slot.start}-${slot.end}`;
+                            startTimeInput.value = slot.start;
+                            endTimeInput.value = slot.end;
+
+                            // Update display
+                            document.getElementById('edit-selected-slot-label').textContent = slot.label;
+                            selectedDisplay.classList.remove('d-none');
+                        });
+                    }
+
+                    return card;
+                }
+
+                function buildSlotGroup(label, groupSlots) {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'time-slot-group';
+
+                    const header = document.createElement('div');
+                    header.className = 'time-slot-group-header';
+                    header.innerHTML = `<span class="time-slot-group-badge" role="heading" aria-level="3">${label}</span>`;
+
+                    const grid = document.createElement('div');
+                    grid.className = 'time-slots-grid';
+                    groupSlots.forEach(slot => grid.appendChild(buildSlotCard(slot)));
+
+                    wrapper.appendChild(header);
+                    wrapper.appendChild(grid);
+                    return wrapper;
+                }
+
+                container.innerHTML = '';
+                const columns = document.createElement('div');
+                columns.className = 'time-slot-columns';
+                if (amSlots.length > 0) {
+                    columns.appendChild(buildSlotGroup('AM', amSlots));
+                }
+                if (pmSlots.length > 0) {
+                    columns.appendChild(buildSlotGroup('PM', pmSlots));
+                }
+                container.appendChild(columns);
+            })
+            .catch(() => {
+                container.innerHTML = '<div class="text-center py-3 text-danger"><i class="fas fa-exclamation-circle me-2"></i>Failed to load time slots.</div>';
+            });
+    }
+
+    // Load slots on court or date change (and clear any stale selection)
+    courtSelect.addEventListener('change', function() {
+        clearSlotSelection();
+        if (dateInput.value) {
+            loadTimeSlots();
+        }
+    });
+
+    dateInput.addEventListener('change', function() {
+        clearSlotSelection();
+        if (courtSelect.value) {
+            loadTimeSlots();
+        }
+    });
+
+    function clearSlotSelection() {
+        timeSlotInput.value = '';
+        startTimeInput.value = '';
+        endTimeInput.value = '';
+        document.getElementById('edit-selected-slot-display')?.classList.add('d-none');
+        document.querySelectorAll('#edit-time-slots-container .time-slot-card').forEach(c => {
+            if (c.dataset.status === 'selected') {
+                setCardStatus(c, 'available');
+            } else {
+                c.classList.remove('selected');
+            }
+        });
+    }
+
+    // Clear slot button (reuses clearSlotSelection)
+    document.getElementById('edit-clear-slot-btn')?.addEventListener('click', clearSlotSelection);
+
+    // Pre-load slots if court and date are already selected
+    if (courtSelect.value && dateInput.value) {
+        loadTimeSlots();
+    }
+
+    // ===== Equipment card selection =====
+    document.querySelectorAll('.equipment-card').forEach(card => {
+        card.addEventListener('click', function() {
+            this.classList.toggle('selected');
+            const checkbox = this.querySelector('.equipment-check-input');
+            if (checkbox) checkbox.checked = !checkbox.checked;
+        });
+    });
+})();
+</script>
+{% endblock %}

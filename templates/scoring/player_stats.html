@@ -1,0 +1,199 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}My Statistics{% endblock %}
+{% block page_title %}My Statistics{% endblock %}
+
+{% block content %}
+{% if stats %}
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+            <div class="card-body p-4" style="background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);">
+                <div class="d-flex align-items-center">
+                    <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-gamepad fa-lg text-white"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h3 class="text-white mb-0 fw-bold">{{ stats.total_matches }}</h3>
+                        <p class="text-white mb-0 opacity-75">Total Matches</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+            <div class="card-body p-4" style="background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);">
+                <div class="d-flex align-items-center">
+                    <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-trophy fa-lg text-white"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h3 class="text-white mb-0 fw-bold">{{ stats.wins }}</h3>
+                        <p class="text-white mb-0 opacity-75">Wins</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+            <div class="card-body p-4" style="background: linear-gradient(135deg, #dc3545 0%, #a71d2a 100%);">
+                <div class="d-flex align-items-center">
+                    <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-times-circle fa-lg text-white"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h3 class="text-white mb-0 fw-bold">{{ stats.losses }}</h3>
+                        <p class="text-white mb-0 opacity-75">Losses</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+            <div class="card-body p-4" style="background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);">
+                <div class="d-flex align-items-center">
+                    <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-percentage fa-lg text-white"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h3 class="text-white mb-0 fw-bold">{{ stats.win_rate|floatformat:0 }}%</h3>
+                        <p class="text-white mb-0 opacity-75">Win Rate</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+            <div class="card-body p-4" style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);">
+                <div class="d-flex align-items-center">
+                    <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-table-tennis fa-lg text-white"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h3 class="text-white mb-0 fw-bold">{{ stats.total_games_played }}</h3>
+                        <p class="text-white mb-0 opacity-75">Games Played</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+            <div class="card-body p-4" style="background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);">
+                <div class="d-flex align-items-center">
+                    <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-check-circle fa-lg text-white"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h3 class="text-white mb-0 fw-bold">{{ stats.games_won }}</h3>
+                        <p class="text-white mb-0 opacity-75">Games Won</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+            <div class="card-body p-4" style="background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);">
+                <div class="d-flex align-items-center">
+                    <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-star fa-lg text-white"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h3 class="text-white mb-0 fw-bold">{{ stats.total_points_scored }}</h3>
+                        <p class="text-white mb-0 opacity-75">Points Scored</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card border-0 shadow-sm" style="border-radius: 12px;">
+    <div class="card-body p-4" style="background: linear-gradient(135deg, #e7f3ff 0%, #f0f9ff 100%);">
+        <div class="d-flex align-items-center">
+            <div style="width: 50px; height: 50px; background: rgba(59,122,140,0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-info-circle fa-lg text-primary"></i>
+            </div>
+            <div class="ms-3">
+                <h5 class="fw-bold mb-0">No statistics available yet</h5>
+                <p class="text-muted mb-0">Start playing matches to see your stats!</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Match History -->
+<div class="card border-0 shadow-lg" style="border-radius: 15px; overflow: hidden;">
+    <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0"><i class="fas fa-history text-primary me-2"></i>Recent Match History</h5>
+        <a href="{% url 'leaderboard' %}" class="btn btn-outline-primary btn-sm" style="border-radius: 8px;">
+            <i class="fas fa-trophy me-1"></i>View Leaderboard
+        </a>
+    </div>
+    <div class="card-body p-0">
+        {% if matches %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="padding: 15px 20px;">Date</th>
+                        <th style="padding: 15px 20px;">Court</th>
+                        <th style="padding: 15px 20px;">Format</th>
+                        <th style="padding: 15px 20px;">Score</th>
+                        <th style="padding: 15px 20px;">Result</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for match in matches %}
+                    <tr class="hover-row" style="transition: all 0.3s ease;">
+                        <td data-label="Date" style="padding: 15px 20px;">{{ match.reservation.date|date:"M d, Y" }}</td>
+                        <td data-label="Court" style="padding: 15px 20px;">{{ match.reservation.court.name }}</td>
+                        <td data-label="Format" style="padding: 15px 20px;">
+                            <span class="badge bg-info px-2 py-1">{{ match.get_format_display }}</span>
+                        </td>
+                        <td data-label="Score" style="padding: 15px 20px;">
+                            <span class="badge bg-primary px-3 py-2">{{ match.get_team1_score }} - {{ match.get_team2_score }}</span>
+                        </td>
+                        <td data-label="Result" style="padding: 15px 20px;">
+                            {% with user_team=match.team1_player1.id %}
+                                {% if match.winner_team == 1 %}
+                                    <span class="badge bg-success px-3 py-2"><i class="fas fa-check me-1"></i>Won</span>
+                                {% else %}
+                                    <span class="badge bg-danger px-3 py-2"><i class="fas fa-times me-1"></i>Lost</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 15px;">
+                <i class="fas fa-gamepad fa-2x text-muted"></i>
+            </div>
+            <p class="text-muted mb-0">No matches played yet</p>
+            <a href="{% url 'court_list' %}" class="btn btn-primary mt-2" style="border-radius: 10px;">Reserve a Court</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.hover-row:hover {
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %}
+

@@ -1,0 +1,911 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Reservation Details{% endblock %}
+{% block page_title %}Reservation #{{ reservation.id }}{% endblock %}
+
+{% block content %}
+<style>
+/* ===== Reservation Detail Redesign ===== */
+.res-detail-page {
+    --ps-primary: #3B7A8C;
+    --ps-dark: #1a3a42;
+}
+
+/* Hero status banner */
+.res-hero {
+    background: linear-gradient(135deg, #1a3a42 0%, #2c6271 55%, #3B7A8C 100%);
+    border-radius: 18px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 12px 30px rgba(26, 58, 66, 0.25);
+}
+.res-hero::before {
+    content: '';
+    position: absolute;
+    top: -80%;
+    right: -10%;
+    width: 460px;
+    height: 460px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.14) 0%, transparent 70%);
+    pointer-events: none;
+}
+.res-hero::after {
+    content: '';
+    position: absolute;
+    bottom: -110px;
+    left: 35%;
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 70%);
+    pointer-events: none;
+}
+.res-hero .badge {
+    border-radius: 20px;
+    padding: 7px 15px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+}
+.res-hero-kicker {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.65);
+}
+.res-hero-id {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.25);
+}
+.res-hero-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: rgba(255,255,255,0.8);
+    font-size: 0.85rem;
+    margin-bottom: 0.35rem;
+}
+.res-hero-meta i {
+    width: 16px;
+    text-align: center;
+    color: rgba(255,255,255,0.6);
+}
+.res-hero-court {
+    background: rgba(255,255,255,0.12);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 14px;
+    padding: 14px 20px;
+    min-width: 210px;
+}
+.res-hero-court .court-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    margin-bottom: 8px;
+}
+.res-hero-court .court-name {
+    font-weight: 700;
+    font-size: 1rem;
+    line-height: 1.2;
+}
+.res-hero-court .court-site {
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.75);
+}
+
+/* Section cards */
+.res-section {
+    border: none;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 3px 14px rgba(0,0,0,0.07);
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+.res-section:hover {
+    box-shadow: 0 8px 26px rgba(0,0,0,0.1);
+}
+.res-section .card-header {
+    background: transparent;
+    border-bottom: 1px solid #eef1f4;
+    padding: 1.15rem 1.5rem;
+}
+.res-section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+}
+.res-section-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: rgba(59,122,140,0.1);
+    color: var(--ps-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+}
+.res-section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0;
+    color: #243b47;
+}
+.res-section-body {
+    padding: 1.25rem 1.5rem 1.5rem;
+}
+
+/* Info rows */
+.info-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.8rem;
+}
+.info-row + .info-row {
+    margin-top: 1.1rem;
+}
+.info-chip {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: #f1f6f8;
+    color: var(--ps-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+.info-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #8a9aa4;
+    margin-bottom: 2px;
+}
+.info-value {
+    font-size: 0.94rem;
+    font-weight: 600;
+    color: #243b47;
+    word-break: break-word;
+}
+.info-value.highlight {
+    color: var(--ps-primary);
+}
+
+/* Court image */
+.res-court-img {
+    width: 100%;
+    height: 190px;
+    object-fit: cover;
+    border-radius: 12px;
+    margin-bottom: 1.1rem;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+}
+
+/* Status badges */
+.badge-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+}
+.badge-status.pending { background: #fff3cd; color: #856404; }
+.badge-status.confirmed { background: #d4edda; color: #155724; }
+.badge-status.completed { background: #d6e4f0; color: #1b4d6e; }
+.badge-status.cancelled { background: #f8d7da; color: #721c24; }
+.badge-status.rejected { background: #fbe1e3; color: #7a1e24; }
+.badge-status .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+/* Payment summary card */
+.pay-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.55rem 0;
+    font-size: 0.88rem;
+    color: #5c6f7a;
+}
+.pay-summary-row.total {
+    border-top: 2px dashed #dde5ea;
+    margin-top: 0.5rem;
+    padding-top: 1rem;
+    font-weight: 800;
+    color: #243b47;
+    font-size: 1rem;
+}
+.pay-summary-row.total .amount {
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: var(--ps-primary);
+    letter-spacing: -0.3px;
+}
+.pay-summary-row .amount { font-weight: 700; color: #243b47; }
+
+/* Payment status */
+.pay-status-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.55rem 0;
+    font-size: 0.88rem;
+}
+.pay-status-item .label { color: #8a9aa4; font-size: 0.8rem; }
+.pay-status-item .value { font-weight: 600; color: #243b47; text-align: right; word-break: break-word; }
+.pay-proof-thumb {
+    width: 52px;
+    height: 52px;
+    border-radius: 10px;
+    object-fit: cover;
+    border: 2px solid #eef1f4;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.pay-proof-thumb:hover { transform: scale(1.06); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+
+/* Timeline */
+.res-timeline { position: relative; padding-left: 4px; }
+.timeline-item {
+    position: relative;
+    display: flex;
+    gap: 0.9rem;
+    padding-bottom: 1.4rem;
+}
+.timeline-item:last-child { padding-bottom: 0; }
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 32px;
+    bottom: 0;
+    width: 2px;
+    background: #e3eaee;
+}
+.timeline-item:last-child::before { display: none; }
+.timeline-marker {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(59,122,140,0.12);
+    color: var(--ps-primary);
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px rgba(59,122,140,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    flex-shrink: 0;
+    z-index: 1;
+}
+.timeline-item.muted .timeline-marker {
+    background: #eef1f4;
+    color: #8a9aa4;
+    box-shadow: 0 0 0 2px #e3eaee;
+}
+.timeline-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #243b47;
+    padding-top: 3px;
+}
+.timeline-meta {
+    font-size: 0.76rem;
+    color: #8a9aa4;
+    margin-top: 1px;
+}
+
+/* Action buttons */
+.res-actions .btn {
+    border-radius: 10px;
+    padding: 0.6rem 1rem;
+    font-weight: 600;
+    font-size: 0.88rem;
+}
+.res-actions .btn-primary-gradient {
+    background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);
+    border: none;
+    color: #fff;
+}
+.res-actions .btn-success-gradient {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+    border: none;
+    color: #fff;
+}
+
+/* Rented equipment */
+.equip-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid #f0f3f5;
+}
+.equip-item:last-child { border-bottom: none; }
+.equip-item .equip-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    background: #f1f6f8;
+    color: var(--ps-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.equip-name { font-weight: 600; font-size: 0.9rem; color: #243b47; }
+.equip-sub { font-size: 0.75rem; color: #8a9aa4; }
+.equip-fee { font-weight: 800; color: var(--ps-primary); font-size: 0.92rem; }
+
+/* Notes banner */
+.res-notes {
+    background: #f8fafb;
+    border: 1px dashed #c9d6dc;
+    border-radius: 12px;
+    padding: 1.1rem 1.25rem;
+}
+
+@media (max-width: 991.98px) {
+    .res-hero-id { font-size: 1.6rem; }
+    .res-hero-court { min-width: 0; }
+}
+@media (max-width: 575.98px) {
+    .res-section-body { padding: 1rem 1.1rem 1.2rem; }
+    .res-section .card-header { padding: 1rem 1.1rem; }
+    .res-hero { border-radius: 14px; }
+    .res-hero-id { font-size: 1.35rem; }
+    .res-hero-meta { font-size: 0.78rem; }
+    .res-court-img { height: 150px; }
+    .pay-summary-row.total .amount { font-size: 1.35rem; }
+}
+</style>
+
+<div class="res-detail-page">
+
+    <!-- ===== Hero Status Card ===== -->
+    <div class="res-hero p-4 p-lg-5 mb-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-4 position-relative" style="z-index: 1;">
+            <div>
+                <div class="res-hero-kicker mb-1">Reservation</div>
+                <div class="d-flex align-items-center gap-3 flex-wrap mb-2">
+                    <span class="res-hero-id">#{{ reservation.id }}</span>
+                    <span class="badge-status {{ reservation.status }}">
+                        <span class="dot"></span>{{ reservation.get_status_display }}
+                    </span>
+                </div>
+                <div class="res-hero-meta">
+                    <i class="fas fa-calendar-plus"></i>
+                    <span>Created: {{ reservation.created_at|date:"M d, Y · g:i A" }}</span>
+                </div>
+                <div class="res-hero-meta">
+                    <i class="fas fa-clock"></i>
+                    <span>Last updated: {{ reservation.updated_at|date:"M d, Y · g:i A" }}</span>
+                </div>
+            </div>
+            <div class="res-hero-court">
+                <div class="court-icon"><i class="fas fa-map-marker-alt"></i></div>
+                <div class="court-name">{{ reservation.court.name }}</div>
+                <div class="court-site">{{ reservation.court.site.name }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- ===== Left Column ===== -->
+        <div class="col-lg-8">
+
+            <!-- Court Information -->
+            <div class="card res-section mb-4">
+                <div class="card-header">
+                    <div class="res-section-header">
+                        <div class="res-section-icon"><i class="fas fa-map-marker-alt"></i></div>
+                        <h5 class="res-section-title">Court Information</h5>
+                    </div>
+                </div>
+                <div class="card-body res-section-body">
+                    {% if reservation.court.image %}
+                    <img src="{{ reservation.court.image.url }}" alt="{{ reservation.court.name }}" class="res-court-img">
+                    {% endif %}
+                    <div class="row g-4">
+                        <div class="col-sm-6">
+                            <div class="info-row">
+                                <div class="info-chip"><i class="fas fa-tag"></i></div>
+                                <div>
+                                    <div class="info-label">Court Name</div>
+                                    <div class="info-value highlight">{{ reservation.court.name }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="info-row">
+                                <div class="info-chip"><i class="fas fa-building"></i></div>
+                                <div>
+                                    <div class="info-label">Site</div>
+                                    <div class="info-value">{{ reservation.court.site.name|default:"—" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="info-row">
+                                <div class="info-chip"><i class="fas fa-road"></i></div>
+                                <div>
+                                    <div class="info-label">Court Type</div>
+                                    <div class="info-value">{{ reservation.court.get_court_type_display|default:"—" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="info-row">
+                                <div class="info-chip"><i class="fas fa-money-bill-wave"></i></div>
+                                <div>
+                                    <div class="info-label">Court Rate</div>
+                                    <div class="info-value">₱{{ reservation.court.hourly_rate|floatformat:2 }}<span style="font-weight:400; color:#8a9aa4;"> / hour</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="info-row">
+                                <div class="info-chip"><i class="fas fa-stopwatch"></i></div>
+                                <div>
+                                    <div class="info-label">Duration</div>
+                                    {% with dur=reservation.duration_hours|floatformat:"-1" %}
+                                    <div class="info-value">{{ dur }} Hour{{ dur|pluralize }}</div>
+                                    {% endwith %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="info-row">
+                                <div class="info-chip"><i class="fas fa-map-pin"></i></div>
+                                <div>
+                                    <div class="info-label">Address</div>
+                                    {% with site=reservation.court.site %}
+                                    {% if site.address %}
+                                    <div class="info-value">{{ site.address }}</div>
+                                    {% else %}
+                                    <div class="info-value">—</div>
+                                    {% endif %}
+                                    {% endwith %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Date & Time -->
+            <div class="card res-section mb-4">
+                <div class="card-header">
+                    <div class="res-section-header">
+                        <div class="res-section-icon"><i class="fas fa-calendar-check"></i></div>
+                        <h5 class="res-section-title">Date &amp; Time</h5>
+                    </div>
+                </div>
+                <div class="card-body res-section-body">
+                    <div class="row g-4">
+                        <div class="col-sm-6">
+                            <div class="info-row">
+                                <div class="info-chip"><i class="fas fa-calendar-day"></i></div>
+                                <div>
+                                    <div class="info-label">Reservation Date</div>
+                                    <div class="info-value highlight">{{ reservation.date|date:"l, F j, Y" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="info-row">
+                                <div class="info-chip"><i class="fas fa-clock"></i></div>
+                                <div>
+                                    <div class="info-label">Reservation Time</div>
+                                    <div class="info-value highlight">{{ reservation.start_time|time:"g:i A" }} – {{ reservation.end_time|time:"g:i A" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="info-row">
+                                <div class="info-chip"><i class="fas fa-stopwatch"></i></div>
+                                <div>
+                                    <div class="info-label">Duration</div>
+                                    {% with dur=reservation.duration_hours|floatformat:"-1" %}
+                                    <div class="info-value">{{ dur }} Hour{{ dur|pluralize }}</div>
+                                    {% endwith %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% if reservation.notes %}
+                    <hr class="my-4">
+                    <div class="info-row">
+                        <div class="info-chip"><i class="fas fa-sticky-note"></i></div>
+                        <div>
+                            <div class="info-label">Notes</div>
+                            <div class="info-value" style="font-weight:500;">{{ reservation.notes }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Match Settings -->
+            <div class="card res-section mb-4">
+                <div class="card-header">
+                    <div class="res-section-header">
+                        <div class="res-section-icon"><i class="fas fa-gamepad"></i></div>
+                        <h5 class="res-section-title">Match Settings</h5>
+                    </div>
+                </div>
+                <div class="card-body res-section-body">
+                    <div class="row g-4">
+                        <div class="col-sm-6">
+                            <div class="info-row">
+                                <div class="info-chip"><i class="fas fa-tag"></i></div>
+                                <div>
+                                    <div class="info-label">Match Name</div>
+                                    <div class="info-value">{{ reservation.match_name|default:"—" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="info-row">
+                                <div class="info-chip"><i class="fas fa-users"></i></div>
+                                <div>
+                                    <div class="info-label">Match Format</div>
+                                    <div class="info-value">{{ match_format_display|default:reservation.match_format|title }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="info-row">
+                                <div class="info-chip"><i class="fas fa-dice"></i></div>
+                                <div>
+                                    <div class="info-label">Game Type</div>
+                                    <div class="info-value">{{ game_type_display|default:reservation.game_type|title }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="info-row">
+                                <div class="info-chip"><i class="fas fa-star"></i></div>
+                                <div>
+                                    <div class="info-label">Scoring Format</div>
+                                    <div class="info-value">{{ scoring_format_display|default:reservation.scoring_format }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="info-row">
+                                <div class="info-chip"><i class="fas fa-hashtag"></i></div>
+                                <div>
+                                    <div class="info-label">Points / Game</div>
+                                    <div class="info-value">{{ reservation.points_per_game }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="info-row">
+                                <div class="info-chip"><i class="fas fa-trophy"></i></div>
+                                <div>
+                                    <div class="info-label">Games to Win</div>
+                                    <div class="info-value">{{ reservation.games_to_win }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="info-row">
+                                <div class="info-chip"><i class="fas fa-check-double"></i></div>
+                                <div>
+                                    <div class="info-label">Win by Two</div>
+                                    <div class="info-value">{% if reservation.win_by_two %}Yes{% else %}No{% endif %}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Booking Information -->
+            <div class="card res-section mb-4">
+                <div class="card-header">
+                    <div class="res-section-header">
+                        <div class="res-section-icon"><i class="fas fa-user-circle"></i></div>
+                        <h5 class="res-section-title">Booking Information</h5>
+                    </div>
+                </div>
+                <div class="card-body res-section-body">
+                    <div class="d-flex align-items-center gap-3 mb-4">
+                        {% if reservation.user.profile_picture %}
+                        <img src="{{ reservation.user.profile_picture.url }}" alt="{{ reservation.user.username }}"
+                             style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid #f1f6f8; box-shadow: 0 3px 10px rgba(0,0,0,0.12);">
+                        {% else %}
+                        <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 700; border: 3px solid #f1f6f8; box-shadow: 0 3px 10px rgba(0,0,0,0.12);">
+                            {{ reservation.user.username|first|upper }}
+                        </div>
+                        {% endif %}
+                        <div>
+                            <div class="info-label">Booked By</div>
+                            <div class="info-value highlight" style="font-size: 1.05rem;">{{ reservation.user.get_full_name|default:reservation.user.username }}</div>
+                            <div class="d-flex align-items-center gap-2" style="font-size: 0.78rem; color: #8a9aa4;">
+                                <span><i class="fas fa-at me-1"></i>{{ reservation.user.username }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row g-4">
+                        <div class="col-sm-6">
+                            <div class="info-row">
+                                <div class="info-chip"><i class="fas fa-envelope"></i></div>
+                                <div>
+                                    <div class="info-label">Email Address</div>
+                                    <div class="info-value">{{ reservation.user.email|default:"—" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="info-row">
+                                <div class="info-chip"><i class="fas fa-phone-alt"></i></div>
+                                <div>
+                                    <div class="info-label">Contact Number</div>
+                                    <div class="info-value">{{ reservation.user.phone_number|default:"—" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rented Equipment -->
+            {% if reservation.rented_equipment.all %}
+            <div class="card res-section mb-4">
+                <div class="card-header">
+                    <div class="res-section-header">
+                        <div class="res-section-icon"><i class="fas fa-tools"></i></div>
+                        <h5 class="res-section-title">Rented Equipment</h5>
+                    </div>
+                </div>
+                <div class="card-body res-section-body py-2">
+                    {% for item in reservation.rented_equipment.all %}
+                    <div class="equip-item">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="equip-icon"><i class="fas fa-{% if item.equipment.type == 'paddle' %}table-tennis{% elif item.equipment.type == 'ball' %}circle{% else %}box{% endif %}"></i></div>
+                            <div>
+                                <div class="equip-name">{{ item.equipment.name }}</div>
+                                <div class="equip-sub">{{ item.equipment.get_type_display|default:"Equipment" }} · Qty {{ item.quantity }}</div>
+                            </div>
+                        </div>
+                        <div class="equip-fee">₱{{ item.rental_fee|floatformat:2 }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ===== Right Column ===== -->
+        <div class="col-lg-4">
+
+            <!-- Payment Summary -->
+            <div class="card res-section mb-4">
+                <div class="card-header">
+                    <div class="res-section-header">
+                        <div class="res-section-icon"><i class="fas fa-receipt"></i></div>
+                        <h5 class="res-section-title">Payment Summary</h5>
+                    </div>
+                </div>
+                <div class="card-body res-section-body">
+                    <div class="pay-summary-row">
+                        <span>Court Fee <small style="color:#8a9aa4;">({{ reservation.duration_hours|floatformat:"-1" }} hr)</small></span>
+                        <span class="amount">₱{{ reservation.subtotal|floatformat:2 }}</span>
+                    </div>
+                    <div class="pay-summary-row">
+                        <span>Equipment Fee</span>
+                        <span class="amount">₱{{ reservation.equipment_fee|floatformat:2 }}</span>
+                    </div>
+                    <div class="pay-summary-row total">
+                        <span>Total Amount</span>
+                        <span class="amount">₱{{ reservation.total_amount|floatformat:2 }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Status -->
+            {% if reservation.payment %}
+            <div class="card res-section mb-4">
+                <div class="card-header">
+                    <div class="res-section-header">
+                        <div class="res-section-icon"><i class="fas fa-credit-card"></i></div>
+                        <h5 class="res-section-title">Payment Status</h5>
+                    </div>
+                </div>
+                <div class="card-body res-section-body">
+                    <div class="pay-status-item">
+                        <span class="label">Status</span>
+                        <span class="badge-status {% if reservation.payment.status == 'paid' %}confirmed{% elif reservation.payment.status == 'pending' %}pending{% elif reservation.payment.status == 'failed' or reservation.payment.status == 'cancelled' %}cancelled{% elif reservation.payment.status == 'refunded' %}completed{% else %}rejected{% endif %}">
+                            <span class="dot"></span>{{ reservation.payment.get_status_display }}
+                        </span>
+                    </div>
+                    <div class="pay-status-item">
+                        <span class="label">Method</span>
+                        <span class="value">{{ reservation.payment.get_method_display|default:"N/A" }}</span>
+                    </div>
+                    <div class="pay-status-item">
+                        <span class="label">Amount</span>
+                        <span class="value">₱{{ reservation.payment.amount|floatformat:2 }}</span>
+                    </div>
+                    {% if reservation.payment.method == 'gcash' or reservation.payment.method == 'maya' or reservation.payment.method == 'bank_transfer' %}
+                    {% if reservation.payment.gcash_reference %}
+                    <div class="pay-status-item">
+                        <span class="label">Payment Reference</span>
+                        <span class="value" style="font-family: monospace; font-size: 0.82rem;">{{ reservation.payment.gcash_reference }}</span>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+                    {% if reservation.payment.transaction_id %}
+                    <div class="pay-status-item">
+                        <span class="label">Transaction ID</span>
+                        <span class="value" style="font-family: monospace; font-size: 0.82rem;">{{ reservation.payment.transaction_id }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="pay-status-item">
+                        <span class="label">Payment Date</span>
+                        <span class="value">{{ reservation.payment.created_at|date:"M d, Y · g:i A" }}</span>
+                    </div>
+                    {% if reservation.payment.gcash_proof_image %}
+                    <div class="pay-status-item">
+                        <span class="label">Proof of Payment</span>
+                        <a href="{{ reservation.payment.gcash_proof_image.url }}" target="_blank" title="View proof of payment">
+                            <img src="{{ reservation.payment.gcash_proof_image.url }}" alt="Proof of payment" class="pay-proof-thumb">
+                        </a>
+                    </div>
+                    {% endif %}
+                    {% if reservation.payment.stripe_receipt_url %}
+                    <div class="pay-status-item">
+                        <span class="label">Receipt</span>
+                        <a href="{{ reservation.payment.stripe_receipt_url }}" target="_blank" class="value" style="color: #3B7A8C; text-decoration: none;">
+                            <i class="fas fa-external-link-alt me-1"></i>View receipt
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Reservation Timeline -->
+            <div class="card res-section mb-4">
+                <div class="card-header">
+                    <div class="res-section-header">
+                        <div class="res-section-icon"><i class="fas fa-history"></i></div>
+                        <h5 class="res-section-title">Reservation Timeline</h5>
+                    </div>
+                </div>
+                <div class="card-body res-section-body">
+                    <div class="res-timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-marker"><i class="fas fa-plus"></i></div>
+                            <div class="flex-grow-1">
+                                <div class="timeline-title">Reservation Created</div>
+                                <div class="timeline-meta">{{ reservation.created_at|date:"M d, Y · g:i A" }}</div>
+                            </div>
+                        </div>
+                        {% if reservation.payment %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker"><i class="fas fa-credit-card"></i></div>
+                            <div class="flex-grow-1">
+                                <div class="timeline-title">Payment Submitted</div>
+                                <div class="timeline-meta">{{ reservation.payment.created_at|date:"M d, Y · g:i A" }}</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if reservation.approved_at %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker"><i class="fas fa-check"></i></div>
+                            <div class="flex-grow-1">
+                                <div class="timeline-title">Reservation Approved</div>
+                                <div class="timeline-meta">{{ reservation.approved_at|date:"M d, Y · g:i A" }}</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if reservation.match %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker"><i class="fas fa-play-circle"></i></div>
+                            <div class="flex-grow-1">
+                                <div class="timeline-title">Match Scheduled</div>
+                                <div class="timeline-meta">{{ reservation.match.created_at|date:"M d, Y · g:i A" }}</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if reservation.status == 'completed' %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker"><i class="fas fa-flag-checkered"></i></div>
+                            <div class="flex-grow-1">
+                                <div class="timeline-title">Reservation Completed</div>
+                                <div class="timeline-meta">{{ reservation.updated_at|date:"M d, Y · g:i A" }}</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if reservation.status == 'cancelled' %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker"><i class="fas fa-times"></i></div>
+                            <div class="flex-grow-1">
+                                <div class="timeline-title">Reservation Cancelled</div>
+                                <div class="timeline-meta">{{ reservation.updated_at|date:"M d, Y · g:i A" }}</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="card res-section mb-4">
+                <div class="card-header">
+                    <div class="res-section-header">
+                        <div class="res-section-icon"><i class="fas fa-bolt"></i></div>
+                        <h5 class="res-section-title">Actions</h5>
+                    </div>
+                </div>
+                <div class="card-body res-section-body">
+                    <div class="d-grid gap-2 res-actions">
+                        {% if reservation.status == 'pending' and can_edit %}
+                            {% if not user.is_staff_user and not user.is_admin %}
+                            <a href="{% url 'reservation_edit' reservation.id %}" class="btn btn-primary-gradient">
+                                <i class="fas fa-edit me-2"></i>Edit Reservation
+                            </a>
+                            <a href="{% url 'cancel_reservation' reservation.id %}" class="btn btn-outline-danger">
+                                <i class="fas fa-times me-2"></i>Cancel Reservation
+                            </a>
+                            {% endif %}
+                        {% endif %}
+
+                        {% if user.is_staff_user or user.is_admin %}
+                            {% if reservation.status == 'pending' %}
+                            <a href="{% url 'staff_approve_reservation' reservation.id %}" class="btn btn-success-gradient">
+                                <i class="fas fa-check me-2"></i>Approve/Reject
+                            </a>
+                            {% endif %}
+                            {% if reservation.status == 'confirmed' and not reservation.match %}
+                            <a href="{% url 'start_match' reservation.id %}" class="btn btn-warning">
+                                <i class="fas fa-play me-2"></i>Start Match
+                            </a>
+                            {% endif %}
+                        {% endif %}
+
+                        {% if user.is_super_admin %}
+                            <a href="{% url 'super_admin_reservation_list' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Reservations
+                            </a>
+                        {% elif user.is_staff_user %}
+                            <a href="{% url 'staff_reservations' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Reservations
+                            </a>
+                        {% else %}
+                            <a href="{% url 'reservation_list' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to List
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

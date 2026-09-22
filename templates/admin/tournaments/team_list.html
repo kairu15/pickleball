@@ -1,0 +1,77 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Team Management{% endblock %}
+{% block page_title %}Team Management{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'super_admin_analytics' %}"><i class="fas fa-home me-1"></i>Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'admin_tournament_list' %}">Tournaments</a></li>
+        <li class="breadcrumb-item active">Teams</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-users text-primary"></i>
+            All Teams
+        </h5>
+        <a href="{% url 'admin_team_create' %}" class="btn btn-sm btn-success">
+            <i class="fas fa-plus me-1"></i>Add Team
+        </a>
+    </div>
+    <div class="card-body p-0">
+        <div class="admin-table-container">
+            <table class="table admin-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Team Name</th>
+                        <th>Tournament</th>
+                        <th>Players</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for team in teams %}
+                    <tr>
+                        <td data-label="Team Name" class="fw-semibold">{{ team.name }}</td>
+                        <td data-label="Tournament">{{ team.tournament.name }}</td>
+                        <td data-label="Players">
+                            <span class="badge bg-info">{{ team.player_count }}</span>
+                        </td>
+                        <td data-label="Status">
+                            {% if team.is_active %}
+                            <span class="status-badge active">Active</span>
+                            {% else %}
+                            <span class="status-badge inactive">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Actions">
+                            <span class="text-muted small">—</span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">
+                                    <i class="fas fa-users fa-2x text-muted"></i>
+                                </div>
+                                <h5 class="empty-state-title">No teams yet</h5>
+                                <p class="empty-state-text">Teams will appear here once created.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends 'base/dashboard_base.html' %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="admin-card">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3"><label class="form-label fw-semibold">Title</label><input type="text" name="title" class="form-control" value="{{ announcement.title|default:'' }}" required></div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Message</label><textarea name="message" class="form-control" rows="3" required>{{ announcement.message|default:'' }}</textarea></div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Type</label><select name="announcement_type" class="form-select">{% for k,v in announcement_types %}<option value="{{ k }}" {% if announcement and announcement.announcement_type == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Link URL</label><input type="url" name="link_url" class="form-control" value="{{ announcement.link_url|default:'' }}"></div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Link Text</label><input type="text" name="link_text" class="form-control" value="{{ announcement.link_text|default:'' }}"></div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Show on Pages <small class="text-muted">(comma-separated, leave blank for all)</small></label><input type="text" name="show_on_pages" class="form-control" value="{{ announcement.show_on_pages|default:'' }}"></div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Display Order</label><input type="number" name="display_order" class="form-control" value="{{ announcement.display_order|default:0 }}"></div>
+                    {% if announcement %}<div class="mb-3 form-check form-switch"><input type="checkbox" name="is_active" class="form-check-input" id="isActive" {% if announcement.is_active %}checked{% endif %}><label class="form-check-label" for="isActive">Active</label></div>{% endif %}
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Save</button>
+                    <a href="{% url 'super_admin_site_settings' %}" class="btn btn-outline-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

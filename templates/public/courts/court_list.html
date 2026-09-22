@@ -1,0 +1,297 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Browse Courts - PickleSphere{% endblock %}
+{% block page_title %}
+    <i class="fas fa-map-marker-alt me-2"></i>Browse Courts
+{% endblock %}
+
+{% block content %}
+<!-- Filter Bar -->
+{% include 'components/filter_bar_start.html' %}
+    <div class="col-md-3 col-sm-6">
+        <label class="filter-label"><i class="fas fa-search"></i>Search</label>
+        <input type="text" name="q" class="filter-input" placeholder="Court name, site, keyword..." value="{{ search_query }}">
+    </div>
+    <div class="col-md-2 col-sm-6">
+        <label class="filter-label"><i class="fas fa-building"></i>Site</label>
+        <select name="site" class="filter-select">
+            <option value="">All Sites</option>
+            {% for site in sites %}
+            <option value="{{ site.id }}" {% if selected_site == site.id|stringformat:"s" %}selected{% endif %}>{{ site.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2 col-sm-6">
+        <label class="filter-label"><i class="fas fa-cloud"></i>Type</label>
+        <select name="type" class="filter-select">
+            <option value="">All Types</option>
+            <option value="indoor" {% if selected_type == 'indoor' %}selected{% endif %}>Indoor</option>
+            <option value="outdoor" {% if selected_type == 'outdoor' %}selected{% endif %}>Outdoor</option>
+        </select>
+    </div>
+    <div class="col-md-2 col-sm-6">
+        <label class="filter-label"><i class="fas fa-calendar"></i>Date</label>
+        <input type="date" name="date" class="filter-input" value="{{ selected_date }}" min="{% now 'Y-m-d' %}">
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <label class="filter-label"><i class="fas fa-sort-amount-down-alt"></i>Sort By</label>
+        <select name="sort" class="filter-select">
+            <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Name (A–Z)</option>
+            <option value="-name" {% if sort_by == '-name' %}selected{% endif %}>Name (Z–A)</option>
+            <option value="price" {% if sort_by == 'price' %}selected{% endif %}>Price (Low–High)</option>
+            <option value="-price" {% if sort_by == '-price' %}selected{% endif %}>Price (High–Low)</option>
+            <option value="-created_at" {% if sort_by == '-created_at' %}selected{% endif %}>Newest First</option>
+        </select>
+    </div>
+    <div class="col-12">
+        <div class="filter-btn-row justify-content-between">
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-search me-1"></i>Search</button>
+                {% if selected_site or selected_type or selected_date or search_query %}
+                <a href="{% url 'court_list' %}" class="btn btn-outline-secondary"><i class="fas fa-undo me-1"></i>Clear</a>
+                {% endif %}
+            </div>
+            <small class="text-muted align-self-center">{{ page_obj.paginator.count }} court{{ page_obj.paginator.count|pluralize }} found</small>
+        </div>
+    </div>
+{% include 'components/filter_bar_end.html' %}
+
+<!-- Loading Indicator (hidden by default) -->
+<div id="courtLoading" class="text-center py-5" style="display: none;">
+    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+        <span class="visually-hidden">Loading courts...</span>
+    </div>
+    <p class="text-muted mt-2">Loading courts...</p>
+</div>
+
+<!-- Courts Grid -->
+<div id="courtGrid" class="row g-4">
+    {% for court in courts %}
+    <div class="col-md-6 col-lg-4">
+        <div class="card border-0 shadow-sm h-100 court-card">
+            <!-- Image / Map / Placeholder -->
+            <div class="court-card-img">
+                {% if court.image %}
+                    <img src="{{ court.image.url }}" class="court-card-img-el" alt="{{ court.name }}" loading="lazy">
+                {% elif court.organization and court.organization.latitude and court.organization.longitude %}
+                    <img src="{% url 'static_map' %}?lat={{ court.organization.latitude }}&lng={{ court.organization.longitude }}&width=400&height=200&zoom=14" alt="Map of {{ court.organization.name }}" class="court-card-img-el" loading="lazy">
+                {% else %}
+                    <div class="court-card-img-placeholder">
+                        <i class="fas fa-table-tennis"></i>
+                    </div>
+                {% endif %}
+                <!-- Type badge (top-left) -->
+                <span class="court-badge-type">
+                    <i class="fas fa-{% if court.court_type == 'indoor' %}building{% else %}sun{% endif %} me-1"></i>{{ court.get_court_type_display }}
+                </span>
+                <!-- Status badge (top-right) -->
+                <span class="court-badge-status {% if court.status == 'available' %}bg-success{% elif court.status == 'maintenance' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                    {% if court.status == 'available' %}
+                        <i class="fas fa-check-circle me-1"></i>Available
+                    {% elif court.status == 'maintenance' %}
+                        <i class="fas fa-tools me-1"></i>Maintenance
+                    {% else %}
+                        <i class="fas fa-calendar-times me-1"></i>Reserved
+                    {% endif %}
+                </span>
+            </div>                    <div class="card-body p-3 d-flex flex-column">
+                <!-- Title + Organization -->
+                <div class="d-flex justify-content-between align-items-start mb-1">
+                    <h6 class="fw-bold mb-0 court-card-title">{{ court.name }}</h6>
+                </div>
+                <!-- Rating Stars + Surface Type -->
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    {% if court.rating_avg %}
+                        <div style="color: #ffc107; font-size: 0.7rem;">
+                            {% for i in "12345" %}
+                                <i class="{% if forloop.counter <= court.rating_avg %}fas{% else %}far{% endif %} fa-star"></i>
+                            {% endfor %}
+                        </div>
+                        <small class="text-muted" style="font-size:0.7rem;">{{ court.rating_avg|floatformat:1 }}</small>
+                    {% else %}
+                        <small class="text-muted" style="font-size:0.7rem;">No ratings</small>
+                    {% endif %}
+                    {% if court.surface_type %}
+                        <span class="badge" style="background: #e9ecef; color: #495057; font-size:0.62rem; font-weight:500;">{{ court.get_surface_type_display }}</span>
+                    {% endif %}
+                </div>
+                <p class="text-muted small mb-2">
+                    <i class="fas fa-building me-1" style="color: #3B7A8C;"></i>
+                    {% if court.organization %}{{ court.organization.name }}{% else %}{{ court.site.name }}{% endif %}
+                    <br>
+                    <i class="fas fa-map-marker-alt me-1" style="color: #3B7A8C;"></i>{{ court.site.name }}
+                </p>
+                <!-- Amenities chips -->
+                {% if court.amenities %}
+                <div class="mb-2 court-amenities">
+                    {% for amenity in court.amenities|slice:":3" %}
+                    <span class="court-amenity-chip">{{ amenity }}</span>
+                    {% endfor %}
+                    {% if court.amenities|length > 3 %}
+                    <span class="court-amenity-chip">+{{ court.amenities|length|add:"-3" }}</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+                <!-- Description -->
+                <p class="card-text small text-muted flex-grow-1">{{ court.description|truncatewords:12|default:"Premium pickleball court." }}</p>
+                <!-- Price + Actions -->
+                <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                    <div>
+                        <span class="fw-bold fs-5 court-price">₱{{ court.hourly_rate|floatformat:0 }}</span>
+                        <small class="text-muted">/hr</small>
+                    </div>
+                    <div class="d-flex gap-1">
+                        <a href="{% url 'court_detail' court.id %}" class="btn btn-sm btn-outline-primary court-action-btn" title="View Details">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        {% if court.organization and court.organization.latitude and court.organization.longitude %}
+                        <a href="{% url 'court_directions' court.id %}" class="btn btn-sm btn-outline-success court-action-btn" title="Get Directions">
+                            <i class="fas fa-directions"></i>
+                        </a>
+                        {% endif %}
+                        {% if court.status == 'available' %}
+                        <a href="{% url 'reservation_create' %}?court={{ court.id }}" class="btn btn-sm btn-primary court-action-btn" title="Book Now">
+                            <i class="fas fa-calendar-plus"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center py-5">
+                <div class="court-empty-icon">
+                    <i class="fas fa-search"></i>
+                </div>
+                <h5 class="fw-bold mb-2">No courts found</h5>
+                <p class="text-muted mb-3">Try adjusting your search or filter criteria above.</p>
+                <a href="{% url 'court_list' %}" class="btn btn-primary px-4">
+                    <i class="fas fa-undo me-2"></i>Clear All Filters
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+{% include 'components/pagination.html' with page_obj=page_obj %}
+{% endif %}
+
+<style>
+/* ===== Court Card Styles ===== */
+.court-card {
+    border-radius: 14px;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.court-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.12) !important;
+}
+
+.court-card-img {
+    position: relative;
+    height: 190px;
+    overflow: hidden;
+    background: #f8f9fa;
+}
+.court-card-img-el {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+}
+.court-card:hover .court-card-img-el {
+    transform: scale(1.08);
+}
+.court-card-img-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    color: #adb5bd;
+}
+
+/* Badges on card image */
+.court-badge-type {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(59,122,140,0.9);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    backdrop-filter: blur(4px);
+}
+.court-badge-status {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.court-card-title {
+    font-size: 1rem;
+    color: #212529;
+}
+
+.court-amenities {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+.court-amenity-chip {
+    display: inline-block;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 0.7rem;
+    color: #495057;
+}
+
+.court-price {
+    color: #3B7A8C;
+}
+
+.court-action-btn {
+    border-radius: 8px;
+    padding: 6px 10px;
+}
+
+.court-empty-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 15px;
+    font-size: 2rem;
+    color: #6c757d;
+}
+
+/* Responsive tweaks */
+@media (max-width: 575.98px) {
+    .court-card-img {
+        height: 160px;
+    }
+}
+</style>
+{% endblock %}
+

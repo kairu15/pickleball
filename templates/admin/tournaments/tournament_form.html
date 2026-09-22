@@ -1,0 +1,195 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}{% if tournament %}Edit {{ tournament.name }}{% else %}Create Tournament{% endif %} - PickleSphere{% endblock %}
+
+{% block page_title %}{% if tournament %}Edit {{ tournament.name }}{% else %}Create Tournament{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card border-0 shadow-lg" style="border-radius: 15px; overflow: hidden;">
+                <div class="card-header text-white p-4" style="background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px);">
+                                <i class="fas fa-{% if tournament %}edit{% else %}plus{% endif %} fa-lg text-white"></i>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <h5 class="mb-0 fw-bold">{% if tournament %}Edit Tournament{% else %}Create New Tournament{% endif %}</h5>
+                            <p class="mb-0 opacity-75">Fill in the details below</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="row g-4">
+                            <!-- Basic Info -->
+                            <div class="col-md-6">
+                                <div class="card border-0" style="background: #f8f9fa; border-radius: 12px;">
+                                    <div class="card-body p-4">
+                                        <h6 class="fw-bold mb-3"><i class="fas fa-info-circle me-2 text-primary"></i>Basic Information</h6>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Tournament Name <span class="text-danger">*</span></label>
+                                            {{ form.name }}
+                                            {% if form.name.errors %}
+                                                <div class="invalid-feedback d-block"><i class="fas fa-exclamation-circle me-1"></i>{{ form.name.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Description</label>
+                                            {{ form.description }}
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label fw-bold">Category <span class="text-danger">*</span></label>
+                                                {{ form.category }}
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label fw-bold">Format <span class="text-danger">*</span></label>
+                                                {{ form.format }}
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Skill Level</label>
+                                            {{ form.skill_level }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Dates -->
+                            <div class="col-md-6">
+                                <div class="card border-0" style="background: #f8f9fa; border-radius: 12px;">
+                                    <div class="card-body p-4">
+                                        <h6 class="fw-bold mb-3"><i class="fas fa-calendar-alt me-2 text-info"></i>Schedule</h6>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Registration Start <span class="text-danger">*</span></label>
+                                            {{ form.registration_start }}
+                                            {% if form.registration_start.errors %}
+                                                <div class="invalid-feedback d-block"><i class="fas fa-exclamation-circle me-1"></i>{{ form.registration_start.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Registration End <span class="text-danger">*</span></label>
+                                            {{ form.registration_end }}
+                                            {% if form.registration_end.errors %}
+                                                <div class="invalid-feedback d-block"><i class="fas fa-exclamation-circle me-1"></i>{{ form.registration_end.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Tournament Start <span class="text-danger">*</span></label>
+                                            {{ form.tournament_start }}
+                                            {% if form.tournament_start.errors %}
+                                                <div class="invalid-feedback d-block"><i class="fas fa-exclamation-circle me-1"></i>{{ form.tournament_start.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Tournament End</label>
+                                            {{ form.tournament_end }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-4 mt-0">
+                            <!-- Settings -->
+                            <div class="col-md-6">
+                                <div class="card border-0" style="background: #f8f9fa; border-radius: 12px;">
+                                    <div class="card-body p-4">
+                                        <h6 class="fw-bold mb-3"><i class="fas fa-cog me-2 text-success"></i>Settings</h6>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label fw-bold">Min Participants</label>
+                                                {{ form.min_participants }}
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label fw-bold">Max Participants</label>
+                                                {{ form.max_participants }}
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Players per Group (Round Robin)</label>
+                                            {{ form.players_per_group }}
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label fw-bold">Points per Win</label>
+                                                {{ form.points_per_win }}
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label fw-bold">Points per Loss</label>
+                                                {{ form.points_per_loss }}
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                {{ form.auto_assign_teams }}
+                                                <label class="form-check-label ms-2" for="{{ form.auto_assign_teams.id_for_label }}">
+                                                    Auto-assign teams for doubles
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Prize -->
+                            <div class="col-md-6">
+                                <div class="card border-0" style="background: #f8f9fa; border-radius: 12px;">
+                                    <div class="card-body p-4">
+                                        <h6 class="fw-bold mb-3"><i class="fas fa-gift me-2 text-warning"></i>Prize</h6>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Prize Pool (₱)</label>
+                                            {{ form.prize_pool }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between pt-4">
+                            <a href="{% url 'admin_tournament_list' %}" class="btn btn-outline-secondary px-4" style="border-radius: 10px;">
+                                <i class="fas fa-arrow-left me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-success px-5" style="border-radius: 10px; background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%); border: none;">
+                                <i class="fas fa-save me-2"></i>{% if tournament %}Save Changes{% else %}Create Tournament{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Style form inputs
+document.querySelectorAll('select').forEach(function(select) {
+    select.classList.add('form-select');
+    select.style.borderRadius = '10px';
+});
+document.querySelectorAll('input[type="number"], input[type="text"], textarea').forEach(function(input) {
+    input.style.borderRadius = '10px';
+});
+</script>
+{% endblock %}
+

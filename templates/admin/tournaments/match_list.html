@@ -1,0 +1,197 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Matches - {{ tournament.name }} - PickleSphere{% endblock %}
+
+{% block page_title %}Matches: {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a href="{% url 'admin_tournament_manage' tournament.pk %}" class="btn btn-sm btn-outline-secondary mb-2" style="border-radius: 8px;">
+                <i class="fas fa-arrow-left me-2"></i>Back to Management
+            </a>
+            <h5 class="fw-bold mb-0">Match Management</h5>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'admin_schedule_matches' tournament.pk %}" class="btn btn-info" style="border-radius: 10px;">
+                <i class="fas fa-calendar-alt me-2"></i>Schedule
+            </a>
+            <a href="{% url 'admin_generate_matches' tournament.pk %}" class="btn btn-success" style="border-radius: 10px;">
+                <i class="fas fa-plus me-2"></i>Generate New
+            </a>
+        </div>
+    </div>
+
+    <!-- Match Stats -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 15px;">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Total Matches</p>
+                            <h3 class="mb-0 fw-bold">{{ total_count }}</h3>
+                        </div>
+                        <div style="width: 45px; height: 45px; background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-gamepad text-white"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 15px;">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Scheduled</p>
+                            <h3 class="mb-0 fw-bold text-warning">{{ scheduled_count }}</h3>
+                        </div>
+                        <div style="width: 45px; height: 45px; background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-calendar-check text-white"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 15px;">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Completed</p>
+                            <h3 class="mb-0 fw-bold text-success">{{ completed_count }}</h3>
+                        </div>
+                        <div style="width: 45px; height: 45px; background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-check-circle text-white"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 15px;">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">In Progress</p>
+                            <h3 class="mb-0 fw-bold text-info">{{ in_progress_count }}</h3>
+                        </div>
+                        <div style="width: 45px; height: 45px; background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-play text-white"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Matches Table -->
+    <div class="card border-0 shadow-lg" style="border-radius: 15px; overflow: hidden;">
+        <div class="card-body p-0">
+            {% if matches %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="padding: 15px 20px;">Match #</th>
+                                <th style="padding: 15px 20px;">Round/Group</th>
+                                <th style="padding: 15px 20px;">Players</th>
+                                <th style="padding: 15px 20px;">Score</th>
+                                <th style="padding: 15px 20px;">Schedule</th>
+                                <th style="padding: 15px 20px;">Status</th>
+                                <th style="padding: 15px 20px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for match in matches %}
+                            <tr class="hover-row {% if match.status == 'completed' %}table-success{% elif match.status == 'in_progress' %}table-warning{% endif %}" style="transition: all 0.3s ease;">
+                                <td style="padding: 15px 20px;"><strong>#{{ match.match_number }}</strong></td>
+                                <td style="padding: 15px 20px;">
+                                    <span class="badge bg-secondary">{{ match.get_round_name_display }}</span>
+                                    {% if match.group_name %}
+                                        <br><small class="text-muted">Group {{ match.group_name }}</small>
+                                    {% endif %}
+                                </td>
+                                <td style="padding: 15px 20px;">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="{% if match.winner == match.player1 or match.winner_team == match.team1 %}fw-bold text-success{% endif %}">
+                                            {{ match.get_player1_display }}
+                                        </span>
+                                        <span class="text-muted">vs</span>
+                                        <span class="{% if match.winner == match.player2 or match.winner_team == match.team2 %}fw-bold text-success{% endif %}">
+                                            {{ match.get_player2_display }}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td style="padding: 15px 20px;">
+                                    {% if match.status == 'completed' %}
+                                        <span class="badge bg-dark fs-6 px-3 py-2">{{ match.score1 }} - {{ match.score2 }}</span>
+                                        <br><small class="text-success"><i class="fas fa-trophy me-1"></i>{{ match.get_winner_display|truncatechars:15 }}</small>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td style="padding: 15px 20px;">
+                                    {% if match.scheduled_date %}
+                                        <i class="fas fa-calendar-day text-primary me-1"></i>{{ match.scheduled_date|date:"M d" }}
+                                        <br><small><i class="fas fa-clock text-muted me-1"></i>{{ match.scheduled_time|time:"g:i A" }}</small>
+                                        {% if match.court %}
+                                            <br><small class="text-muted"><i class="fas fa-map-marker-alt me-1"></i>{{ match.court.name }}</small>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i>Unscheduled</span>
+                                    {% endif %}
+                                </td>
+                                <td style="padding: 15px 20px;">
+                                    <span class="badge bg-{% if match.status == 'completed' %}success{% elif match.status == 'in_progress' %}warning{% elif match.status == 'scheduled' %}info{% else %}secondary{% endif %} px-3 py-2">
+                                        {{ match.get_status_display }}
+                                    </span>
+                                </td>
+                                <td style="padding: 15px 20px;">
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'admin_match_edit' tournament.pk match.id %}" class="btn btn-primary" style="border-radius: 8px;" title="Edit Score/Status">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% if match.scheduled_date %}
+                                            <button class="btn btn-outline-success" title="Scheduled" disabled style="border-radius: 8px;">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        {% else %}
+                                            <a href="{% url 'admin_schedule_matches' tournament.pk %}" class="btn btn-outline-warning" title="Schedule" style="border-radius: 8px;">
+                                                <i class="fas fa-clock"></i>
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 15px;">
+                        <i class="fas fa-table-tennis fa-2x text-muted"></i>
+                    </div>
+                    <h5 class="text-muted">No matches generated yet</h5>
+                    <p class="text-muted mb-3">Generate matches after approving players</p>
+                    <a href="{% url 'admin_generate_matches' tournament.pk %}" class="btn btn-success" style="border-radius: 10px;">
+                        <i class="fas fa-magic me-2"></i>Generate Matches
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.hover-row:hover {
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %}
+

@@ -1,0 +1,202 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Registrations - {{ tournament.name }} - PickleSphere{% endblock %}
+
+{% block page_title %}Registrations: {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a href="{% url 'admin_tournament_manage' tournament.pk %}" class="btn btn-sm btn-outline-secondary mb-2" style="border-radius: 8px;">
+                <i class="fas fa-arrow-left me-2"></i>Back to Management
+            </a>
+            <h5 class="fw-bold mb-0">Tournament Registrations</h5>
+        </div>
+        <div class="d-flex gap-2">
+            <form method="post" action="{% url 'admin_bulk_approve' tournament.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success" style="border-radius: 10px;" data-confirm-message="Approve all pending registrations?"
+                        onclick="event.preventDefault(); showConfirmModal({ title: 'Bulk Approve', message: this.dataset.confirmMessage, actionText: 'Approve All', actionClass: 'btn-success', onConfirm: () => { this.closest('form').submit(); } })">
+                    <i class="fas fa-check-double me-2"></i>Bulk Approve
+                </button>
+            </form>
+        </div>
+    </div>
+
+    {% include 'components/filter_bar_start.html' with extra_class=' mb-4' %}
+            <div class="col-md-3 col-sm-6">
+                <label class="filter-label"><i class="fas fa-filter"></i>Status</label>
+                <select name="status" class="filter-select" onchange="this.form.submit()">
+                    <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Statuses</option>
+                    <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved</option>
+                    <option value="rejected" {% if status_filter == 'rejected' %}selected{% endif %}>Rejected</option>
+                </select>
+            </div>
+            <div class="col-md-3 col-sm-6 d-flex align-items-end">
+                <div class="filter-btn-row w-100">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search me-2"></i>Filter
+                    </button>
+                    {% if status_filter and status_filter != 'all' %}
+                    <a href="?status=all" class="btn btn-outline-secondary">
+                        <i class="fas fa-undo me-1"></i>Clear
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+    {% include 'components/filter_bar_end.html' %}
+
+    <!-- Stats -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 15px;">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Total</p>
+                            <h3 class="mb-0 fw-bold">{{ pending_count|add:approved_count|add:rejected_count }}</h3>
+                        </div>
+                        <div style="width: 45px; height: 45px; background: linear-gradient(135deg, #6c757d 0%, #545b62 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-list text-white"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 15px;">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Pending</p>
+                            <h3 class="mb-0 fw-bold text-warning">{{ pending_count }}</h3>
+                        </div>
+                        <div style="width: 45px; height: 45px; background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-clock text-white"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 15px;">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Approved</p>
+                            <h3 class="mb-0 fw-bold text-success">{{ approved_count }}</h3>
+                        </div>
+                        <div style="width: 45px; height: 45px; background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-check text-white"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 15px;">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Rejected</p>
+                            <h3 class="mb-0 fw-bold text-danger">{{ rejected_count }}</h3>
+                        </div>
+                        <div style="width: 45px; height: 45px; background: linear-gradient(135deg, #dc3545 0%, #a71d2a 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-times text-white"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registrations Table -->
+    <div class="card border-0 shadow-lg" style="border-radius: 15px; overflow: hidden;">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="padding: 15px 20px;">Player</th>
+                            <th style="padding: 15px 20px;">Skill Level</th>
+                            <th style="padding: 15px 20px;">Gender</th>
+                            <th style="padding: 15px 20px;">Status</th>
+                            <th style="padding: 15px 20px;">Registered</th>
+                            <th style="padding: 15px 20px;">Reviewed By</th>
+                            <th style="padding: 15px 20px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for reg in registrations %}
+                        <tr class="hover-row {% if reg.status == 'pending' %}table-warning{% endif %}" style="transition: all 0.3s ease;">
+                            <td style="padding: 15px 20px;">
+                                <div class="d-flex align-items-center">
+                                    {% if reg.user.profile_picture %}
+                                        <img src="{{ reg.user.profile_picture.url }}" class="rounded-circle me-3" style="width: 45px; height: 45px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 45px; height: 45px;">
+                                            <span class="fw-bold">{{ reg.user.username|first|upper }}</span>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <strong>{{ reg.user.get_full_name|default:reg.user.username }}</strong>
+                                        <br><small class="text-muted">{{ reg.user.email }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td style="padding: 15px 20px;">{{ reg.get_skill_level_display|default:"-" }}</td>
+                            <td style="padding: 15px 20px;">{{ reg.get_gender_display|default:"-" }}</td>
+                            <td style="padding: 15px 20px;">
+                                <span class="badge bg-{% if reg.status == 'pending' %}warning text-dark{% elif reg.status == 'approved' %}success{% elif reg.status == 'rejected' %}danger{% else %}secondary{% endif %} px-3 py-2">
+                                    <i class="fas fa-{% if reg.status == 'pending' %}clock{% elif reg.status == 'approved' %}check{% elif reg.status == 'rejected' %}times{% else %}minus{% endif %} me-1"></i>
+                                    {{ reg.get_status_display }}
+                                </span>
+                            </td>
+                            <td style="padding: 15px 20px;">{{ reg.registered_at|date:"M d, Y H:i" }}</td>
+                            <td style="padding: 15px 20px;">
+                                {% if reg.reviewed_by %}
+                                    {{ reg.reviewed_by.username }}
+                                    <br><small class="text-muted">{{ reg.reviewed_at|date:"M d, Y" }}</small>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 15px 20px;">
+                                {% if reg.status == 'pending' %}
+                                    <a href="{% url 'admin_registration_review' tournament.pk reg.id %}" class="btn btn-sm btn-primary" style="border-radius: 8px;">
+                                        <i class="fas fa-gavel me-1"></i> Review
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted">{{ reg.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-5">
+                                <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 15px;">
+                                    <i class="fas fa-inbox fa-2x text-muted"></i>
+                                </div>
+                                <h5 class="text-muted">No registrations found</h5>
+                                <p class="text-muted mb-0">Registrations will appear here when players sign up</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.hover-row:hover {
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %}
+

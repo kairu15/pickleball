@@ -1,0 +1,30 @@
+{% extends 'emails/base_email.html' %}
+
+{% block email_content %}
+    <span class="notification-badge success">💰 Refunded</span>
+    <h2>Refund Processed</h2>
+    <p>Hi <strong>{{ user.get_full_name|default:user.username }}</strong>, your refund has been processed successfully.</p>
+    
+    <div class="details-card">
+        <table cellpadding="0" cellspacing="0">
+            <tr>
+                <td class="label">Court</td>
+                <td class="value">{{ court_name }}</td>
+            </tr>
+            <tr>
+                <td class="label">Date</td>
+                <td class="value">{{ date }}</td>
+            </tr>
+            <tr>
+                <td class="label">Reservation #</td>
+                <td class="value">{{ reservation_id }}</td>
+            </tr>
+        </table>
+    </div>
+    
+    <p>Please allow 3-5 business days for the refund to reflect in your account depending on your payment method.</p>
+    
+    <div style="text-align: center;">
+        <a href="{{ action_url }}" class="cta-button">{{ action_text }}</a>
+    </div>
+{% endblock %}

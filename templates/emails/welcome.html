@@ -1,0 +1,36 @@
+{% extends 'emails/base_email.html' %}
+
+{% block email_content %}
+    <span class="notification-badge success">🎉 Welcome!</span>
+    <h2>Welcome to {{ site_name }}!</h2>
+    <p>Hi <strong>{{ username }}</strong>,</p>
+    <p>Thank you for joining {{ site_name }}! We're thrilled to have you on board. Get ready to experience the best in pickleball facility management.</p>
+    
+    <p style="font-size: 15px; color: #555;"><strong>Here's what you can do:</strong></p>
+    <table cellpadding="0" cellspacing="0" style="margin: 16px 0;">
+        <tr>
+            <td style="padding: 6px 12px; vertical-align: top; color: #3B7A8C;">🏟️</td>
+            <td style="padding: 6px 0; color: #555;">Browse and book courts at nearby facilities</td>
+        </tr>
+        <tr>
+            <td style="padding: 6px 12px; vertical-align: top; color: #3B7A8C;">🎾</td>
+            <td style="padding: 6px 0; color: #555;">Rent equipment for your games</td>
+        </tr>
+        <tr>
+            <td style="padding: 6px 12px; vertical-align: top; color: #3B7A8C;">🏆</td>
+            <td style="padding: 6px 0; color: #555;">Join tournaments and compete with others</td>
+        </tr>
+        <tr>
+            <td style="padding: 6px 12px; vertical-align: top; color: #3B7A8C;">📊</td>
+            <td style="padding: 6px 0; color: #555;">Track your scores and see the leaderboard</td>
+        </tr>
+    </table>
+    
+    <div style="text-align: center;">
+        <a href="{{ action_url }}" class="cta-button">{{ action_text }}</a>
+    </div>
+    
+    <p style="font-size: 14px; color: #888; margin-top: 20px;">
+        If you have any questions, feel free to reach out to our support team.
+    </p>
+{% endblock %}

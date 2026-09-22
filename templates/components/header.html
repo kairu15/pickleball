@@ -1,0 +1,473 @@
+{% load static %}
+
+{% if topbar_settings and topbar_settings.is_visible %}
+<!-- Top Bar -->
+<div class="top-bar" style="background: linear-gradient({{ topbar_settings.background_gradient_start|default:'#1a3a42' }}, {{ topbar_settings.background_gradient_end|default:'#0f172a' }});">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                {% if topbar_settings.show_contact_info %}
+                <div class="top-bar-contact">
+                    <a href="tel:{{ topbar_settings.phone_primary|default:site_contact_info.phone }}" class="top-bar-link">
+                        <i class="fas fa-phone-alt"></i>
+                        <span>{{ topbar_settings.phone_primary|default:site_contact_info.phone }}</span>
+                    </a>
+                    <a href="mailto:{{ topbar_settings.email_primary|default:site_contact_info.email }}" class="top-bar-link">
+                        <i class="fas fa-envelope"></i>
+                        <span>{{ topbar_settings.email_primary|default:site_contact_info.email }}</span>
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            <div class="col-md-4">
+                <div class="top-bar-actions">
+                    {% if topbar_settings.show_social_media and topbar_social_platforms %}
+                    <div class="social-links">
+                        {% for platform in topbar_social_platforms %}
+                        <a href="{{ platform.url }}" aria-label="{{ platform.get_platform_display }}" {% if platform.open_in_new_tab %}target="_blank" rel="noopener"{% endif %}>
+                            <i class="{{ platform.icon_class }}"></i>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    {% if topbar_settings.show_language_selector %}
+                    <div class="dropdown language-dropdown">
+                        <button class="language-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-globe"></i>
+                            <span>English</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item active" href="#"><i class="fas fa-check me-2"></i>English</a></li>
+                            <li><a class="dropdown-item" href="#">Filipino</a></li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Navigation -->
+<style>
+/* Top Bar Styles */
+.top-bar {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    position: relative;
+    z-index: 1040;
+}
+
+.top-bar-contact {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 575.98px) {
+    .top-bar-contact {
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: center;
+    }
+}
+
+.top-bar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: rgba(255,255,255,0.85);
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: color 0.3s ease;
+}
+
+.top-bar-link i {
+    color: #3B7A8C;
+    font-size: 0.875rem;
+}
+
+.top-bar-link:hover {
+    color: #fff;
+}
+
+.top-bar-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+.social-links {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding-right: 1rem;
+    border-right: 1px solid rgba(255,255,255,0.2);
+}
+
+.social-links a {
+    color: rgba(255,255,255,0.7);
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.social-links a:hover {
+    color: #fff;
+    background: rgba(255,255,255,0.1);
+}
+
+.language-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: rgba(255,255,255,0.85);
+    background: none;
+    border: none;
+    font-size: 0.875rem;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    transition: color 0.3s ease;
+}
+
+.language-toggle i {
+    color: #3B7A8C;
+}
+
+.language-toggle:hover {
+    color: #fff;
+}
+
+.language-dropdown .dropdown-menu {
+    z-index: 1100;
+    margin-top: 0.5rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+/* Navigation Styles */
+.main-navbar {
+    background: var(--sidebar-bg, #0f172a);
+    padding: 0.5rem 0;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.main-navbar .navbar-nav {
+    gap: 1.5rem;
+}
+
+.main-navbar .nav-link {
+    position: relative;
+    color: rgba(255,255,255,0.8);
+    font-weight: 500;
+    padding: 0.5rem 0;
+    transition: color 0.3s ease;
+}
+
+.main-navbar .nav-link:hover,
+.main-navbar .nav-link.active {
+    color: #fff;
+    background: transparent;
+}
+
+
+.navbar-brand {
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.brand-logo {
+    height: 32px;
+    width: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* User Dropdown Styles */
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.avatar-placeholder {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #3B7A8C;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.dropdown-header {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6c757d;
+    font-weight: 600;
+}
+
+.dropdown-menu {
+    font-size: 0.875rem;
+    border: none;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.dropdown-item {
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dropdown-item i {
+    width: 1rem;
+    text-align: center;
+}
+
+.dropdown-item:hover {
+    background: #f8f9fa;
+}
+
+/* CTA Button */
+.btn-nav-primary {
+    background: #3B7A8C;
+    color: #fff;
+    border: none;
+    padding: 0.375rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.btn-nav-primary:hover {
+    background: #2a5a66;
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+/* Collapsed navbar backdrop overlay for mobile */
+@media (max-width: 991.98px) {
+    .navbar-collapse.collapsing,
+    .navbar-collapse.show {
+        background: var(--sidebar-bg, #0f172a);
+        border-radius: 0 0 12px 12px;
+        max-height: 80vh;
+        overflow-y: auto;
+        padding: 0 1rem 1rem;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    }
+    
+    .navbar-collapse .dropdown-menu {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
+        box-shadow: none;
+        margin-top: 0;
+        padding: 0.5rem;
+    }
+    .navbar-collapse .dropdown-item {
+        color: rgba(255,255,255,0.8);
+        border-radius: 8px;
+    }
+    .navbar-collapse .dropdown-item:hover {
+        background: rgba(255,255,255,0.1);
+        color: #fff;
+    }
+    .navbar-collapse .dropdown-header {
+        color: rgba(255,255,255,0.5);
+    }
+    .navbar-collapse .dropdown-divider {
+        border-color: rgba(255,255,255,0.1);
+    }
+    .navbar-collapse .dropdown-item i {
+        color: #3B7A8C;
+    }
+    .navbar-collapse .dropdown-item.text-danger i {
+        color: var(--danger-color, #dc3545);
+    }
+}
+
+/* Responsive */
+@media (max-width: 991.98px) {
+    .top-bar-contact {
+        justify-content: center;
+        margin-bottom: 0.5rem;
+    }
+    
+    .top-bar-actions {
+        justify-content: center;
+    }
+    
+    .main-navbar .navbar-nav {
+        gap: 0.5rem;
+    }
+    
+    .main-navbar .nav-link {
+        padding: 0.5rem;
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 575.98px) {
+    .top-bar {
+        padding: 0.375rem 0;
+    }
+    .top-bar-link {
+        font-size: 0.75rem;
+    }
+    .social-links a {
+        width: 24px;
+        height: 24px;
+        font-size: 0.75rem;
+    }
+    .language-toggle {
+        font-size: 0.75rem;
+    }
+}
+</style>
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top main-navbar" style="{% if navbar_settings %}background: {{ navbar_settings.background_color }};{% endif %}">
+    <div class="container">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="{% url 'home' %}">
+            {% if site_branding and site_branding.header_logo %}
+                <img src="{{ site_branding.header_logo.url }}?_v={{ site_branding.cache_buster }}" alt="{{ site_branding.brand_name|default:'PickleSphere' }}" class="brand-logo">
+            {% else %}
+                <img src="{% static 'PickleSphereLogo.png' %}" alt="PickleSphere" class="brand-logo">
+            {% endif %}
+            <span>{% if site_branding %}{{ site_branding.brand_name }}{% else %}PickleSphere{% endif %}</span>
+        </a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav mx-auto">
+                {% if navbar_menu_items %}
+                    {% for item in navbar_menu_items %}
+                        {% if item.menu_position == 'left' %}
+                            {% if not item.requires_auth or user.is_authenticated %}
+                                {% if not item.hide_if_auth or not user.is_authenticated %}
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ item.get_url }}" {% if item.open_in_new_tab %}target="_blank" rel="noopener"{% endif %}>
+                                        {% if item.icon_class %}<i class="{{ item.icon_class }} me-1"></i>{% endif %}
+                                        {{ item.title }}
+                                    </a>
+                                </li>
+                                {% endif %}
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                {% else %}
+                    <!-- Default menu items when no CMS items exist -->
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{% url 'home' %}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if '/all_courts/' in request.path or '/court/' in request.path %}active{% endif %}" href="{% url 'all_courts' %}">Courts</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if '/tournaments/' in request.path %}active{% endif %}" href="{% url 'tournament_list' %}">Tournaments</a>
+                    </li>
+                    {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if '/equipment/' in request.path %}active{% endif %}" href="{% url 'equipment_list' %}">Equipment</a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if '/about/' in request.path %}active{% endif %}" href="{% url 'about' %}">About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if '/contact/' in request.path %}active{% endif %}" href="{% url 'contact' %}">Contact</a>
+                    </li>
+                {% endif %}
+            </ul>
+        
+
+            <ul class="navbar-nav ms-auto align-items-center">
+                {% if user.is_authenticated %}
+                    {% if user.is_staff_user %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="manageDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-cog"></i>
+                            <span class="ms-1">Manage</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><h6 class="dropdown-header">Staff Portal</h6></li>
+                            <li><a class="dropdown-item" href="{% url 'staff_reservations' %}">
+                                <i class="fas fa-clipboard-list"></i>Reservations
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'staff_equipment' %}">
+                                <i class="fas fa-tools"></i>Equipment
+                            </a></li>
+                            {% if user.is_super_admin %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">Admin Actions</h6></li>
+                            <li><a class="dropdown-item" href="{% url 'admin_court_list' %}">
+                                <i class="fas fa-th-large"></i>Manage Courts
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'super_admin_user_list' %}">
+                                <i class="fas fa-users"></i>Manage Users
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'admin_tournament_list' %}">
+                                <i class="fas fa-trophy"></i>Manage Tournaments
+                            </a></li>
+
+                            {% endif %}
+                        </ul>
+                    </li>
+                    {% endif %}
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            {% if user.profile_picture %}
+                                <img src="{{ user.profile_picture.url }}" alt="{{ user.username }}" class="user-avatar">
+                            {% else %}
+                                <div class="avatar-placeholder">{{ user.username|first|upper }}</div>
+                            {% endif %}
+                            <span class="d-none d-lg-inline ms-2">{{ user.get_full_name|default:user.username }}</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><h6 class="dropdown-header">My Account</h6></li>
+                            <li><a class="dropdown-item" href="{% url 'dashboard' %}">
+                                <i class="fas fa-th-large"></i>Dashboard
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'profile' %}">
+                                <i class="fas fa-user"></i>Profile
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'my_tournaments' %}">
+                                <i class="fas fa-trophy"></i>My Tournaments
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="{% url 'logout' %}">
+                                <i class="fas fa-sign-out-alt"></i>Logout
+                            </a></li>
+                        </ul>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'login' %}">Sign In</a>
+                    </li>
+                    <li class="nav-item ms-2">
+                        <a class="btn btn-nav-primary" href="{% url 'register' %}" style="{% if navbar_settings and navbar_settings.cta_button_color %}background: {{ navbar_settings.cta_button_color }};{% endif %}">
+                            {{ navbar_settings.cta_button_text|default:'Get Started' }}
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>

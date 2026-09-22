@@ -1,0 +1,153 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Rate Your Experience - PickleSphere{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-success text-white text-center py-4">
+                    <h3 class="mb-0"><i class="fas fa-star me-2"></i>Rate Your Experience</h3>
+                </div>
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <div class="mb-3">
+                            <i class="fas fa-table-tennis fa-3x text-success"></i>
+                        </div>
+                        <h5>{{ reservation.court.name }}</h5>
+                        <p class="text-muted mb-1">{{ reservation.date|date:"F d, Y" }}</p>
+                        <p class="text-muted">{{ reservation.start_time|time:"g:i A" }} - {{ reservation.end_time|time:"g:i A" }}</p>
+                    </div>
+                    
+                    <form method="post" action="{% url 'submit_rating' reservation.id %}">
+                        {% csrf_token %}
+                        
+                        <!-- Star Rating -->
+                        <div class="mb-4 text-center">
+                            <label class="form-label fw-bold mb-3">How was your experience?</label>
+                            <div class="star-rating mb-3">
+                                <div class="d-flex justify-content-center gap-2" style="font-size: 2.5rem;">
+                                    {% for i in "12345" %}
+                                    <label class="star-label cursor-pointer" style="cursor: pointer; color: #ffc107; transition: transform 0.2s;">
+                                        <input type="radio" name="rating" value="{{ forloop.counter }}" class="d-none" {% if forloop.counter == 5 %}checked{% endif %}>
+                                        <i class="far fa-star" data-star="{{ forloop.counter }}"></i>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                                <p class="text-muted mt-2 rating-text">Select a rating</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Optional Comment -->
+                        <div class="mb-4">
+                            <label for="comment" class="form-label fw-bold">Optional Comment</label>
+                            <textarea 
+                                name="comment" 
+                                id="comment" 
+                                class="form-control" 
+                                rows="3" 
+                                maxlength="500"
+                                placeholder="Tell us about your experience (optional)"
+                            ></textarea>
+                            <div class="form-text text-end">
+                                <span id="charCount">0</span>/500 characters
+                            </div>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-paper-plane me-2"></i>Submit Rating
+                            </button>
+                            <button type="submit" name="skip" value="true" class="btn btn-outline-secondary">
+                                Skip for now
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.star-label:hover {
+    transform: scale(1.2);
+}
+.star-label i.fas {
+    color: #ffc107;
+}
+.star-label:hover ~ .star-label i,
+.star-label:has(~ .star-label:hover) i {
+    color: #ffc107;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const stars = document.querySelectorAll('.star-label i');
+    const inputs = document.querySelectorAll('.star-label input');
+    const ratingText = document.querySelector('.rating-text');
+    const commentTextarea = document.getElementById('comment');
+    const charCount = document.getElementById('charCount');
+    
+    const ratingDescriptions = {
+        1: 'Poor - Needs improvement',
+        2: 'Fair - Below expectations',
+        3: 'Good - Met expectations',
+        4: 'Very Good - Exceeded expectations',
+        5: 'Excellent - Outstanding experience!'
+    };
+    
+    // Star rating interaction
+    function updateStars(selectedRating) {
+        stars.forEach((star, index) => {
+            if (index < selectedRating) {
+                star.classList.remove('far');
+                star.classList.add('fas');
+            } else {
+                star.classList.remove('fas');
+                star.classList.add('far');
+            }
+        });
+        ratingText.textContent = ratingDescriptions[selectedRating] || 'Select a rating';
+    }
+    
+    stars.forEach((star, index) => {
+        // Hover effect
+        star.parentElement.addEventListener('mouseenter', function() {
+            updateStars(index + 1);
+        });
+        
+        // Click to select
+        star.parentElement.addEventListener('click', function() {
+            inputs[index].checked = true;
+            updateStars(index + 1);
+        });
+    });
+    
+    // Reset on mouse leave if no selection
+    document.querySelector('.star-rating').addEventListener('mouseleave', function() {
+        let selectedRating = 5;
+        inputs.forEach((input, index) => {
+            if (input.checked) {
+                selectedRating = index + 1;
+            }
+        });
+        updateStars(selectedRating);
+    });
+    
+    // Initialize with 5 stars
+    updateStars(5);
+    
+    // Character count for comment
+    if (commentTextarea && charCount) {
+        commentTextarea.addEventListener('input', function() {
+            charCount.textContent = this.value.length;
+        });
+    }
+});
+</script>
+{% endblock %}

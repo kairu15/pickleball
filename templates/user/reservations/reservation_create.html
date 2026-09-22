@@ -1,0 +1,3397 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Reserve a Court{% endblock %}
+{% block page_title %}Reserve a Court{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+/* ===== STEPPER ===== */
+.wizard-stepper {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 0;
+    margin-bottom: 2.25rem;
+    padding: 0.5rem 0.5rem 0.25rem;
+    position: relative;
+    --step-size: 48px;
+}
+.wizard-step {
+    flex: 1;
+    max-width: 240px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    min-width: 0;
+}
+
+/* Connecting progress line between circles */
+.wizard-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: calc(var(--step-size) / 2 - 2px);
+    left: calc(50% + var(--step-size) / 2 + 2px);
+    width: calc(100% - var(--step-size) - 4px);
+    height: 4px;
+    border-radius: 4px;
+    background: #e9ecef;
+    z-index: 0;
+    transition: background 0.4s ease;
+}
+.wizard-step.completed:not(:last-child)::after {
+    background: linear-gradient(90deg, #4caf50 0%, #66bb6a 100%);
+}
+.wizard-step.active:not(:last-child)::after {
+    background: linear-gradient(90deg, rgba(59,122,140,0.55) 0%, rgba(59,122,140,0.2) 100%);
+}
+
+/* Step circle */
+.wizard-step-circle {
+    width: var(--step-size);
+    height: var(--step-size);
+    border-radius: 50%;
+    background: #fff;
+    border: 2.5px solid #dee2e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: calc(var(--step-size) * 0.38);
+    color: #6c757d;
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+/* Active step */
+.wizard-step.active .wizard-step-circle {
+    background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);
+    border-color: #3B7A8C;
+    color: #fff;
+    box-shadow: 0 0 0 5px rgba(59,122,140,0.15), 0 6px 18px rgba(59,122,140,0.35);
+    transform: scale(1.06);
+    animation: stepPulse 2.2s ease-in-out infinite;
+}
+@keyframes stepPulse {
+    0%, 100% {
+        box-shadow: 0 0 0 5px rgba(59,122,140,0.15), 0 6px 18px rgba(59,122,140,0.35);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(59,122,140,0.05), 0 6px 18px rgba(59,122,140,0.35);
+    }
+}
+
+/* Completed step */
+.wizard-step.completed .wizard-step-circle {
+    background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+    border-color: #4caf50;
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(76,175,80,0.3);
+}
+.wizard-step.completed .wizard-step-number {
+    display: none;
+}
+.wizard-step-check {
+    display: none;
+    font-size: calc(var(--step-size) * 0.42);
+}
+.wizard-step.completed .wizard-step-check {
+    display: block;
+    animation: checkPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes checkPop {
+    from { transform: scale(0.3); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+/* Step label */
+.wizard-step-label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #6c757d;
+    text-align: center;
+    margin-top: 0.7rem;
+    white-space: nowrap;
+    transition: color 0.3s ease;
+}
+.wizard-step-label .step-icon {
+    font-size: 0.75rem;
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+.wizard-step.active .wizard-step-label {
+    color: #1a3a42;
+    font-weight: 700;
+}
+.wizard-step.active .wizard-step-label .step-icon {
+    color: #3B7A8C;
+    opacity: 1;
+}
+.wizard-step.completed .wizard-step-label {
+    color: #2e7d32;
+}
+.wizard-step.completed .wizard-step-label .step-icon {
+    color: #4caf50;
+    opacity: 1;
+}
+
+/* Respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .wizard-step.active .wizard-step-circle {
+        animation: none;
+    }
+    .wizard-step.completed .wizard-step-check {
+        animation: none;
+    }
+}
+
+/* ===== STEP SECTIONS ===== */
+.step-section {
+    display: none;
+    animation: fadeSlideIn 0.4s ease forwards;
+}
+.step-section.active {
+    display: block;
+}
+@keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== CALENDAR ===== */
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+.calendar-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+.calendar-nav-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: 1px solid #dee2e6;
+    background: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+.calendar-nav-btn:hover {
+    background: #f8f9fa;
+    border-color: #3B7A8C;
+    color: #3B7A8C;
+}
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 0.5rem;
+}
+.calendar-day-header {
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #6c757d;
+    padding: 0.5rem 0;
+    text-transform: uppercase;
+}
+.calendar-day {
+    aspect-ratio: 1;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+    position: relative;
+}
+.calendar-day:hover:not(.past):not(.other-month) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.calendar-day.available {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+.calendar-day.available:hover {
+    background: #c8e6c9;
+}
+.calendar-day.full {
+    background: #ffebee;
+    color: #c62828;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+.calendar-day.past {
+    background: #f5f5f5;
+    color: #bdbdbd;
+    cursor: not-allowed;
+}
+.calendar-day.other-month {
+    visibility: hidden;
+}
+.calendar-day.selected {
+    border-color: #3B7A8C;
+    background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(59,122,140,0.4);
+}
+.calendar-day.selected .slot-dot {
+    background: rgba(255,255,255,0.7);
+}
+.calendar-day.today:not(.selected) {
+    border-color: #3B7A8C;
+    border-style: dashed;
+}
+.slot-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    margin-top: 2px;
+}
+.slot-dot.available {
+    background: #4caf50;
+}
+.slot-dot.full {
+    background: #e53935;
+}
+.slot-count {
+    font-size: 0.6rem;
+    font-weight: 700;
+    margin-top: 1px;
+}
+
+/* ===== TIME SLOTS ===== */
+.time-slot-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    align-items: start;
+}
+.time-slots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.5rem;
+    max-height: 460px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+.time-slots-grid::-webkit-scrollbar {
+    width: 4px;
+}
+.time-slots-grid::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+.time-slot-card {
+    position: relative;
+    border: 2px solid #e8f5e9;
+    border-radius: 12px;
+    padding: 0.75rem 0.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: #f1f8e9;
+    user-select: none;
+    -webkit-user-select: none;
+}
+.time-slot-card.status-available {
+    border-color: #a5d6a7;
+    background: #f1f8e9;
+}
+.time-slot-card.status-available:hover {
+    transform: translateY(-2px);
+    border-color: #4caf50;
+    background: #e8f5e9;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
+}
+.time-slot-card.status-available:active {
+    transform: translateY(0) scale(0.97);
+}
+.time-slot-card.status-booked {
+    border-color: #ffcdd2;
+    background: #ffebee;
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+.time-slot-card.status-unavailable {
+    border-color: #e0e0e0;
+    background: #f5f5f5;
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+.time-slot-card.status-booked:hover,
+.time-slot-card.status-unavailable:hover {
+    transform: none;
+    box-shadow: none;
+}
+.time-slot-card.selected {
+    border-color: #3B7A8C;
+    background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(59, 122, 140, 0.35);
+    transform: translateY(-2px);
+    animation: slotSelectedPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes slotSelectedPop {
+    from { transform: scale(0.96); }
+    to { transform: translateY(-2px) scale(1); }
+}
+.time-slot-time {
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+.time-slot-status {
+    font-size: 0.7rem;
+    margin-top: 3px;
+}
+.time-slot-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.18rem 0.55rem;
+    border-radius: 20px;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    text-transform: uppercase;
+}
+.time-slot-badge.available {
+    background: rgba(76, 175, 80, 0.12);
+    color: #2e7d32;
+}
+.time-slot-badge.booked {
+    background: rgba(229, 57, 53, 0.12);
+    color: #c62828;
+}
+.time-slot-badge.unavailable {
+    background: rgba(117, 117, 117, 0.12);
+    color: #616161;
+}
+.time-slot-badge.selected {
+    background: rgba(255, 255, 255, 0.22);
+    color: #fff;
+}
+
+/* ===== TIME SLOT GROUPS (AM / PM) ===== */
+.time-slot-group {
+    margin-bottom: 1.25rem;
+}
+.time-slot-group:last-child {
+    margin-bottom: 0;
+}
+.time-slot-group-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.6rem;
+}
+.time-slot-group-header::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(59,122,140,0.35), rgba(59,122,140,0));
+}
+.time-slot-group-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    padding: 0.3rem 0.9rem;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+/* ===== BOOKING SUMMARY & PRICE BREAKDOWN ===== */
+.booking-summary-card,
+.price-breakdown-card {
+    border: 1px solid #eef1f4;
+    border-radius: 16px;
+    box-shadow: 0 6px 24px rgba(26, 58, 66, 0.08);
+    overflow: hidden;
+}
+.booking-summary-card .card-header,
+.price-breakdown-card .card-header {
+    background: #f8fafb;
+    border-bottom: 1px solid #eef1f4;
+    padding: 1.1rem 1.5rem;
+}
+.summary-header-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(59, 122, 140, 0.3);
+}
+.price-breakdown-card .summary-header-icon {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+/* Summary list */
+.summary-list {
+    display: flex;
+    flex-direction: column;
+}
+.summary-item {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.7rem 0;
+    border-bottom: 1px dashed #eef1f4;
+}
+.summary-item:last-child {
+    border-bottom: none;
+}
+.summary-item-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    background: rgba(59, 122, 140, 0.1);
+    color: #3B7A8C;
+}
+.summary-item-label {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #6c757d;
+    flex: 1;
+}
+.summary-item-value {
+    font-weight: 600;
+    color: #1a3a42;
+    text-align: right;
+    min-width: 0;
+    word-break: break-word;
+}
+.summary-item-value.summary-highlight {
+    font-weight: 700;
+    color: #3B7A8C;
+}
+
+/* Price list */
+.price-list {
+    display: flex;
+    flex-direction: column;
+}
+.price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6rem 0;
+    gap: 1rem;
+}
+.price-label {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+.price-row-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+    background: rgba(59, 122, 140, 0.08);
+    color: #3B7A8C;
+}
+.price-value {
+    font-weight: 600;
+    color: #1a3a42;
+    text-align: right;
+}
+.price-divider {
+    border: none;
+    border-top: 1px dashed #dde3e7;
+    margin: 0.6rem 0;
+}
+.price-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    background: linear-gradient(135deg, rgba(59, 122, 140, 0.08) 0%, rgba(59, 122, 140, 0.03) 100%);
+    border: 1px solid rgba(59, 122, 140, 0.15);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-top: 0.4rem;
+}
+.price-total-label {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #1a3a42;
+    min-width: 0;
+}
+.price-total {
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: #3B7A8C;
+    letter-spacing: -0.5px;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+/* ===== EQUIPMENT SELECTION ===== */
+.equipment-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.5rem;
+}
+.equipment-card {
+    border: 2px solid #dee2e6;
+    border-radius: 10px;
+    padding: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.equipment-card:hover {
+    border-color: #3B7A8C;
+}
+.equipment-card.selected {
+    border-color: #3B7A8C;
+    background: rgba(59,122,140,0.05);
+    box-shadow: 0 2px 8px rgba(59,122,140,0.15);
+}
+.equipment-check {
+    display: none;
+}
+.equipment-card.selected .equipment-check {
+    display: inline;
+}
+
+/* ===== ANIMATIONS ===== */
+.step-transition {
+    animation: fadeSlideIn 0.4s ease forwards;
+}
+
+/* ===== SKIP TO REVIEW BANNER ===== */
+.skip-banner {
+    display: none;
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    border: 1px solid #a5d6a7;
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    animation: fadeSlideIn 0.4s ease forwards;
+}
+.skip-banner.show {
+    display: flex;
+}
+.skip-banner-text {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.9rem;
+    color: #2e7d32;
+}
+.skip-banner-text i {
+    font-size: 1.1rem;
+}
+.skip-banner-link {
+    white-space: nowrap;
+    font-weight: 600;
+    background: #2e7d32;
+    color: white !important;
+    padding: 0.4rem 1rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    border: none;
+}
+.skip-banner-link:hover {
+    background: #1b5e20;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(46,125,50,0.3);
+}
+.skip-banner-dismiss {
+    background: none;
+    border: none;
+    color: #558b2f;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+.skip-banner-dismiss:hover {
+    background: rgba(0,0,0,0.08);
+}
+
+@media (max-width: 576px) {
+    .skip-banner {
+        flex-direction: column;
+        text-align: center;
+    }
+    .skip-banner-text {
+        font-size: 0.8rem;
+    }
+}
+
+/* ===== COURT SELECT CUSTOM DROPDOWN ===== */
+.court-select-wrapper {
+    position: relative;
+}
+.court-select-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0.6rem 1rem;
+    background: #fff;
+    border: 2px solid #dee2e6;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    text-align: left;
+    transition: all 0.2s ease;
+    color: #495057;
+    font-family: inherit;
+}
+.court-select-trigger:hover {
+    border-color: #3B7A8C;
+}
+.court-select-trigger:focus {
+    outline: none;
+    border-color: #3B7A8C;
+    box-shadow: 0 0 0 3px rgba(59,122,140,0.15);
+}
+.court-select-trigger.open {
+    border-color: #3B7A8C;
+    box-shadow: 0 0 0 3px rgba(59,122,140,0.15);
+}
+.court-select-text {
+    flex: 1;
+}
+.court-select-text.placeholder {
+    color: #adb5bd;
+}
+.court-select-arrow {
+    margin-left: 0.75rem;
+    color: #adb5bd;
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+}
+.court-select-trigger.open .court-select-arrow {
+    transform: rotate(180deg);
+    color: #3B7A8C;
+}
+.court-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    z-index: 100;
+    max-height: 280px;
+    overflow-y: auto;
+    animation: fadeSlideIn 0.2s ease forwards;
+}
+.court-dropdown.open {
+    display: block;
+}
+.court-dropdown::-webkit-scrollbar {
+    width: 4px;
+}
+.court-dropdown::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+.court-dropdown-option {
+    padding: 0.65rem 1rem;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    transition: background 0.15s ease;
+    border-bottom: 1px solid #f5f5f5;
+}
+.court-dropdown-option:last-child {
+    border-bottom: none;
+}
+.court-dropdown-option:hover {
+    background: rgba(59,122,140,0.06);
+}
+.court-dropdown-option.selected {
+    background: rgba(59,122,140,0.1);
+    border-left: 3px solid #3B7A8C;
+}
+.court-dropdown-option-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #212529;
+}
+.court-dropdown-option-detail {
+    font-size: 0.78rem;
+    color: #6c757d;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+.court-dropdown-option-detail .badge {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.5rem;
+}
+.court-dropdown-option-rate {
+    font-weight: 700;
+    color: #3B7A8C;
+}
+.court-dropdown-empty {
+    padding: 1.5rem;
+    text-align: center;
+    color: #6c757d;
+    font-size: 0.85rem;
+}
+
+/* ===== COURT TOOLTIP ===== */
+.court-tooltip {
+    display: none;
+    margin-top: 0.75rem;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    animation: fadeSlideIn 0.3s ease forwards;
+}
+.court-tooltip.show {
+    display: block;
+}
+.court-tooltip-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.35rem;
+}
+.court-tooltip-name {
+    font-size: 1rem;
+}
+.court-tooltip-type-badge {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.55rem;
+    border-radius: 20px;
+    background: #e3f2fd;
+    color: #1565c0;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+.court-tooltip-desc {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+@media (max-width: 576px) {
+    .court-dropdown {
+        max-height: 220px;
+    }
+    .court-dropdown-option {
+        padding: 0.55rem 0.85rem;
+    }
+    .court-dropdown-option-name {
+        font-size: 0.85rem;
+    }
+    .court-dropdown-option-detail {
+        font-size: 0.72rem;
+    }
+    .court-select-trigger {
+        padding: 0.5rem 0.85rem;
+        font-size: 0.9rem;
+    }
+    .court-tooltip {
+        padding: 0.6rem 0.85rem;
+    }
+}
+
+/* ===== VERIFICATION ALERT ===== */
+.slot-verification-alert {
+    display: none;
+    animation: fadeSlideIn 0.3s ease forwards;
+}
+.slot-verification-alert.show {
+    display: flex;
+}
+.slot-verification-alert .btn-sm {
+    white-space: nowrap;
+}
+
+/* ===== SUBMIT OVERLAY ===== */
+.submit-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    align-items: center;
+    justify-content: center;
+    animation: overlayFadeIn 0.25s ease forwards;
+}
+.submit-overlay.active {
+    display: flex;
+    cursor: wait;
+}
+@keyframes overlayFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+.submit-overlay-card {
+    background: white;
+    border-radius: 20px;
+    padding: 2.5rem 3rem;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    animation: overlayCardIn 0.35s ease forwards;
+    max-width: 90vw;
+}
+@keyframes overlayCardIn {
+    from { opacity: 0; transform: scale(0.9) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.submit-overlay-spinner {
+    width: 56px;
+    height: 56px;
+    border: 4px solid #e8f5e9;
+    border-top-color: #28a745;
+    border-radius: 50%;
+    animation: spinner 0.8s linear infinite;
+    margin: 0 auto 1.25rem;
+}
+@keyframes spinner {
+    to { transform: rotate(360deg); }
+}
+.submit-overlay-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1a3a42;
+    margin-bottom: 0.35rem;
+}
+.submit-overlay-sub {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-bottom: 0;
+}
+.submit-overlay-progress {
+    margin-top: 1.25rem;
+    height: 4px;
+    background: #e9ecef;
+    border-radius: 2px;
+    overflow: hidden;
+    max-width: 200px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.submit-overlay-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #28a745, #20c997);
+    border-radius: 2px;
+    animation: progressAnim 2s ease-in-out infinite;
+}
+@keyframes progressAnim {
+    0% { width: 0%; margin-left: 0; }
+    50% { width: 70%; margin-left: 0; }
+    100% { width: 0%; margin-left: 100%; }
+}
+
+@media (max-width: 480px) {
+    .submit-overlay-card {
+        padding: 1.5rem 1.5rem;
+    }
+    .submit-overlay-spinner {
+        width: 44px;
+        height: 44px;
+        border-width: 3px;
+        margin-bottom: 1rem;
+    }
+    .submit-overlay-title {
+        font-size: 1rem;
+    }
+    .submit-overlay-sub {
+        font-size: 0.8rem;
+    }
+}
+
+/* ===== SWIPE ANIMATION ===== */
+.calendar-wrapper {
+    position: relative;
+}
+.calendar-grid {
+    will-change: transform, opacity;
+    touch-action: pan-y;
+}
+.calendar-grid.swipe-settling {
+    transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.35s ease;
+}
+
+/* ===== CALENDAR SLIDE TRANSITION ===== */
+.calendar-grid.slide-from-left {
+    animation: slideFromLeft 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+.calendar-grid.slide-from-right {
+    animation: slideFromRight 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+@keyframes slideFromLeft {
+    from { transform: translateX(-20px); opacity: 0.6; }
+    to { transform: translateX(0); opacity: 1; }
+}
+@keyframes slideFromRight {
+    from { transform: translateX(20px); opacity: 0.6; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+/* ===== SWIPE INDICATOR ARROWS ===== */
+.swipe-indicator {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(59, 122, 140, 0.12);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #3B7A8C;
+    font-size: 0.9rem;
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+.swipe-indicator.show {
+    opacity: 1;
+}
+.swipe-indicator.left {
+    left: -8px;
+    animation: indicatorPulseLeft 2.4s ease-in-out infinite;
+}
+.swipe-indicator.right {
+    right: -8px;
+    animation: indicatorPulseRight 2.4s ease-in-out infinite;
+}
+@keyframes indicatorPulseLeft {
+    0%, 100% {
+        transform: translateY(-50%) translateX(0);
+        opacity: 0.5;
+    }
+    50% {
+        transform: translateY(-50%) translateX(-4px);
+        opacity: 1;
+    }
+}
+@keyframes indicatorPulseRight {
+    0%, 100% {
+        transform: translateY(-50%) translateX(0);
+        opacity: 0.5;
+    }
+    50% {
+        transform: translateY(-50%) translateX(4px);
+        opacity: 1;
+    }
+}
+
+@media (min-width: 769px) {
+    .swipe-indicator {
+        display: none;
+    }
+}
+
+/* ===== AVAILABILITY LEGEND ===== */
+.legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+/* ===== RESPONSIVE: TABLETS & BELOW ===== */
+@media (max-width: 768px) {
+    .wizard-stepper {
+        --step-size: 40px;
+    }
+    .wizard-step-label {
+        font-size: 0.75rem;
+        margin-top: 0.6rem;
+    }
+    .time-slot-columns {
+        grid-template-columns: 1fr;
+    }
+    .time-slots-grid {
+        grid-template-columns: repeat(2, 1fr);
+        max-height: 460px;
+    }
+    .calendar-grid {
+        gap: 2px;
+    }
+    .calendar-day {
+        font-size: 0.8rem;
+    }
+}
+
+/* ===== RESPONSIVE: LARGE PHONES (576px & BELOW) ===== */
+@media (max-width: 576px) {
+    .wizard-stepper {
+        --step-size: 36px;
+        margin-bottom: 1.75rem;
+    }
+    .wizard-step-label {
+        font-size: 0.7rem;
+        margin-top: 0.55rem;
+        gap: 0.35rem;
+    }
+    .wizard-step-label .step-icon {
+        font-size: 0.65rem;
+    }
+    .calendar-grid {
+        gap: 2px;
+    }
+    .calendar-day-header {
+        font-size: 0.65rem;
+        padding: 0.35rem 0;
+    }
+    .calendar-day {
+        font-size: 0.8rem;
+        border-radius: 8px;
+        border-width: 1.5px;
+    }
+    .calendar-day.selected {
+        border-width: 2px;
+    }
+    .slot-dot {
+        width: 4px;
+        height: 4px;
+        margin-top: 1px;
+    }
+    .time-slots-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        max-height: 460px;
+    }
+    .time-slot-card {
+        padding: 0.5rem;
+    }
+    .time-slot-time {
+        font-size: 0.8rem;
+    }
+    .equipment-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    }
+    .calendar-title {
+        font-size: 0.95rem;
+    }
+    .card-body {
+        padding: 1rem;
+    }
+    .legend-dot {
+        width: 10px;
+        height: 10px;
+    }
+}
+
+/* ===== RESPONSIVE: SMALL PHONES (480px & BELOW) ===== */
+@media (max-width: 480px) {
+    .wizard-stepper {
+        --step-size: 32px;
+        padding: 0.25rem 0;
+    }
+    .wizard-step-label {
+        font-size: 0.62rem;
+        margin-top: 0.5rem;
+        gap: 0.3rem;
+    }
+    .wizard-step-label .step-icon {
+        font-size: 0.6rem;
+    }
+
+    .calendar-grid {
+        gap: 2px;
+    }
+    .calendar-day {
+        min-height: 38px;
+        aspect-ratio: auto;
+        font-size: 0.75rem;
+        border-radius: 6px;
+        border-width: 1.5px;
+        padding: 1px;
+    }
+    .calendar-day.selected {
+        border-width: 2px;
+    }
+    .calendar-day:hover:not(.past):not(.other-month) {
+        transform: none;
+        box-shadow: none;
+    }
+    .calendar-day.available:hover {
+        background: #e8f5e9;
+    }
+    .calendar-day-header {
+        font-size: 0.6rem;
+        padding: 0.25rem 0;
+    }
+    .slot-dot {
+        width: 3px;
+        height: 3px;
+        margin-top: 1px;
+    }
+    .slot-count {
+        font-size: 0.5rem;
+    }
+
+    .calendar-title {
+        font-size: 0.9rem;
+    }
+    .calendar-nav-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+    }
+
+    .time-slots-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.35rem;
+        max-height: 460px;
+    }
+    .time-slot-card {
+        padding: 0.45rem;
+        border-radius: 8px;
+        border-width: 1.5px;
+    }
+    .time-slot-time {
+        font-size: 0.75rem;
+    }
+    .time-slot-status {
+        font-size: 0.6rem;
+    }
+
+    .equipment-grid {
+        grid-template-columns: 1fr;
+        gap: 0.35rem;
+    }
+    .equipment-card {
+        padding: 0.6rem;
+        border-radius: 8px;
+    }
+
+    .summary-item {
+        padding: 0.6rem 0;
+    }
+    .summary-item-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 0.78rem;
+    }
+    .price-row {
+        padding: 0.5rem 0;
+    }
+    .price-total {
+        font-size: 1.4rem;
+    }
+    .booking-summary-card .card-header,
+    .price-breakdown-card .card-header {
+        padding: 1rem 1.25rem;
+    }
+
+    .card-body {
+        padding: 0.75rem;
+    }
+    .card-header {
+        padding: 0.75rem !important;
+    }
+
+    /* Stack date display vertically on very small screens */
+    #selected-date-display {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 0.4rem;
+    }
+    #selected-date-display .btn {
+        align-self: flex-end;
+    }
+
+    /* Stack action buttons */
+    .d-flex.justify-content-between.mt-4 {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    .d-flex.justify-content-between.mt-4 .btn {
+        flex: 1;
+        min-width: 120px;
+    }
+
+    /* Full-width confirm button */
+    .btn-success.px-5 {
+        padding-left: 1.5rem !important;
+        padding-right: 1.5rem !important;
+    }
+
+    /* Legend compact */
+    .d-flex.gap-3.flex-wrap {
+        gap: 0.5rem !important;
+    }
+    .d-flex.gap-3.flex-wrap small {
+        font-size: 0.65rem;
+    }
+    .legend-dot {
+        width: 8px;
+        height: 8px;
+    }
+}
+
+/* ===== RESPONSIVE: VERY SMALL PHONES (360px & BELOW) ===== */
+@media (max-width: 360px) {
+    .wizard-stepper {
+        --step-size: 28px;
+    }
+    .wizard-step-label {
+        font-size: 0.55rem;
+        margin-top: 0.45rem;
+        white-space: normal;
+        line-height: 1.25;
+        align-items: flex-start;
+    }
+    .wizard-step-label .step-icon {
+        font-size: 0.55rem;
+    }
+
+    .calendar-grid {
+        gap: 1px;
+    }
+    .calendar-day {
+        min-height: 32px;
+        font-size: 0.65rem;
+        border-radius: 4px;
+    }
+    .calendar-day-header {
+        font-size: 0.5rem;
+        padding: 0.2rem 0;
+    }
+    .slot-dot {
+        display: none;
+    }
+
+    .calendar-title {
+        font-size: 0.8rem;
+    }
+    .calendar-nav-btn {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+    }
+
+    .time-slots-grid {
+        grid-template-columns: 1fr;
+        gap: 0.3rem;
+        max-height: 460px;
+    }
+    .time-slot-card {
+        padding: 0.4rem;
+    }
+
+    .equipment-grid {
+        gap: 0.3rem;
+    }
+    .equipment-card {
+        padding: 0.5rem;
+    }
+
+    .card-body {
+        padding: 0.6rem;
+    }
+
+    .summary-item {
+        padding: 0.5rem 0;
+        gap: 0.7rem;
+    }
+    .summary-item-value {
+        font-size: 0.88rem;
+    }
+    .price-value {
+        font-size: 0.85rem;
+    }
+    .price-total {
+        font-size: 1.3rem;
+    }
+
+    .d-flex.justify-content-between.mt-4 .btn {
+        font-size: 0.8rem;
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+    }
+
+    /* Always show slot availability info on far right of cards */
+    .time-slot-card {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        text-align: left;
+        padding: 0.4rem 0.6rem;
+    }
+    .time-slot-time {
+        font-size: 0.8rem;
+    }
+    .time-slot-status {
+        margin-top: 0;
+        font-size: 0.65rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+            <div class="card-header text-white p-4" style="background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);">
+                <div class="d-flex align-items-center">
+                    <div style="width: 45px; height: 45px; background: rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-calendar-check fa-lg text-white"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h5 class="mb-0 fw-bold">Reserve a Court</h5>
+                        <p class="mb-0 opacity-75">Follow the steps below to book your court</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-4">
+
+                <!-- ===== STEPPER ===== -->
+                <div class="wizard-stepper" role="navigation" aria-label="Booking progress">
+                    <div class="wizard-step active" id="step-indicator-1" aria-current="step">
+                        <div class="wizard-step-circle">
+                            <span class="wizard-step-number">1</span>
+                            <i class="fas fa-check wizard-step-check" aria-hidden="true"></i>
+                        </div>
+                        <div class="wizard-step-label">
+                            <i class="fas fa-map-marker-alt step-icon" aria-hidden="true"></i>
+                            <span>Court &amp; Date</span>
+                        </div>
+                    </div>
+                    <div class="wizard-step" id="step-indicator-2">
+                        <div class="wizard-step-circle">
+                            <span class="wizard-step-number">2</span>
+                            <i class="fas fa-check wizard-step-check" aria-hidden="true"></i>
+                        </div>
+                        <div class="wizard-step-label">
+                            <i class="fas fa-clock step-icon" aria-hidden="true"></i>
+                            <span>Time &amp; Equipment</span>
+                        </div>
+                    </div>
+                    <div class="wizard-step" id="step-indicator-3">
+                        <div class="wizard-step-circle">
+                            <span class="wizard-step-number">3</span>
+                            <i class="fas fa-check wizard-step-check" aria-hidden="true"></i>
+                        </div>
+                        <div class="wizard-step-label">
+                            <i class="fas fa-clipboard-check step-icon" aria-hidden="true"></i>
+                            <span>Review &amp; Confirm</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== SKIP TO REVIEW BANNER ===== -->
+                <div class="skip-banner" id="skip-banner">
+                    <div class="skip-banner-text">
+                        <i class="fas fa-check-circle"></i>
+                        <span>You already have a booking in progress.</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="skip-banner-link" id="skip-to-step-3">
+                            Skip to Review <i class="fas fa-arrow-right"></i>
+                        </button>
+                        <button type="button" class="skip-banner-dismiss" id="skip-banner-dismiss" title="Dismiss">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <form method="post" action="{% url 'reservation_create' %}" id="reservation-form">
+                    {% csrf_token %}
+
+                    <!-- ===================== STEP 1: COURT & DATE ===================== -->
+                    <div class="step-section active" id="step-1">
+                        <h5 class="fw-bold mb-3"><i class="fas fa-map-marker-alt text-primary me-2"></i>Choose Your Court</h5>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Select a court</label>
+                            <!-- Hidden native select (for form submission) -->
+                            <select name="court" id="{{ form.court.id_for_label }}" class="d-none">
+                                <option value="">—— Select a court ——</option>
+                                {% for court_choice in form.court.field.queryset %}
+                                <option value="{{ court_choice.id }}"
+                                    data-name="{{ court_choice.name|escape }}"
+                                    data-rate="{{ court_choice.hourly_rate|floatformat:0 }}"
+                                    data-description="{{ court_choice.description|default:''|escape }}"
+                                    data-type="{{ court_choice.court_type }}"
+                                    data-site="{{ court_choice.site.name }}"
+                                    {% if form.court.value|add:'0' == court_choice.id %} selected{% endif %}>
+                                    {{ court_choice.name }} ({{ court_choice.site.name }}) — ₱{{ court_choice.hourly_rate|floatformat:0 }}/hr
+                                </option>
+                                {% endfor %}
+                            </select>
+
+                            <!-- Custom dropdown -->
+                            <div class="court-select-wrapper" id="court-select-wrapper">
+                                <button type="button" class="court-select-trigger" id="court-select-trigger">
+                                    <span class="court-select-text" id="court-select-text">—— Select a court ——</span>
+                                    <i class="fas fa-chevron-down court-select-arrow"></i>
+                                </button>
+                                <div class="court-dropdown" id="court-dropdown">
+                                    <!-- Populated by JS -->
+                                </div>
+                            </div>
+
+                            {% if form.court.errors %}
+                                <div class="text-danger small mt-1">{{ form.court.errors.0 }}</div>
+                            {% endif %}
+
+                            <!-- Court detail tooltip -->
+                            <div class="court-tooltip" id="court-tooltip">
+                                <div class="court-tooltip-header">
+                                    <strong class="court-tooltip-name"></strong>
+                                    <span class="court-tooltip-type-badge"></span>
+                                </div>
+                                <div class="court-tooltip-desc"></div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h5 class="fw-bold mb-3"><i class="fas fa-calendar-alt text-primary me-2"></i>Pick Your Date</h5>
+
+                        <!-- Monthly Calendar -->
+                        <div class="mb-3">
+                            <div class="calendar-header">
+                                <button type="button" class="calendar-nav-btn" id="prev-month" aria-label="Previous month">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <span class="calendar-title" id="calendar-title"></span>
+                                <button type="button" class="calendar-nav-btn" id="next-month" aria-label="Next month">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                            <div class="calendar-wrapper" id="calendar-wrapper">
+                                <div class="swipe-indicator left" id="swipe-indicator-left"><i class="fas fa-chevron-left"></i></div>
+                                <div class="calendar-grid" id="calendar-grid">
+                                    <div class="calendar-day-header">Sun</div>
+                                    <div class="calendar-day-header">Mon</div>
+                                    <div class="calendar-day-header">Tue</div>
+                                    <div class="calendar-day-header">Wed</div>
+                                    <div class="calendar-day-header">Thu</div>
+                                    <div class="calendar-day-header">Fri</div>
+                                    <div class="calendar-day-header">Sat</div>
+                                </div>
+                                <div class="swipe-indicator right" id="swipe-indicator-right"><i class="fas fa-chevron-right"></i></div>
+                            </div>
+                            <!-- Legend -->
+                            <div class="d-flex gap-3 mt-2 flex-wrap">
+                                <div class="d-flex align-items-center gap-1">
+                                    <span class="legend-dot" style="background:#4caf50;"></span>
+                                    <small class="text-muted">Available</small>
+                                </div>
+                                <div class="d-flex align-items-center gap-1">
+                                    <span class="legend-dot" style="background:#e53935;"></span>
+                                    <small class="text-muted">Fully Booked</small>
+                                </div>
+                                <div class="d-flex align-items-center gap-1">
+                                    <span class="legend-dot" style="background:#e0e0e0;"></span>
+                                    <small class="text-muted">Past</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Hidden date input (synced with calendar selection) -->
+                        {{ form.date }}
+                        <input type="hidden" id="calendar-date-store" value="">
+
+                        {% if form.date.errors %}
+                            <div class="text-danger small mt-1">{{ form.date.errors.0 }}</div>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-end mt-4">
+                            <button type="button" class="btn btn-primary px-4" id="step-1-next" disabled style="border-radius: 10px;">
+                                Next Step <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ===================== STEP 2: TIME & EQUIPMENT ===================== -->
+                    <div class="step-section" id="step-2">
+                        <h5 class="fw-bold mb-3"><i class="fas fa-clock text-primary me-2"></i>Select Time Slot</h5>
+
+                        <!-- Selected date display -->
+                        <div class="alert alert-info py-2 mb-3 d-flex align-items-center justify-content-between" id="selected-date-display">
+                            <span><i class="fas fa-calendar-check me-2"></i>Date: <strong id="display-date-label">Not selected</strong></span>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="back-to-date-btn" style="border-radius: 8px;">
+                                <i class="fas fa-edit me-1"></i>Change
+                            </button>
+                        </div>
+
+                        {{ form.start_time }}
+                        {{ form.end_time }}
+                        {{ form.time_slot }}
+
+                        <div class="d-flex gap-3 mb-3 flex-wrap" aria-label="Time slot legend">
+                            <div class="d-flex align-items-center gap-1">
+                                <span class="legend-dot" style="background:#4caf50;"></span>
+                                <small class="text-muted">Available</small>
+                            </div>
+                            <div class="d-flex align-items-center gap-1">
+                                <span class="legend-dot" style="background:#3B7A8C;"></span>
+                                <small class="text-muted">Selected</small>
+                            </div>
+                            <div class="d-flex align-items-center gap-1">
+                                <span class="legend-dot" style="background:#e53935;"></span>
+                                <small class="text-muted">Booked</small>
+                            </div>
+                            <div class="d-flex align-items-center gap-1">
+                                <span class="legend-dot" style="background:#e0e0e0;"></span>
+                                <small class="text-muted">Unavailable</small>
+                            </div>
+                        </div>
+
+                        <div id="time-slots-container" class="mb-4">
+                            <div class="text-center py-4 text-muted">
+                                <i class="fas fa-spinner fa-spin me-2"></i>Loading available slots...
+                            </div>
+                        </div>
+
+                        <div id="selected-slot-display" class="d-none mb-4">
+                            <div class="alert alert-success py-2 d-flex align-items-center justify-content-between">
+                                <span><i class="fas fa-check-circle me-2"></i>Selected: <strong id="selected-slot-label"></strong></span>
+                                <button type="button" class="btn btn-sm btn-outline-success" id="clear-slot-btn" style="border-radius: 8px;">
+                                    <i class="fas fa-times me-1"></i>Clear
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Inline verification alert (shown when slot was just taken) -->
+                        <div class="alert alert-danger slot-verification-alert" id="slot-verification-alert">
+                            <div class="d-flex align-items-start gap-2 w-100">
+                                <i class="fas fa-exclamation-triangle mt-1"></i>
+                                <div class="flex-grow-1">
+                                    <strong class="d-block">Slot No Longer Available</strong>
+                                    <span id="slot-verification-message"></span>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-danger" id="reload-slots-btn" style="border-radius: 6px;">
+                                    <i class="fas fa-sync-alt me-1"></i>Refresh
+                                </button>
+                            </div>
+                        </div>
+
+                        {% if form.time_slot.errors %}
+                            <div class="text-danger small mt-1">{{ form.time_slot.errors.0 }}</div>
+                        {% endif %}
+
+                        <hr class="my-4">
+
+                        <!-- ===== MATCH PARTICIPANTS ===== -->
+                        <h5 class="fw-bold mb-3"><i class="fas fa-users text-primary me-2"></i>Match Participants <span class="badge bg-secondary ms-1" style="font-weight:400;font-size:0.65rem;">Optional</span></h5>
+                        <div class="card border-0 shadow-sm mb-4" style="border-radius: 14px; background: #f8f9fa;">
+                            <div class="card-body p-4">
+                                <!-- Format Selector -->
+                                <div class="mb-4">
+                                    <label class="fw-semibold small text-uppercase text-muted mb-2 d-block" style="letter-spacing:0.3px;"><i class="fas fa-bolt me-1"></i>Match Format</label>
+                                    <div class="row g-2">
+                                        <div class="col-4">
+                                            <div class="format-card text-center px-2 py-3 border rounded-3" data-format="singles" style="cursor:pointer;transition:all 0.2s ease;background:#fff;border-color:#dee2e6;">
+                                                <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#6c757d,#495057);color:white;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-size:0.85rem;"><i class="fas fa-user"></i></div>
+                                                <div class="fw-bold" style="font-size:0.8rem;">Singles</div>
+                                                <small class="text-muted" style="font-size:0.65rem;">1 vs 1</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="format-card text-center px-2 py-3 border rounded-3" data-format="doubles" style="cursor:pointer;transition:all 0.2s ease;background:#fff;border-color:#dee2e6;">
+                                                <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#6c757d,#495057);color:white;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-size:0.85rem;"><i class="fas fa-users"></i></div>
+                                                <div class="fw-bold" style="font-size:0.8rem;">Doubles</div>
+                                                <small class="text-muted" style="font-size:0.65rem;">2 vs 2</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="format-card text-center px-2 py-3 border rounded-3" data-format="mixed_doubles" style="cursor:pointer;transition:all 0.2s ease;background:#fff;border-color:#dee2e6;">
+                                                <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#6c757d,#495057);color:white;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-size:0.85rem;"><i class="fas fa-venus-mars"></i></div>
+                                                <div class="fw-bold" style="font-size:0.8rem;">Mixed</div>
+                                                <small class="text-muted" style="font-size:0.65rem;">2 vs 2</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" name="match_format" id="reservation-match-format" value="singles">
+                                </div>
+
+                                <hr class="my-3">
+
+                                <!-- Teams Layout -->
+                                <div class="row g-4">
+                                    <!-- Team 1 -->
+                                    <div class="col-md-6">
+                                        <div class="d-flex align-items-center gap-2 mb-3">
+                                            <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#3B7A8C,#1a3a42);color:white;display:flex;align-items:center;justify-content:center;font-size:0.7rem;flex-shrink:0;"><i class="fas fa-shield-alt"></i></div>
+                                            <strong style="font-size:0.9rem;">Team 1</strong>
+                                            <small class="text-muted">— You</small>
+                                        </div>
+
+                                        <!-- You (P1) -->
+                                        <div class="player-card mb-2" style="background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px;">
+                                            <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#3B7A8C,#1a3a42);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;flex-shrink:0;">
+                                                {{ user.username|first|upper }}
+                                            </div>
+                                            <div class="flex-grow-1" style="min-width:0;">
+                                                <div class="fw-semibold" style="font-size:0.85rem;">{{ user.get_full_name|default:user.username }}</div>
+                                                <small class="text-muted" style="font-size:0.7rem;">@{{ user.username }}</small>
+                                            </div>
+                                            <span class="badge bg-primary" style="font-size:0.6rem;border-radius:6px;flex-shrink:0;">P1</span>
+                                        </div>
+
+                                        <!-- Team 1 Player 2 (shown for doubles/mixed) -->
+                                        <div id="reservation-slot-t1p2" class="player-slot-container d-none">
+                                            <div class="d-flex align-items-center gap-2 mb-2">
+                                                <div style="width:22px;height:22px;border-radius:6px;background:#6c757d;color:white;display:flex;align-items:center;justify-content:center;font-size:0.6rem;flex-shrink:0;">P2</div>
+                                                <small class="text-muted fw-semibold" style="font-size:0.75rem;">Teammate</small>
+                                                <button type="button" class="btn-guest-trigger ms-auto btn btn-sm btn-outline-warning py-0 px-2" style="border-radius:6px;font-size:0.7rem;border-style:dashed;" data-slot="t1p2"><i class="fas fa-user-plus me-1"></i>Guest</button>
+                                            </div>
+                                            <div style="position:relative;">
+                                                <input type="text" class="form-control form-control-sm player-search-input" data-slot="t1p2" data-team="1" data-player="2" placeholder="Search for a teammate..." autocomplete="off" style="border-radius:8px;">
+                                                <div class="player-search-dropdown d-none" data-slot="t1p2" style="position:absolute;top:100%;left:0;right:0;z-index:100;background:#fff;border:1px solid #dee2e6;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.1);max-height:200px;overflow-y:auto;margin-top:2px;"></div>
+                                            </div>
+                                            <input type="hidden" name="team1_player2_search" id="hidden-t1p2" value="">
+                                            <input type="hidden" name="guest_team1_p2" id="guest-hidden-t1p2" value="">
+                                            <div class="guest-fields d-none mt-2" data-slot="t1p2">
+                                                <div class="input-group input-group-sm">
+                                                    <input type="text" class="form-control guest-name" placeholder="Full Name *" style="border-radius:8px 0 0 8px;">
+                                                    <input type="text" class="form-control guest-nickname" placeholder="Nickname" style="border-radius:0;">
+                                                    <button class="btn btn-sm btn-warning guest-confirm-btn" type="button" style="border-radius:0 8px 8px 0;"><i class="fas fa-check"></i></button>
+                                                </div>
+                                            </div>
+                                            <div class="player-selected d-none mt-2" data-slot="t1p2">
+                                                <div class="d-flex align-items-center gap-2 p-2 rounded-3" style="background:rgba(59,122,140,0.06);border:1px solid rgba(59,122,140,0.15);">
+                                                    <div class="player-selected-avatar" style="width:30px;height:30px;border-radius:50%;background:#3B7A8C;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.75rem;flex-shrink:0;"></div>
+                                                    <div class="flex-grow-1" style="min-width:0;">
+                                                        <div class="player-selected-name fw-semibold" style="font-size:0.8rem;"></div>
+                                                        <div class="player-selected-type" style="font-size:0.65rem;color:#6c757d;"></div>
+                                                    </div>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 player-remove-btn" style="border-radius:6px;font-size:0.7rem;flex-shrink:0;"><i class="fas fa-times"></i></button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Team 1 Name -->
+                                        <div class="mt-2">
+                                            <input type="text" class="form-control form-control-sm" name="team1_name" placeholder="Team 1 name (optional)" style="border-radius:8px;font-size:0.8rem;" value="Home Team">
+                                        </div>
+                                    </div>
+
+                                    <!-- Team 2 -->
+                                    <div class="col-md-6">
+                                        <div class="d-flex align-items-center gap-2 mb-3">
+                                            <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#e83e8c,#d63384);color:white;display:flex;align-items:center;justify-content:center;font-size:0.7rem;flex-shrink:0;"><i class="fas fa-shield-alt"></i></div>
+                                            <strong style="font-size:0.9rem;">Team 2</strong>
+                                            <small class="text-muted">— Opponent</small>
+                                        </div>
+
+                                        <!-- Team 2 Player 1 (always shown) -->
+                                        <div id="reservation-slot-t2p1" class="player-slot-container">
+                                            <div class="d-flex align-items-center gap-2 mb-2">
+                                                <div style="width:22px;height:22px;border-radius:6px;background:#e83e8c;color:white;display:flex;align-items:center;justify-content:center;font-size:0.6rem;flex-shrink:0;">P1</div>
+                                                <small class="text-muted fw-semibold" style="font-size:0.75rem;">Opponent</small>
+                                                <button type="button" class="btn-guest-trigger ms-auto btn btn-sm btn-outline-warning py-0 px-2" style="border-radius:6px;font-size:0.7rem;border-style:dashed;" data-slot="t2p1"><i class="fas fa-user-plus me-1"></i>Guest</button>
+                                            </div>
+                                            <div style="position:relative;">
+                                                <input type="text" class="form-control form-control-sm player-search-input" data-slot="t2p1" data-team="2" data-player="1" placeholder="Search for opponent..." autocomplete="off" style="border-radius:8px;">
+                                                <div class="player-search-dropdown d-none" data-slot="t2p1" style="position:absolute;top:100%;left:0;right:0;z-index:100;background:#fff;border:1px solid #dee2e6;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.1);max-height:200px;overflow-y:auto;margin-top:2px;"></div>
+                                            </div>
+                                            <input type="hidden" name="team2_player1_search" id="hidden-t2p1" value="">
+                                            <input type="hidden" name="guest_team2_p1" id="guest-hidden-t2p1" value="">
+                                            <div class="guest-fields d-none mt-2" data-slot="t2p1">
+                                                <div class="input-group input-group-sm">
+                                                    <input type="text" class="form-control guest-name" placeholder="Full Name *" style="border-radius:8px 0 0 8px;">
+                                                    <input type="text" class="form-control guest-nickname" placeholder="Nickname" style="border-radius:0;">
+                                                    <button class="btn btn-sm btn-warning guest-confirm-btn" type="button" style="border-radius:0 8px 8px 0;"><i class="fas fa-check"></i></button>
+                                                </div>
+                                            </div>
+                                            <div class="player-selected d-none mt-2" data-slot="t2p1">
+                                                <div class="d-flex align-items-center gap-2 p-2 rounded-3" style="background:rgba(232,62,140,0.06);border:1px solid rgba(232,62,140,0.15);">
+                                                    <div class="player-selected-avatar" style="width:30px;height:30px;border-radius:50%;background:#e83e8c;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.75rem;flex-shrink:0;"></div>
+                                                    <div class="flex-grow-1" style="min-width:0;">
+                                                        <div class="player-selected-name fw-semibold" style="font-size:0.8rem;"></div>
+                                                        <div class="player-selected-type" style="font-size:0.65rem;color:#6c757d;"></div>
+                                                    </div>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 player-remove-btn" style="border-radius:6px;font-size:0.7rem;flex-shrink:0;"><i class="fas fa-times"></i></button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Team 2 Player 2 (shown for doubles/mixed) -->
+                                        <div id="reservation-slot-t2p2" class="player-slot-container d-none mt-3">
+                                            <div class="d-flex align-items-center gap-2 mb-2">
+                                                <div style="width:22px;height:22px;border-radius:6px;background:#6c757d;color:white;display:flex;align-items:center;justify-content:center;font-size:0.6rem;flex-shrink:0;">P2</div>
+                                                <small class="text-muted fw-semibold" style="font-size:0.75rem;">Teammate</small>
+                                                <button type="button" class="btn-guest-trigger ms-auto btn btn-sm btn-outline-warning py-0 px-2" style="border-radius:6px;font-size:0.7rem;border-style:dashed;" data-slot="t2p2"><i class="fas fa-user-plus me-1"></i>Guest</button>
+                                            </div>
+                                            <div style="position:relative;">
+                                                <input type="text" class="form-control form-control-sm player-search-input" data-slot="t2p2" data-team="2" data-player="2" placeholder="Search for a player..." autocomplete="off" style="border-radius:8px;">
+                                                <div class="player-search-dropdown d-none" data-slot="t2p2" style="position:absolute;top:100%;left:0;right:0;z-index:100;background:#fff;border:1px solid #dee2e6;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.1);max-height:200px;overflow-y:auto;margin-top:2px;"></div>
+                                            </div>
+                                            <input type="hidden" name="team2_player2_search" id="hidden-t2p2" value="">
+                                            <input type="hidden" name="guest_team2_p2" id="guest-hidden-t2p2" value="">
+                                            <div class="guest-fields d-none mt-2" data-slot="t2p2">
+                                                <div class="input-group input-group-sm">
+                                                    <input type="text" class="form-control guest-name" placeholder="Full Name *" style="border-radius:8px 0 0 8px;">
+                                                    <input type="text" class="form-control guest-nickname" placeholder="Nickname" style="border-radius:0;">
+                                                    <button class="btn btn-sm btn-warning guest-confirm-btn" type="button" style="border-radius:0 8px 8px 0;"><i class="fas fa-check"></i></button>
+                                                </div>
+                                            </div>
+                                            <div class="player-selected d-none mt-2" data-slot="t2p2">
+                                                <div class="d-flex align-items-center gap-2 p-2 rounded-3" style="background:rgba(232,62,140,0.06);border:1px solid rgba(232,62,140,0.15);">
+                                                    <div class="player-selected-avatar" style="width:30px;height:30px;border-radius:50%;background:#e83e8c;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.75rem;flex-shrink:0;"></div>
+                                                    <div class="flex-grow-1" style="min-width:0;">
+                                                        <div class="player-selected-name fw-semibold" style="font-size:0.8rem;"></div>
+                                                        <div class="player-selected-type" style="font-size:0.65rem;color:#6c757d;"></div>
+                                                    </div>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 player-remove-btn" style="border-radius:6px;font-size:0.7rem;flex-shrink:0;"><i class="fas fa-times"></i></button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Team 2 Name -->
+                                        <div class="mt-2">
+                                            <input type="text" class="form-control form-control-sm" name="team2_name" placeholder="Team 2 name (optional)" style="border-radius:8px;font-size:0.8rem;" value="Opponent">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Status info -->
+                                <div id="reservation-selected-player-info" class="mt-3 small text-muted d-flex align-items-center gap-2">
+                                    <i class="fas fa-info-circle"></i>
+                                    <span>Select opponents/teammates, or leave empty to assign later at the court.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h5 class="fw-bold mb-3"><i class="fas fa-tools text-primary me-2"></i>Equipment (Optional)</h5>
+                        <div class="equipment-grid mb-4">
+                            {% for equipment in equipment_list %}
+                            <div class="equipment-card" data-eq-id="{{ equipment.id }}">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-semibold">{{ equipment.name }}</div>
+                                        <small class="text-muted">{{ equipment.get_type_display }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="fw-bold text-primary">₱{{ equipment.rental_price|floatformat:0 }}</div>
+                                        <small class="equipment-check text-success"><i class="fas fa-check-circle"></i></small>
+                                    </div>
+                                </div>
+                                <input type="checkbox" name="equipment" value="{{ equipment.id }}" class="equipment-check-input" id="eq{{ equipment.id }}" hidden>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h5 class="fw-bold mb-3"><i class="fas fa-sticky-note text-primary me-2"></i>Notes (Optional)</h5>
+                        <div class="mb-4">
+                            {{ form.notes }}
+                        </div>
+
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors.0 }}
+                        </div>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button type="button" class="btn btn-outline-secondary px-4" id="step-2-back" style="border-radius: 10px;">
+                                <i class="fas fa-arrow-left me-2"></i>Back
+                            </button>
+                            <button type="button" class="btn btn-primary px-4" id="step-2-next" disabled style="border-radius: 10px;">
+                                Review Booking <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ===================== STEP 3: REVIEW & CONFIRM ===================== -->
+                    <div class="step-section" id="step-3">
+                        <div class="text-center mb-4">
+                            <div style="width: 64px; height: 64px; background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
+                                <i class="fas fa-check-circle fa-2x" style="color: #2e7d32;"></i>
+                            </div>
+                            <h5 class="fw-bold mb-1">Almost Done!</h5>
+                            <p class="text-muted mb-0">Please review your booking details below</p>
+                        </div>
+
+                        <div class="row g-4 mb-2">
+                            <!-- ===== BOOKING SUMMARY ===== -->
+                            <div class="col-lg-7">
+                                <div class="card booking-summary-card h-100">
+                                    <div class="card-header">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="summary-header-icon"><i class="fas fa-clipboard-check"></i></div>
+                                            <div>
+                                                <h6 class="fw-bold mb-0">Booking Summary</h6>
+                                                <small class="text-muted">Review your booking details</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-body p-4">
+                                        <div class="summary-list">
+                                            <div class="summary-item">
+                                                <div class="summary-item-icon"><i class="fas fa-map-marker-alt"></i></div>
+                                                <span class="summary-item-label">Court</span>
+                                                <div class="summary-item-value summary-highlight" id="confirm-court">—</div>
+                                            </div>
+                                            <div class="summary-item">
+                                                <div class="summary-item-icon"><i class="fas fa-building"></i></div>
+                                                <span class="summary-item-label">Site</span>
+                                                <div class="summary-item-value" id="confirm-site">—</div>
+                                            </div>
+                                            <div class="summary-item">
+                                                <div class="summary-item-icon"><i class="fas fa-calendar-day"></i></div>
+                                                <span class="summary-item-label">Date</span>
+                                                <div class="summary-item-value summary-highlight" id="confirm-date">—</div>
+                                            </div>
+                                            <div class="summary-item">
+                                                <div class="summary-item-icon"><i class="fas fa-clock"></i></div>
+                                                <span class="summary-item-label">Time</span>
+                                                <div class="summary-item-value summary-highlight" id="confirm-time">—</div>
+                                            </div>
+                                            <div class="summary-item">
+                                                <div class="summary-item-icon"><i class="fas fa-hourglass-half"></i></div>
+                                                <span class="summary-item-label">Duration</span>
+                                                <div class="summary-item-value" id="confirm-duration">—</div>
+                                            </div>
+                                            <div class="summary-item">
+                                                <div class="summary-item-icon"><i class="fas fa-tools"></i></div>
+                                                <span class="summary-item-label">Equipment</span>
+                                                <div class="summary-item-value" id="confirm-equipment">None selected</div>
+                                            </div>
+                                            <div class="summary-item">
+                                                <div class="summary-item-icon"><i class="fas fa-sticky-note"></i></div>
+                                                <span class="summary-item-label">Notes</span>
+                                                <div class="summary-item-value" id="confirm-notes">—</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ===== PRICE BREAKDOWN ===== -->
+                            <div class="col-lg-5">
+                                <div class="card price-breakdown-card h-100">
+                                    <div class="card-header">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="summary-header-icon"><i class="fas fa-receipt"></i></div>
+                                            <div>
+                                                <h6 class="fw-bold mb-0">Price Breakdown</h6>
+                                                <small class="text-muted">Your payment details</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-body p-4">
+                                        <div class="price-list">
+                                            <div class="price-row">
+                                                <span class="price-label"><span class="price-row-icon"><i class="fas fa-money-bill-wave"></i></span>Court Rate</span>
+                                                <span class="price-value" id="confirm-rate">₱0.00/hr</span>
+                                            </div>
+                                            <div class="price-row">
+                                                <span class="price-label"><span class="price-row-icon"><i class="fas fa-hourglass-half"></i></span>Duration</span>
+                                                <span class="price-value" id="confirm-duration-price">0 hrs</span>
+                                            </div>
+                                            <div class="price-row">
+                                                <span class="price-label"><span class="price-row-icon"><i class="fas fa-calculator"></i></span>Court Subtotal</span>
+                                                <span class="price-value" id="confirm-subtotal">₱0.00</span>
+                                            </div>
+                                            <div class="price-row">
+                                                <span class="price-label"><span class="price-row-icon"><i class="fas fa-tools"></i></span>Equipment Fee</span>
+                                                <span class="price-value" id="confirm-equipment-fee">₱0.00</span>
+                                            </div>
+                                            <!-- Hidden by default: shown only when tax/discount values are supplied (future-proof placeholders) -->
+                                            <div class="price-row d-none" id="confirm-tax-row">
+                                                <span class="price-label"><span class="price-row-icon"><i class="fas fa-percent"></i></span>Taxes</span>
+                                                <span class="price-value" id="confirm-tax">₱0.00</span>
+                                            </div>
+                                            <div class="price-row d-none" id="confirm-discount-row">
+                                                <span class="price-label"><span class="price-row-icon"><i class="fas fa-tags"></i></span>Discounts</span>
+                                                <span class="price-value" id="confirm-discount">−₱0.00</span>
+                                            </div>
+                                            <hr class="price-divider">
+                                            <div class="price-total-row">
+                                                <span class="price-total-label"><i class="fas fa-check-circle me-2" style="color: #3B7A8C;"></i>Total Amount</span>
+                                                <span class="price-total" id="confirm-total">₱0.00</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button type="button" class="btn btn-outline-secondary px-4" id="step-3-back" style="border-radius: 10px;">
+                                <i class="fas fa-arrow-left me-2"></i>Back
+                            </button>
+                            <button type="submit" class="btn btn-success px-5" style="border-radius: 10px; background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%); border: none; box-shadow: 0 4px 15px rgba(40,167,69,0.3);">
+                                <i class="fas fa-check-circle me-2"></i>Confirm &amp; Proceed to Payment
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- ===== SUBMIT LOADING OVERLAY ===== -->
+                <div class="submit-overlay" id="submit-overlay">
+                    <div class="submit-overlay-card">
+                        <div class="submit-overlay-spinner"></div>
+                        <h6 class="submit-overlay-title">Processing Your Booking</h6>
+                        <p class="submit-overlay-sub">Please wait while we process your reservation…</p>
+                        <div class="submit-overlay-progress">
+                            <div class="submit-overlay-progress-bar"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    'use strict';
+
+    // ===== STATE =====
+    const state = {
+        currentStep: 1,
+        selectedCourtId: null,
+        selectedDate: null,
+        selectedSlot: null,
+        selectedCourtName: '',
+        selectedCourtRate: 0,
+        selectedEquipment: [],
+        selectedTax: 0,
+        selectedDiscount: 0,
+        selectedNotes: '',
+        calendarMonth: new Date().getMonth() + 1,
+        calendarYear: new Date().getFullYear(),
+    };
+
+    // ===== DOM REFS =====
+    const courtSelect = document.getElementById('{{ form.court.id_for_label }}');
+    const dateInput = document.getElementById('{{ form.date.id_for_label }}');
+    const timeSlotInput = document.getElementById('{{ form.time_slot.id_for_label }}');
+    const startTimeInput = document.getElementById('{{ form.start_time.id_for_label }}');
+    const endTimeInput = document.getElementById('{{ form.end_time.id_for_label }}');
+    const calendarGrid = document.getElementById('calendar-grid');
+    const calendarWrapper = document.getElementById('calendar-wrapper');
+    const calendarTitle = document.getElementById('calendar-title');
+    const swipeIndicatorLeft = document.getElementById('swipe-indicator-left');
+    const swipeIndicatorRight = document.getElementById('swipe-indicator-right');
+    const slotsContainer = document.getElementById('time-slots-container');
+    const selectedSlotDisplay = document.getElementById('selected-slot-display');
+    const selectedSlotLabel = document.getElementById('selected-slot-label');
+    const confirmTaxRow = document.getElementById('confirm-tax-row');
+    const confirmDiscountRow = document.getElementById('confirm-discount-row');
+    const confirmTaxEl = document.getElementById('confirm-tax');
+    const confirmDiscountEl = document.getElementById('confirm-discount');
+
+    // ===== MATCH PARTICIPANTS — REDESIGNED =====
+    // Format card selector
+    var formatCards = document.querySelectorAll('.format-card');
+    var matchFormatInput = document.getElementById('reservation-match-format');
+    
+    function activateFormatCard(card) {
+        formatCards.forEach(function(c) {
+            c.style.background = '#fff';
+            c.style.borderColor = '#dee2e6';
+            var icon = c.querySelector('div:first-child');
+            if (icon) icon.style.background = 'linear-gradient(135deg,#6c757d,#495057)';
+        });
+        card.style.background = 'linear-gradient(135deg,#e3f2fd,#f5f9ff)';
+        card.style.borderColor = '#3B7A8C';
+        var icon = card.querySelector('div:first-child');
+        if (icon) icon.style.background = 'linear-gradient(135deg,#3B7A8C,#1a3a42)';
+        var format = card.dataset.format;
+        matchFormatInput.value = format;
+        var isDoubles = format === 'doubles' || format === 'mixed_doubles';
+        document.getElementById('reservation-slot-t1p2').classList.toggle('d-none', !isDoubles);
+        document.getElementById('reservation-slot-t2p2').classList.toggle('d-none', !isDoubles);
+    }
+    
+    formatCards.forEach(function(card) {
+        card.addEventListener('click', function() { activateFormatCard(this); });
+    });
+    // Default: activate Singles
+    activateFormatCard(document.querySelector('.format-card[data-format="singles"]'));
+
+    // Player search with event delegation
+    var resSearchTimeout2 = null;
+    document.addEventListener('input', function(e) {
+        if (!e.target.classList.contains('player-search-input')) return;
+        var input = e.target;
+        var slot = input.dataset.slot;
+        var query = input.value.trim();
+        var dropdown = document.querySelector('.player-search-dropdown[data-slot="' + slot + '"]');
+        if (!dropdown) return;
+        if (resSearchTimeout2) clearTimeout(resSearchTimeout2);
+        if (query.length < 1) {
+            dropdown.classList.add('d-none');
+            dropdown.innerHTML = '';
+            return;
+        }
+        resSearchTimeout2 = setTimeout(function() {
+            // Get already selected user IDs to exclude
+            var selectedIds = [];
+            document.querySelectorAll('input[id^="hidden-"]').forEach(function(inp) {
+                if (inp.value) selectedIds.push(parseInt(inp.value));
+            });
+            var excludeParam = selectedIds.length > 0 ? '&exclude_ids=' + selectedIds.join(',') : '';
+            fetch('/scoring/api/search-users/?q=' + encodeURIComponent(query) + excludeParam)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    dropdown.innerHTML = '';
+                    if (data.users && data.users.length > 0) {
+                        data.users.forEach(function(user) {
+                            var item = document.createElement('div');
+                            item.className = 'search-result-item px-3 py-2 small';
+                            item.style.cursor = 'pointer';
+                            item.style.borderBottom = '1px solid #f0f0f0';
+                            item.style.display = 'flex';
+                            item.style.alignItems = 'center';
+                            item.style.gap = '8px';
+                            item.dataset.slot = slot;
+                            item.dataset.userId = user.id;
+                            item.dataset.userJson = JSON.stringify(user);
+                            var picHtml = user.profile_picture 
+                                ? '<img src="' + user.profile_picture + '" style="width:26px;height:26px;border-radius:50%;object-fit:cover;flex-shrink:0;">'
+                                : '<div style="width:26px;height:26px;border-radius:50%;background:#e8f4f8;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;color:#3B7A8C;flex-shrink:0;">' + (user.full_name || user.username).charAt(0).toUpperCase() + '</div>';
+                            item.innerHTML = picHtml + '<div><div class="fw-semibold" style="font-size:0.8rem;">' + (user.full_name || user.username) + '</div><div style="font-size:0.7rem;color:#6c757d;">@' + user.username + '</div></div>';
+                            dropdown.appendChild(item);
+                        });
+                        dropdown.classList.remove('d-none');
+                    } else {
+                        dropdown.innerHTML = '<div class="px-3 py-2 small text-muted" style="font-size:0.8rem;">No more players found.</div>';
+                        dropdown.classList.remove('d-none');
+                    }
+                })
+                .catch(function() { dropdown.classList.add('d-none'); });
+        }, 300);
+    });
+
+    // Select player via mousedown on search result
+    document.addEventListener('mousedown', function(e) {
+        var item = e.target.closest('.search-result-item');
+        if (!item) return;
+        e.preventDefault();
+        var slot = item.dataset.slot;
+        var user = JSON.parse(item.dataset.userJson);
+        // Duplicate prevention: check if this user is already selected in another slot
+        var alreadySelected = false;
+        document.querySelectorAll('input[id^="hidden-"]').forEach(function(inp) {
+            if (inp.id !== 'hidden-' + slot && parseInt(inp.value) === user.id) alreadySelected = true;
+        });
+        if (alreadySelected) {
+            var dropdown = document.querySelector('.player-search-dropdown[data-slot="' + slot + '"]');
+            if (dropdown) { dropdown.innerHTML = '<div class="px-3 py-2 small text-danger" style="font-size:0.8rem;"><i class="fas fa-exclamation-circle me-1"></i>Player already assigned to another slot.</div>'; }
+            return;
+        }
+        selectReservationPlayer(slot, user);
+    });
+
+    // Hide dropdowns on outside click
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.player-search-input, .search-result-item, .btn-guest-trigger, .guest-fields, .guest-name, .guest-nickname, .guest-confirm-btn')) return;
+        document.querySelectorAll('.player-search-dropdown').forEach(function(d) { d.classList.add('d-none'); });
+    });
+
+    function selectReservationPlayer(slot, user) {
+        var hidden = document.getElementById('hidden-' + slot);
+        if (hidden) hidden.value = user.id;
+        var searchInput = document.querySelector('.player-search-input[data-slot="' + slot + '"]');
+        if (searchInput) {
+            searchInput.value = '';
+            searchInput.style.display = 'none';
+        }
+        var dropdown = document.querySelector('.player-search-dropdown[data-slot="' + slot + '"]');
+        if (dropdown) dropdown.classList.add('d-none');
+        var selected = document.querySelector('.player-selected[data-slot="' + slot + '"]');
+        if (selected) {
+            selected.classList.remove('d-none');
+            var avatar = selected.querySelector('.player-selected-avatar');
+            var name = selected.querySelector('.player-selected-name');
+            var type = selected.querySelector('.player-selected-type');
+            if (avatar) avatar.textContent = (user.full_name || user.username).charAt(0).toUpperCase();
+            if (name) name.textContent = user.full_name || user.username;
+            if (type) type.innerHTML = '<span class="badge bg-primary" style="font-size:0.6rem;border-radius:4px;">Registered</span> @' + user.username;
+        }
+        var guestFields = document.querySelector('.guest-fields[data-slot="' + slot + '"]');
+        if (guestFields) guestFields.classList.add('d-none');
+        var guestHidden = document.getElementById('guest-hidden-' + slot);
+        if (guestHidden) guestHidden.value = '';
+        var btn = document.querySelector('.btn-guest-trigger[data-slot="' + slot + '"]');
+        if (btn) btn.style.display = 'none';
+        showReminder();
+    }
+
+    // Guest trigger toggle
+    document.addEventListener('click', function(e) {
+        var trigger = e.target.closest('.btn-guest-trigger');
+        if (!trigger) return;
+        var slot = trigger.dataset.slot;
+        var fields = document.querySelector('.guest-fields[data-slot="' + slot + '"]');
+        if (fields) fields.classList.toggle('d-none');
+    });
+
+    // Guest confirm
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('.guest-confirm-btn');
+        if (!btn) return;
+        var fields = btn.closest('.guest-fields');
+        if (!fields) return;
+        var slot = fields.dataset.slot;
+        var nameInput = fields.querySelector('.guest-name');
+        var nicknameInput = fields.querySelector('.guest-nickname');
+        var fullName = nameInput ? nameInput.value.trim() : '';
+        if (!fullName) { nameInput.classList.add('is-invalid'); return; }
+        nameInput.classList.remove('is-invalid');
+        var nickname = nicknameInput ? nicknameInput.value.trim() : '';
+        var guestValue = fullName + (nickname ? '|' + nickname : '');
+        var guestHidden = document.getElementById('guest-hidden-' + slot);
+        if (guestHidden) guestHidden.value = guestValue;
+        var searchInput = document.querySelector('.player-search-input[data-slot="' + slot + '"]');
+        if (searchInput) searchInput.style.display = 'none';
+        var dropdown = document.querySelector('.player-search-dropdown[data-slot="' + slot + '"]');
+        if (dropdown) dropdown.classList.add('d-none');
+        fields.classList.add('d-none');
+        var selected = document.querySelector('.player-selected[data-slot="' + slot + '"]');
+        if (selected) {
+            selected.classList.remove('d-none');
+            var avatar = selected.querySelector('.player-selected-avatar');
+            var nameEl = selected.querySelector('.player-selected-name');
+            var typeEl = selected.querySelector('.player-selected-type');
+            if (avatar) { avatar.textContent = fullName.charAt(0).toUpperCase(); avatar.style.background = '#ffc107'; avatar.style.color = '#856404'; }
+            if (nameEl) nameEl.textContent = fullName;
+            if (typeEl) typeEl.innerHTML = '<span class="badge bg-warning text-dark" style="font-size:0.6rem;border-radius:4px;">Guest</span>' + (nickname ? ' <small>"' + nickname + '"</small>' : '');
+        }
+        var btnTrigger = document.querySelector('.btn-guest-trigger[data-slot="' + slot + '"]');
+        if (btnTrigger) btnTrigger.style.display = 'none';
+        showReminder();
+    });
+
+    // Remove player
+    document.addEventListener('click', function(e) {
+        var removeBtn = e.target.closest('.player-remove-btn');
+        if (!removeBtn) return;
+        var selected = removeBtn.closest('.player-selected');
+        if (!selected) return;
+        var slot = selected.dataset.slot;
+        selected.classList.add('d-none');
+        var hidden = document.getElementById('hidden-' + slot);
+        if (hidden) hidden.value = '';
+        var guestHidden = document.getElementById('guest-hidden-' + slot);
+        if (guestHidden) guestHidden.value = '';
+        var searchInput = document.querySelector('.player-search-input[data-slot="' + slot + '"]');
+        if (searchInput) { searchInput.value = ''; searchInput.style.display = 'block'; }
+        var btnTrigger = document.querySelector('.btn-guest-trigger[data-slot="' + slot + '"]');
+        if (btnTrigger) btnTrigger.style.display = '';
+        var avatar = selected.querySelector('.player-selected-avatar');
+        if (avatar) { avatar.style.background = ''; avatar.style.color = ''; }
+        showReminder();
+    });
+
+    function showReminder() {
+        var info = document.getElementById('reservation-selected-player-info');
+        if (!info) return;
+        var hasSel = document.querySelectorAll('.player-selected:not(.d-none)').length > 0;
+        if (hasSel) {
+            info.innerHTML = '<i class="fas fa-check-circle text-success"></i><span>Participants selected. They will be carried over when the match starts.</span>';
+        } else {
+            info.innerHTML = '<i class="fas fa-info-circle"></i><span>Select opponents/teammates, or leave empty to assign later at the court.</span>';
+        }
+    }
+
+    // ===== HELPERS =====
+    function getDayHeaders() {
+        return window.innerWidth < 576
+            ? ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+            : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    }
+
+    function renderDayHeaders() {
+        return getDayHeaders().map(h => `<div class="calendar-day-header">${h}</div>`).join('\n');
+    }
+
+    function formatDateDisplay(dateStr) {
+        if (!dateStr) return '—';
+        const d = new Date(dateStr + 'T12:00:00');
+        return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+    }
+
+    function formatTimeDisplay(timeStr) {
+        if (!timeStr) return '—';
+        const [h, m] = timeStr.split(':').map(Number);
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const hour12 = h % 12 || 12;
+        return `${hour12}:${String(m).padStart(2, '0')} ${ampm}`;
+    }
+
+    function getDurationHours(start, end) {
+        const [sh, sm] = start.split(':').map(Number);
+        const [eh, em] = end.split(':').map(Number);
+        return ((eh * 60 + em) - (sh * 60 + sm)) / 60;
+    }
+
+    // ===== STEP MANAGEMENT =====
+    function goToStep(step) {
+        state.currentStep = step;
+        document.querySelectorAll('.step-section').forEach((el, i) => {
+            el.classList.toggle('active', i + 1 === step);
+        });
+        document.querySelectorAll('.wizard-step').forEach((el, i) => {
+            const num = i + 1;
+            el.classList.remove('active', 'completed');
+            el.removeAttribute('aria-current');
+            if (num === step) {
+                el.classList.add('active');
+                el.setAttribute('aria-current', 'step');
+            } else if (num < step) {
+                el.classList.add('completed');
+            }
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ===== STEP 1: CALENDAR =====
+    async function loadCalendar() {
+        // Reset slide direction so non-navigation renders don't animate
+        slideDirection = null;
+
+        const courtId = courtSelect.value;
+        state.selectedCourtId = courtId;
+
+        if (!courtId) {
+            renderCalendarEmpty();
+            document.getElementById('step-1-next').disabled = true;
+            return;
+        }
+
+        const month = state.calendarMonth;
+        const year = state.calendarYear;
+
+        calendarGrid.innerHTML = `
+            ${renderDayHeaders()}
+            <div class="text-center py-4" style="grid-column: 1 / -1;">
+                <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+            </div>
+        `;
+
+        try {
+            const resp = await fetch(`/reservations/api/monthly-availability/?court_id=${courtId}&month=${month}&year=${year}`);
+            const data = await resp.json();
+            renderCalendar(data);
+            calendarTitle.textContent = `${data.month_name} ${data.year}`;
+        } catch (e) {
+            calendarGrid.innerHTML = `
+                ${renderDayHeaders()}
+                <div class="text-center py-4 text-danger" style="grid-column: 1 / -1;">
+                    <i class="fas fa-exclamation-circle me-2"></i>Failed to load calendar
+                </div>
+            `;
+        }
+    }
+
+    function renderCalendarEmpty() {
+        calendarGrid.innerHTML = renderDayHeaders();
+        calendarTitle.textContent = 'Select a court first';
+        // Show swipe indicators on the empty state too (mobile only, once)
+        showSwipeIndicators();
+    }
+
+    function renderCalendar(data) {
+        calendarGrid.innerHTML = renderDayHeaders();
+
+        const firstDay = new Date(data.year, data.month - 1, 1).getDay();
+        const daysInMonth = new Date(data.year, data.month, 0).getDate();
+
+        // Empty cells for days before 1st
+        for (let i = 0; i < firstDay; i++) {
+            const empty = document.createElement('div');
+            empty.className = 'calendar-day other-month';
+            calendarGrid.appendChild(empty);
+        }
+
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${data.year}-${String(data.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const cell = document.createElement('div');
+            cell.className = 'calendar-day';
+            cell.dataset.date = dateStr;
+
+            const dayInfo = data.availability[dateStr] || 'past';
+
+            if (dayInfo === 'past') {
+                cell.classList.add('past');
+            } else if (dayInfo === 'available') {
+                cell.classList.add('available');
+            } else if (dayInfo === 'full') {
+                cell.classList.add('full');
+            }
+
+            if (dateStr === todayStr && dayInfo !== 'past') {
+                cell.classList.add('today');
+            }
+
+            if (dateStr === state.selectedDate) {
+                cell.classList.add('selected');
+            }
+
+            // Slot indicator dot
+            const dot = document.createElement('span');
+            dot.className = `slot-dot ${dayInfo === 'available' ? 'available' : dayInfo === 'full' ? 'full' : ''}`;
+            cell.appendChild(document.createTextNode(String(day)));
+            cell.appendChild(dot);
+
+            if (dayInfo === 'available') {
+                cell.addEventListener('click', () => selectDate(dateStr));
+            }
+
+            calendarGrid.appendChild(cell);
+        }
+
+        // Apply directional slide-in animation
+        if (slideDirection === 'left') {
+            calendarGrid.classList.add('slide-from-left');
+        } else if (slideDirection === 'right') {
+            calendarGrid.classList.add('slide-from-right');
+        }
+        slideDirection = null;
+
+        // Clean up animation class after it completes
+        calendarGrid.addEventListener('animationend', function() {
+            calendarGrid.classList.remove('slide-from-left', 'slide-from-right');
+        }, { once: true });
+
+        // Show swipe indicators when calendar renders (mobile only, once)
+        showSwipeIndicators();
+    }
+
+    function selectDate(dateStr) {
+        state.selectedDate = dateStr;
+        dateInput.value = dateStr;
+        document.getElementById('calendar-date-store').value = dateStr;
+
+        // The date is changing — clear any previously selected time slot
+        clearSlotSelection();
+
+        // Update calendar UI
+        document.querySelectorAll('.calendar-day').forEach(d => d.classList.remove('selected'));
+        document.querySelector(`.calendar-day[data-date="${dateStr}"]`)?.classList.add('selected');
+
+        document.getElementById('step-1-next').disabled = false;
+
+        // Show selected date display in step 2
+        document.getElementById('display-date-label').textContent = formatDateDisplay(dateStr);
+
+        // Pre-load time slots for step 2
+        loadTimeSlots();
+    }
+
+    // ===== CALENDAR NAVIGATION =====
+    let slideDirection = null; // 'left' or 'right'
+
+    function goToPrevMonth() {
+        slideDirection = 'right';
+        if (state.calendarMonth <= 1) {
+            state.calendarMonth = 12;
+            state.calendarYear--;
+        } else {
+            state.calendarMonth--;
+        }
+        loadCalendar();
+    }
+
+    function goToNextMonth() {
+        slideDirection = 'left';
+        if (state.calendarMonth >= 12) {
+            state.calendarMonth = 1;
+            state.calendarYear++;
+        } else {
+            state.calendarMonth++;
+        }
+        loadCalendar();
+    }
+
+    document.getElementById('prev-month').addEventListener('click', goToPrevMonth);
+    document.getElementById('next-month').addEventListener('click', goToNextMonth);
+
+    // ===== SWIPE INDICATOR ARROWS =====
+    let swipeIndicatorsDismissed = false;
+    let swipeIndicatorTimeout = null;
+
+    function showSwipeIndicators() {
+        if (swipeIndicatorsDismissed) return;
+        if (window.innerWidth > 768) return;
+        swipeIndicatorLeft.classList.add('show');
+        swipeIndicatorRight.classList.add('show');
+
+        // Auto-dismiss after 4 seconds (only set once)
+        if (!swipeIndicatorTimeout) {
+            swipeIndicatorTimeout = setTimeout(function() {
+                dismissSwipeIndicators();
+                swipeIndicatorTimeout = null;
+            }, 4000);
+        }
+    }
+
+    function dismissSwipeIndicators() {
+        if (swipeIndicatorTimeout) {
+            clearTimeout(swipeIndicatorTimeout);
+            swipeIndicatorTimeout = null;
+        }
+        swipeIndicatorsDismissed = true;
+        swipeIndicatorLeft.classList.remove('show');
+        swipeIndicatorRight.classList.remove('show');
+    }
+
+    // Dismiss when user navigates via buttons (only once calendar has day cells rendered)
+    function dismissIfCalendarActive() {
+        if (calendarGrid.children.length > 7) {
+            dismissSwipeIndicators();
+        }
+    }
+    document.getElementById('prev-month').addEventListener('click', dismissIfCalendarActive);
+    document.getElementById('next-month').addEventListener('click', dismissIfCalendarActive);
+
+    // ===== SWIPE GESTURE SUPPORT =====
+    let swipeStartX = 0;
+    let swipeStartY = 0;
+    let swipeStartTime = 0;
+
+    calendarGrid.addEventListener('touchstart', function(e) {
+        // Only enable on single-finger touches
+        if (e.touches.length !== 1) return;
+        swipeStartX = e.touches[0].clientX;
+        swipeStartY = e.touches[0].clientY;
+        swipeStartTime = Date.now();
+    }, { passive: true });
+
+    calendarGrid.addEventListener('touchmove', function(e) {
+        if (swipeStartX === 0 || e.touches.length !== 1) return;
+
+        const deltaX = e.touches[0].clientX - swipeStartX;
+        const deltaY = e.touches[0].clientY - swipeStartY;
+
+        // Only apply visual feedback if the gesture is primarily horizontal
+        if (Math.abs(deltaX) < Math.abs(deltaY)) return;
+
+        // Smoothly clamp the displacement so it doesn't fly off screen
+        const clamped = Math.sign(deltaX) * Math.min(Math.abs(deltaX), 120);
+        calendarGrid.style.transform = `translateX(${clamped}px)`;
+
+        // Subtle opacity fade as displacement increases (fades to 0.65 at 120px)
+        const progress = Math.min(Math.abs(deltaX) / 120, 1);
+        calendarGrid.style.opacity = String(1 - progress * 0.35);
+    }, { passive: true });
+
+    calendarGrid.addEventListener('touchend', function(e) {
+        if (swipeStartX === 0) return;
+
+        const deltaX = e.changedTouches[0].clientX - swipeStartX;
+        const deltaY = e.changedTouches[0].clientY - swipeStartY;
+        const elapsed = Date.now() - swipeStartTime;
+
+        // Determine if this qualifies as a swipe before we reset tracking
+        const isHorizontal = Math.abs(deltaX) >= Math.abs(deltaY) * 1.5;
+        const isFastEnough = elapsed <= 500;
+        const isFarEnough = Math.abs(deltaX) >= 50;
+        const isSwipe = isHorizontal && isFastEnough && isFarEnough;
+
+        // If it's a qualifying swipe, prevent day-cell clicks synchronously
+        if (isSwipe) {
+                e.preventDefault();
+            }
+
+            // Dismiss swipe indicators on any meaningful touch end
+            dismissSwipeIndicators();
+
+            // Animate back to neutral position
+            calendarGrid.classList.add('swipe-settling');
+        calendarGrid.style.transform = 'translateX(0px)';
+        calendarGrid.style.opacity = '1';
+
+        // Clean up inline styles after animation
+        function onSettleComplete() {
+            calendarGrid.classList.remove('swipe-settling');
+            calendarGrid.style.removeProperty('transform');
+            calendarGrid.style.removeProperty('opacity');
+        }
+
+        let swipeProcessed = false;
+
+        function finishSwipe() {
+            if (swipeProcessed) return;
+            swipeProcessed = true;
+
+            // Reset tracking
+            swipeStartX = 0;
+            swipeStartY = 0;
+
+            if (isSwipe) {
+                if (deltaX < 0) {
+                    goToNextMonth();
+                } else {
+                    goToPrevMonth();
+                }
+                // Remove transition after a short delay so the new calendar renders cleanly
+                setTimeout(onSettleComplete, 50);
+            } else {
+                onSettleComplete();
+            }
+        }
+
+        // Wait for the snap-back animation to finish before navigating
+        calendarGrid.addEventListener('transitionend', finishSwipe, { once: true });
+
+        // Safety timeout in case transitionend doesn't fire
+        setTimeout(function() {
+            if (swipeStartX !== 0) {
+                finishSwipe();
+            }
+        }, 400);
+    }, { passive: false });
+
+    // ===== STEP 1 -> 2 =====
+    document.getElementById('step-1-next').addEventListener('click', () => {
+        if (state.selectedDate) {
+            goToStep(2);
+        }
+    });
+
+    document.getElementById('back-to-date-btn').addEventListener('click', () => {
+        goToStep(1);
+    });
+
+    // ===== STEP 2: TIME SLOTS =====
+    async function loadTimeSlots() {
+        const courtId = courtSelect.value;
+        const date = state.selectedDate;
+
+        if (!courtId || !date) {
+            slotsContainer.innerHTML = `
+                <div class="text-center py-4 text-muted">
+                    <i class="fas fa-info-circle me-2"></i>Please select a court and date first.
+                </div>
+            `;
+            return;
+        }
+
+        slotsContainer.innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+                <p class="text-muted mt-2 mb-0">Loading available slots...</p>
+            </div>
+        `;
+
+        try {
+            const resp = await fetch(`/reservations/api/time-slots/?court_id=${courtId}&date=${date}`);
+            const data = await resp.json();
+            renderTimeSlots(data.slots);
+        } catch (e) {
+            slotsContainer.innerHTML = `
+                <div class="text-center py-4 text-danger">
+                    <i class="fas fa-exclamation-circle me-2"></i>Failed to load time slots.
+                </div>
+            `;
+        }
+    }
+
+    // Status metadata for the time-slot badges
+    const STATUS_META = {
+        available: { icon: 'fas fa-check-circle', label: 'Available' },
+        booked: { icon: 'fas fa-times-circle', label: 'Booked' },
+        unavailable: { icon: 'fas fa-ban', label: 'Unavailable' },
+        selected: { icon: 'fas fa-check', label: 'Selected' },
+    };
+
+    function setCardStatus(card, status) {
+        card.dataset.status = status;
+        card.dataset.available = status === 'available';
+        card.classList.remove('status-available', 'status-booked', 'status-unavailable', 'selected');
+        if (status === 'selected') {
+            card.classList.add('selected');
+        } else {
+            card.classList.add('status-' + status);
+        }
+        const badge = card.querySelector('.time-slot-badge');
+        if (badge) {
+            const meta = STATUS_META[status] || STATUS_META.available;
+            badge.className = `time-slot-badge ${status}`;
+            badge.innerHTML = `<i class="${meta.icon} me-1"></i>${meta.label}`;
+        }
+    }
+
+    function renderTimeSlots(slots) {
+        if (!slots || slots.length === 0) {
+            slotsContainer.innerHTML = `
+                <div class="alert alert-warning mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>No time slots available for this date.
+                </div>
+            `;
+            return;
+        }
+
+        // Group slots into AM (before noon) and PM (noon or later)
+        const amSlots = slots.filter(slot => (parseInt(slot.start, 10) || 0) < 12);
+        const pmSlots = slots.filter(slot => (parseInt(slot.start, 10) || 0) >= 12);
+
+        function buildSlotCard(slot) {
+            const status = slot.status || (slot.available ? 'available' : 'booked');
+            const card = document.createElement('div');
+            card.className = `time-slot-card status-${status}`;
+            card.dataset.start = slot.start;
+            card.dataset.end = slot.end;
+            card.dataset.label = slot.label;
+            card.dataset.status = status;
+            card.dataset.available = status === 'available';
+
+            // Restore a previously selected slot (live selection or post-validation re-render).
+            // Only restore the stored value if the slot is still available — a slot that
+            // was just booked or is otherwise unavailable must never be auto-selected.
+            const storedVal = timeSlotInput.value;
+            const restoreStored = card.dataset.status === 'available' && storedVal === `${slot.start}-${slot.end}`;
+            if ((state.selectedSlot && state.selectedSlot.start === slot.start && state.selectedSlot.end === slot.end) || restoreStored) {
+                setCardStatus(card, 'selected');
+                if (restoreStored) {
+                    state.selectedSlot = { start: slot.start, end: slot.end, label: slot.label };
+                    selectedSlotLabel.textContent = slot.label;
+                    selectedSlotDisplay.classList.remove('d-none');
+                    document.getElementById('step-2-next').disabled = false;
+                }
+            }
+
+            const meta = STATUS_META[card.dataset.status] || STATUS_META.available;
+            card.innerHTML = `
+                <div class="time-slot-time">${formatTimeDisplay(slot.start)}</div>
+                <div class="time-slot-status">
+                    <span class="time-slot-badge ${card.dataset.status}">
+                        <i class="${meta.icon} me-1"></i>${meta.label}
+                    </span>
+                </div>
+            `;
+
+            if (card.dataset.status === 'available' || card.dataset.status === 'selected') {
+                card.addEventListener('click', () => selectTimeSlot(card, slot));
+            }
+
+            return card;
+        }
+
+        function buildSlotGroup(label, groupSlots) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'time-slot-group';
+
+            const header = document.createElement('div');
+            header.className = 'time-slot-group-header';
+            header.innerHTML = `<span class="time-slot-group-badge" role="heading" aria-level="3">${label}</span>`;
+
+            const grid = document.createElement('div');
+            grid.className = 'time-slots-grid';
+            groupSlots.forEach(slot => grid.appendChild(buildSlotCard(slot)));
+
+            wrapper.appendChild(header);
+            wrapper.appendChild(grid);
+            return wrapper;
+        }
+
+        slotsContainer.innerHTML = '';
+        const columns = document.createElement('div');
+        columns.className = 'time-slot-columns';
+        if (amSlots.length > 0) {
+            columns.appendChild(buildSlotGroup('AM', amSlots));
+        }
+        if (pmSlots.length > 0) {
+            columns.appendChild(buildSlotGroup('PM', pmSlots));
+        }
+        slotsContainer.appendChild(columns);
+    }
+
+    function selectTimeSlot(card, slot) {
+        // Deselect all other slots (booked/unavailable stay untouched)
+        document.querySelectorAll('.time-slot-card').forEach(c => {
+            if (c === card) return;
+            if (c.dataset.status === 'selected') {
+                setCardStatus(c, 'available');
+            } else {
+                c.classList.remove('selected');
+            }
+        });
+
+        setCardStatus(card, 'selected');
+
+        state.selectedSlot = {
+            start: slot.start,
+            end: slot.end,
+            label: slot.label,
+        };
+
+        // Update hidden fields
+        timeSlotInput.value = `${slot.start}-${slot.end}`;
+        startTimeInput.value = slot.start;
+        endTimeInput.value = slot.end;
+
+        // Show selected display
+        selectedSlotLabel.textContent = slot.label;
+        selectedSlotDisplay.classList.remove('d-none');
+
+        // Enable step 2 -> 3
+        document.getElementById('step-2-next').disabled = false;
+    }
+
+    function clearSlotSelection() {
+        state.selectedSlot = null;
+        timeSlotInput.value = '';
+        startTimeInput.value = '';
+        endTimeInput.value = '';
+        selectedSlotDisplay.classList.add('d-none');
+        document.querySelectorAll('.time-slot-card').forEach(c => {
+            if (c.dataset.status === 'selected') {
+                setCardStatus(c, 'available');
+            } else {
+                c.classList.remove('selected');
+            }
+        });
+        document.getElementById('step-2-next').disabled = true;
+    }
+
+    document.getElementById('clear-slot-btn')?.addEventListener('click', clearSlotSelection);
+
+    // ===== EQUIPMENT SELECTION =====
+    document.querySelectorAll('.equipment-card').forEach(card => {
+        card.addEventListener('click', function() {
+            this.classList.toggle('selected');
+            const checkbox = this.querySelector('.equipment-check-input');
+            checkbox.checked = !checkbox.checked;
+            updateEquipmentState();
+        });
+    });
+
+    function updateEquipmentState() {
+        state.selectedEquipment = [];
+        document.querySelectorAll('.equipment-card.selected').forEach(card => {
+            const id = card.dataset.eqId;
+            const name = card.querySelector('.fw-semibold').textContent;
+            const price = parseFloat(card.querySelector('.fw-bold.text-primary').textContent.replace(/[₱,]/g, ''));
+            state.selectedEquipment.push({ id, name, price });
+        });
+    }
+
+    // ===== STEP 2 -> 3 BACK =====
+    document.getElementById('step-2-back').addEventListener('click', () => {
+        goToStep(1);
+    });
+
+    // ===== VERIFY SLOT AVAILABILITY =====
+    async function verifySlot() {
+        if (!state.selectedSlot) return false;
+
+        const btn = document.getElementById('step-2-next');
+        const alertEl = document.getElementById('slot-verification-alert');
+        const msgEl = document.getElementById('slot-verification-message');
+
+        // Hide any previous alert
+        alertEl.classList.remove('show');
+
+        // Show loading state
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Verifying...';
+
+        try {
+            const courtId = courtSelect.value;
+            const date = state.selectedDate;
+            const start = state.selectedSlot.start;
+            const end = state.selectedSlot.end;
+
+            const resp = await fetch(`/reservations/api/verify-slot/?court_id=${courtId}&date=${date}&start=${start}&end=${end}`);
+            const data = await resp.json();
+
+            if (data.available) {
+                // Slot is still available — proceed
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                updateConfirmation();
+                goToStep(3);
+                return true;
+            } else {
+                // Slot was just taken — show inline error
+                verificationFailed = true;
+                msgEl.textContent = data.message || 'This time slot is no longer available. Please select a different time.';
+                alertEl.classList.add('show');
+
+                // Mark the selected card as booked
+                document.querySelectorAll('.time-slot-card.selected').forEach(c => {
+                    setCardStatus(c, 'booked');
+                    c.style.cursor = 'not-allowed';
+                    // Remove click listeners by replacing with clone
+                    const clone = c.cloneNode(true);
+                    c.parentNode.replaceChild(clone, c);
+                });
+
+                // Clear the selection state
+                state.selectedSlot = null;
+                timeSlotInput.value = '';
+                startTimeInput.value = '';
+                endTimeInput.value = '';
+                selectedSlotDisplay.classList.add('d-none');
+
+                // Restore button text but keep it disabled
+                btn.innerHTML = originalText;
+                btn.disabled = true;
+                return false;
+            }
+        } catch (e) {
+            // Network error — still allow proceeding, the server will validate on submit
+            msgEl.textContent = 'Could not verify availability. Your reservation will be validated when submitted.';
+            alertEl.classList.add('show');
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            updateConfirmation();
+            goToStep(3);
+            return true;
+        }
+    }
+
+    // ===== STEP 2 -> 3 =====
+    document.getElementById('step-2-next').addEventListener('click', () => {
+        if (state.selectedSlot) {
+            verifySlot();
+        }
+    });
+
+    // ===== RELOAD SLOTS AFTER VERIFICATION FAILURE =====
+    document.getElementById('reload-slots-btn')?.addEventListener('click', () => {
+        document.getElementById('slot-verification-alert').classList.remove('show');
+        loadTimeSlots();
+    });
+
+    // ===== FORM SUBMIT — SHOW OVERLAY =====
+    const form = document.getElementById('reservation-form');
+    const overlay = document.getElementById('submit-overlay');
+    const submitBtn = form.querySelector('button[type="submit"]');
+
+    form.addEventListener('submit', function(e) {
+        // Only show overlay if form is valid (step 3 submit)
+        if (state.currentStep === 3) {
+            // Brief delay so the browser paints the overlay before navigation
+            overlay.classList.add('active');
+            submitBtn.disabled = true;
+        }
+    });
+
+    // ===== STEP 3 BACK =====
+    document.getElementById('step-3-back').addEventListener('click', () => {
+        goToStep(2);
+    });
+
+    // ===== CONFIRMATION SUMMARY =====
+    function updateConfirmation() {
+        // Court & Site
+        const courtOption = courtSelect.options[courtSelect.selectedIndex];
+        const courtName = courtOption ? (courtOption.getAttribute('data-name') || courtOption.text.split(' — ')[0].trim()) : '—';
+        const courtSite = courtOption ? (courtOption.getAttribute('data-site') || '') : '';
+        document.getElementById('confirm-court').textContent = courtName;
+        document.getElementById('confirm-site').textContent = courtSite || '—';
+
+        // Date
+        document.getElementById('confirm-date').textContent = formatDateDisplay(state.selectedDate);
+
+        // Time
+        if (state.selectedSlot) {
+            const startFmt = formatTimeDisplay(state.selectedSlot.start);
+            const endFmt = formatTimeDisplay(state.selectedSlot.end);
+            document.getElementById('confirm-time').textContent = `${startFmt} — ${endFmt}`;
+
+            // Duration
+            const dur = Math.round(getDurationHours(state.selectedSlot.start, state.selectedSlot.end) * 10) / 10;
+            document.getElementById('confirm-duration').textContent = `${dur} hour${dur !== 1 ? 's' : ''}`;
+            document.getElementById('confirm-duration-price').textContent = `${dur} hr${dur !== 1 ? 's' : ''}`;
+
+            // Court rate & subtotal
+            const rate = state.selectedCourtRate || 500;
+            const subtotal = rate * dur;
+            document.getElementById('confirm-rate').textContent = `₱${rate.toLocaleString()}/hr`;
+            document.getElementById('confirm-subtotal').textContent = `₱${subtotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+            // Equipment fee
+            let equipFee = 0;
+            const equipNames = [];
+            state.selectedEquipment.forEach(eq => {
+                equipFee += eq.price;
+                equipNames.push(eq.name);
+            });
+            document.getElementById('confirm-equipment').textContent = equipNames.length > 0 ? equipNames.join(', ') : 'None selected';
+            document.getElementById('confirm-equipment-fee').textContent = `₱${equipFee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+            // Taxes & discounts (shown only when applicable)
+            const tax = state.selectedTax || 0;
+            const discount = state.selectedDiscount || 0;
+            if (tax > 0) {
+                confirmTaxRow.classList.remove('d-none');
+                confirmTaxEl.textContent = `₱${tax.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            } else {
+                confirmTaxRow.classList.add('d-none');
+            }
+            if (discount > 0) {
+                confirmDiscountRow.classList.remove('d-none');
+                confirmDiscountEl.textContent = `−₱${discount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            } else {
+                confirmDiscountRow.classList.add('d-none');
+            }
+
+            // Total
+            const total = Math.max(0, subtotal + equipFee + tax - discount);
+            document.getElementById('confirm-total').textContent = `₱${total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        }
+
+        // Notes
+        const notes = document.querySelector('[name="notes"]')?.value || '';
+        document.getElementById('confirm-notes').textContent = notes || '—';
+    }
+
+    // ===== COURT DROPDOWN & TOOLTIP =====
+    const courtTrigger = document.getElementById('court-select-trigger');
+    const courtDropdown = document.getElementById('court-dropdown');
+    const courtSelectText = document.getElementById('court-select-text');
+    const courtTooltip = document.getElementById('court-tooltip');
+
+    function populateCourtDropdown() {
+        const options = courtSelect.options;
+        let html = '';
+        for (let i = 0; i < options.length; i++) {
+            const opt = options[i];
+            if (!opt.value) {
+                // Skip the placeholder for now
+                continue;
+            }
+            const site = opt.getAttribute('data-site') || '';
+            const type = opt.getAttribute('data-type') || 'standard';
+            const rate = opt.getAttribute('data-rate') || '0';
+            const selected = opt.selected ? ' selected' : '';
+            html += `
+                <div class="court-dropdown-option${selected}" data-value="${opt.value}" tabindex="0" role="option">
+                    <div class="court-dropdown-option-name">${opt.text.split(' — ')[0]}</div>
+                    <div class="court-dropdown-option-detail">
+                        ${site ? `<span>${site}</span>` : ''}
+                        <span class="badge bg-light text-dark">${type}</span>
+                        <span class="court-dropdown-option-rate">₱${rate}/hr</span>
+                    </div>
+                </div>
+            `;
+        }
+        if (!html) {
+            html = `<div class="court-dropdown-empty"><i class="fas fa-info-circle me-2"></i>No courts available</div>`;
+        }
+        courtDropdown.innerHTML = html;
+
+        // Click handlers on each option
+        courtDropdown.querySelectorAll('.court-dropdown-option').forEach(el => {
+            el.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const val = this.dataset.value;
+                courtSelect.value = val;
+                closeCourtDropdown();
+                // Trigger the change event on the hidden select
+                courtSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+        });
+    }
+
+    function openCourtDropdown() {
+        courtDropdown.classList.add('open');
+        courtTrigger.classList.add('open');
+        courtTrigger.setAttribute('aria-expanded', 'true');
+    }
+
+    function closeCourtDropdown() {
+        courtDropdown.classList.remove('open');
+        courtTrigger.classList.remove('open');
+        courtTrigger.setAttribute('aria-expanded', 'false');
+    }
+
+    function toggleCourtDropdown() {
+        if (courtDropdown.classList.contains('open')) {
+            closeCourtDropdown();
+        } else {
+            openCourtDropdown();
+        }
+    }
+
+    function updateCourtDisplay() {
+        const selectedOption = courtSelect.options[courtSelect.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+            const text = selectedOption.text.split(' — ')[0];
+            courtSelectText.textContent = text;
+            courtSelectText.classList.remove('placeholder');
+            showCourtTooltip(selectedOption);
+        } else {
+            courtSelectText.textContent = '—— Select a court ——';
+            courtSelectText.classList.add('placeholder');
+            courtTooltip.classList.remove('show');
+        }
+    }
+
+    function showCourtTooltip(option) {
+        const name = option.text.split(' — ')[0];
+        const type = option.getAttribute('data-type') || 'standard';
+        const description = option.getAttribute('data-description') || '';
+
+        document.querySelector('.court-tooltip-name').textContent = name;
+        document.querySelector('.court-tooltip-type-badge').textContent = type.replace(/_/g, ' ');
+
+        const descEl = document.querySelector('.court-tooltip-desc');
+        if (description) {
+            descEl.textContent = description;
+            descEl.style.display = 'block';
+        } else {
+            descEl.style.display = 'none';
+        }
+
+        courtTooltip.classList.add('show');
+    }
+
+    // Toggle dropdown on trigger click
+    courtTrigger.addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleCourtDropdown();
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!courtTrigger.contains(e.target) && !courtDropdown.contains(e.target)) {
+            closeCourtDropdown();
+        }
+    });
+
+    // Close dropdown on Escape
+    courtTrigger.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeCourtDropdown();
+            courtTrigger.focus();
+        }
+        if (e.key === 'ArrowDown' && !courtDropdown.classList.contains('open')) {
+            e.preventDefault();
+            populateCourtDropdown();
+            openCourtDropdown();
+        }
+    });
+
+    // Keyboard navigation within dropdown
+    courtDropdown.addEventListener('keydown', function(e) {
+        const items = courtDropdown.querySelectorAll('.court-dropdown-option');
+        const currentIndex = Array.from(items).indexOf(document.activeElement);
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            const next = currentIndex + 1;
+            if (next < items.length) items[next].focus();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            const prev = currentIndex - 1;
+            if (prev >= 0) items[prev].focus();
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            closeCourtDropdown();
+            courtTrigger.focus();
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (document.activeElement && document.activeElement.classList.contains('court-dropdown-option')) {
+                document.activeElement.click();
+            }
+        }
+    });
+
+    // ===== COURT RATE LOOKUP (native select change) =====
+    courtSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+            // Store court info - get name from data-name and rate from data-rate attribute
+            state.selectedCourtName = selectedOption.getAttribute('data-name') || (selectedOption.text.split(' — ')[0].trim() || '');
+            state.selectedCourtRate = parseFloat(selectedOption.getAttribute('data-rate')) || 500;
+            state.selectedDate = null;
+            dateInput.value = '';
+            document.getElementById('calendar-date-store').value = '';
+            document.getElementById('step-1-next').disabled = true;
+            clearSlotSelection();
+            updateCourtDisplay();
+            loadCalendar();
+        } else {
+            updateCourtDisplay();
+            renderCalendarEmpty();
+            calendarTitle.textContent = 'Select a court first';
+        }
+    });
+
+    // Initial populate of dropdown (silent) — data is ready for toggling
+    populateCourtDropdown();
+    // Attach aria attributes to trigger
+    courtTrigger.setAttribute('aria-haspopup', 'listbox');
+    courtTrigger.setAttribute('aria-expanded', 'false');
+
+    // ===== NOTES =====
+    document.querySelector('[name="notes"]')?.addEventListener('input', function() {
+        state.selectedNotes = this.value;
+    });
+
+    // ===== WIZARD STATE RESTORATION =====
+    // After form validation errors, restore the wizard to the correct step
+    function restoreWizardState() {
+        const hasCourt = courtSelect.value && courtSelect.value !== '';
+        const hasDate = dateInput.value && dateInput.value !== '';
+        const hasTimeSlot = timeSlotInput.value && timeSlotInput.value !== '';
+        const hasNonFieldErrors = document.querySelector('.alert-danger') !== null;
+        
+        // Check which form fields have errors
+        const hasCourtError = document.querySelector('[name="court"] ~ .text-danger') !== null;
+        const hasDateError = document.querySelector('[name="date"] ~ .text-danger') !== null;
+        const hasTimeSlotError = document.querySelector('[name="time_slot"] ~ .text-danger') !== null;
+        
+        // Restore calendar and court state first
+        if (hasCourt) {
+            state.selectedCourtId = courtSelect.value;
+            const selectedOption = courtSelect.options[courtSelect.selectedIndex];
+            state.selectedCourtRate = parseFloat(selectedOption.getAttribute('data-rate')) || 500;
+            state.selectedCourtName = selectedOption?.getAttribute('data-name') || (selectedOption?.text.split(' — ')[0].trim() || '');
+            updateCourtDisplay();
+            
+            // Load calendar for the selected court
+            loadCalendar().then(() => {
+                if (hasDate) {
+                    state.selectedDate = dateInput.value;
+                    document.querySelector(`.calendar-day[data-date="${dateInput.value}"]`)?.classList.add('selected');
+                    document.getElementById('display-date-label').textContent = formatDateDisplay(dateInput.value);
+                    document.getElementById('step-1-next').disabled = false;
+                    
+                    // Load time slots for the selected date
+                    loadTimeSlots().then(() => {
+                        if (hasTimeSlot) {
+                            // Find and select the matching time slot card
+                            const parts = timeSlotInput.value.split('-');
+                            if (parts.length === 2) {
+                                const startVal = parts[0];
+                                const endVal = parts[1];
+                                const matchingCard = document.querySelector(
+                                    `.time-slot-card[data-start="${startVal}"][data-end="${endVal}"]`
+                                );
+                                if (matchingCard && (matchingCard.dataset.status === 'available' || matchingCard.dataset.status === 'selected')) {
+                                    const slot = {
+                                        start: startVal,
+                                        end: endVal,
+                                        label: matchingCard.dataset.label
+                                    };
+                                    selectTimeSlot(matchingCard, slot);
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+        } else {
+            renderCalendarEmpty();
+            calendarTitle.textContent = 'Select a court first';
+        }
+        
+        // Restore equipment selections (checkboxes persist through form re-render)
+        document.querySelectorAll('.equipment-check-input:checked').forEach(function(cb) {
+            const card = cb.closest('.equipment-card');
+            if (card) {
+                card.classList.add('selected');
+            }
+        });
+        updateEquipmentState();
+        
+        // Determine which step to show
+        if (hasNonFieldErrors || hasTimeSlotError) {
+            // Non-field errors (like overlapping reservation) or time slot errors → show step 2
+            if (hasTimeSlot) {
+                // If we already have a time slot selected, go to step 2.
+                // Keep the Next button disabled until the stored slot is confirmed
+                // still available (selectTimeSlot re-enables it during restore).
+                goToStep(2);
+                document.getElementById('step-2-next').disabled = true;
+            }
+        } else if (hasCourtError || hasDateError) {
+            goToStep(1);
+        } else if (hasTimeSlot) {
+            // All fields have values and no errors → go to step 3 (review step)
+            updateConfirmation();
+            goToStep(3);
+        }
+        // Default: stay on step 1
+    }
+
+    // ===== SKIP TO REVIEW BANNER =====
+    const skipBanner = document.getElementById('skip-banner');
+    const skipBtn = document.getElementById('skip-to-step-3');
+    const dismissBtn = document.getElementById('skip-banner-dismiss');
+
+    function showSkipBanner() {
+        const hasCourt = courtSelect.value && courtSelect.value !== '';
+        const hasDate = dateInput.value && dateInput.value !== '';
+        const hasTimeSlot = timeSlotInput.value && timeSlotInput.value !== '';
+        // Only show on steps 1 or 2 when all data is pre-filled
+        if (hasCourt && hasDate && hasTimeSlot && state.currentStep < 3) {
+            skipBanner.classList.add('show');
+        } else {
+            skipBanner.classList.remove('show');
+        }
+    }
+
+    skipBtn.addEventListener('click', function() {
+        // Verify the slot is still available before skipping
+        if (state.selectedSlot) {
+            verifySlot();
+        } else {
+            updateConfirmation();
+            goToStep(3);
+        }
+        skipBanner.classList.remove('show');
+    });
+
+    dismissBtn.addEventListener('click', function() {
+        skipBanner.classList.remove('show');
+    });
+
+    // Re-check banner visibility when step changes
+    const origGoToStep = goToStep;
+    goToStep = function(step) {
+        origGoToStep(step);
+        // Hide banner when user navigates to step 3 or changes selections
+        if (step === 3) {
+            skipBanner.classList.remove('show');
+        } else {
+            showSkipBanner();
+        }
+    };
+
+    // ===== RESPONSIVE DAY HEADERS =====
+    // Update day headers when viewport crosses the 576px threshold
+    let lastHeaderWidth = window.innerWidth;
+    window.addEventListener('resize', function() {
+        const newWidth = window.innerWidth;
+        const wasSmall = lastHeaderWidth < 576;
+        const isSmall = newWidth < 576;
+        if (wasSmall !== isSmall) {
+            lastHeaderWidth = newWidth;
+            // Re-render the current calendar state with new headers
+            const existingHeaders = calendarGrid.querySelectorAll('.calendar-day-header');
+            if (existingHeaders.length > 0) {
+                const newHeadersHTML = renderDayHeaders();
+                // Only replace the header row, leave day cells intact
+                const temp = document.createElement('div');
+                temp.innerHTML = newHeadersHTML;
+                const newHeaders = temp.children;
+                existingHeaders.forEach(function(old, i) {
+                    if (newHeaders[i]) {
+                        old.textContent = newHeaders[i].textContent;
+                    }
+                });
+            }
+        }
+    });
+
+    // ===== INITIALIZE =====
+    // Hide the date input (we use calendar instead)
+    dateInput.style.display = 'none';
+
+    // Style form selects
+    document.querySelectorAll('select').forEach(s => {
+        s.classList.add('form-select');
+        s.style.borderRadius = '10px';
+    });
+    document.querySelectorAll('input[type="date"], input[type="time"], input[type="text"], input[type="number"], textarea').forEach(i => {
+        i.style.borderRadius = '10px';
+    });
+
+    // Restore wizard state if there are pre-filled values (from validation errors or re-render)
+    if (courtSelect.value || dateInput.value || timeSlotInput.value) {
+        // showSkipBanner is called at the end of restoreWizardState
+        restoreWizardState();
+    } else {
+        // Fresh page load, initialize normally
+        if (courtSelect.value) {
+            updateCourtDisplay();
+            courtSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        } else {
+            renderCalendarEmpty();
+            calendarTitle.textContent = 'Select a court first';
+            courtSelectText.classList.add('placeholder');
+        }
+        
+        // If there's already a date selected (from GET param), highlight it
+        if (dateInput.value && courtSelect.value) {
+            state.selectedDate = dateInput.value;
+            document.getElementById('display-date-label').textContent = formatDateDisplay(dateInput.value);
+            document.getElementById('step-1-next').disabled = false;
+            setTimeout(() => {
+                loadTimeSlots();
+                showSkipBanner();
+            }, 300);
+        } else {
+            showSkipBanner();
+        }
+    }
+
+})();
+</script>
+{% endblock %}

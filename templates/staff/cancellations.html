@@ -1,0 +1,566 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Cancellation Requests{% endblock %}
+{% block page_title %}Cancellation Requests{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/staff.css' %}">
+<style>
+:root {
+    --cancel-red: #dc3545;
+    --cancel-orange: #fd7e14;
+    --cancel-green: #28a745;
+    --cancel-blue: #17a2b8;
+}
+
+@keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-in {
+    animation: fadeSlideUp 0.4s ease forwards;
+    opacity: 0;
+}
+.animate-in-d1 { animation-delay: 0.05s; }
+.animate-in-d2 { animation-delay: 0.1s; }
+.animate-in-d3 { animation-delay: 0.15s; }
+.animate-in-d4 { animation-delay: 0.2s; }
+.animate-in-d5 { animation-delay: 0.25s; }
+.animate-in-d6 { animation-delay: 0.3s; }
+
+.filter-bar {
+    background: white;
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 1.5rem;
+}
+.filter-bar .form-control,
+.filter-bar .form-select {
+    border-radius: 10px;
+    border: 1.5px solid #e9ecef;
+    transition: all 0.2s;
+}
+.filter-bar .form-control:focus,
+.filter-bar .form-select:focus {
+    border-color: #3B7A8C;
+    box-shadow: 0 0 0 3px rgba(59,122,140,0.12);
+}
+
+.cancel-card {
+    border-radius: 14px;
+    border: 1.5px solid #e9ecef;
+    transition: all 0.25s ease;
+    background: white;
+    margin-bottom: 1rem;
+}
+.cancel-card:hover {
+    border-color: #dee2e6;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+    transform: translateY(-1px);
+}
+.cancel-card.pending { border-left: 4px solid var(--cancel-orange); }
+.cancel-card.approved { border-left: 4px solid var(--cancel-green); }
+.cancel-card.rejected { border-left: 4px solid var(--cancel-red); }
+.cancel-card.refunded { border-left: 4px solid var(--cancel-blue); }
+
+.badge-status-pending-approval { background: rgba(253,126,20,0.12); color: #d46300; border: 1px solid rgba(253,126,20,0.2); }
+.badge-status-approved { background: rgba(40,167,69,0.12); color: #1e7e34; border: 1px solid rgba(40,167,69,0.2); }
+.badge-status-rejected { background: rgba(220,53,69,0.1); color: #c82333; border: 1px solid rgba(220,53,69,0.15); }
+.badge-status-refunded { background: rgba(23,162,184,0.1); color: #138496; border: 1px solid rgba(23,162,184,0.15); }
+
+.detail-item { display: flex; flex-direction: column; gap: 0.15rem; }
+.detail-item .label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.5px; color: #6c757d; font-weight: 600; }
+.detail-item .value { font-size: 0.9rem; font-weight: 600; color: #212529; }
+.detail-item .value-sm { font-size: 0.82rem; font-weight: 500; color: #6c757d; }
+
+.btn-approve {
+    border-radius: 10px;
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+    border: none; color: white; font-weight: 600;
+    padding: 0.5rem 1.25rem; transition: all 0.25s;
+    box-shadow: 0 3px 10px rgba(40,167,69,0.3);
+}
+.btn-approve:hover { transform: translateY(-1px); box-shadow: 0 5px 15px rgba(40,167,69,0.4); color: white; }
+
+.btn-reject {
+    border-radius: 10px;
+    background: linear-gradient(135deg, #dc3545 0%, #a71d2a 100%);
+    border: none; color: white; font-weight: 600;
+    padding: 0.5rem 1.25rem; transition: all 0.25s;
+    box-shadow: 0 3px 10px rgba(220,53,69,0.25);
+}
+.btn-reject:hover { transform: translateY(-1px); box-shadow: 0 5px 15px rgba(220,53,69,0.35); color: white; }
+
+.btn-refund {
+    border-radius: 10px;
+    background: linear-gradient(135deg, #17a2b8 0%, #117a8b 100%);
+    border: none; color: white; font-weight: 600;
+    padding: 0.5rem 1.25rem; transition: all 0.25s;
+    box-shadow: 0 3px 10px rgba(23,162,184,0.3);
+}
+.btn-refund:hover { transform: translateY(-1px); box-shadow: 0 5px 15px rgba(23,162,184,0.4); color: white; }
+
+.confirm-modal .modal-content { border-radius: 16px; border: none; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+.confirm-modal .modal-header { border: none; padding: 1.5rem 1.5rem 0; }
+.confirm-modal .modal-body { padding: 1rem 1.5rem 1.25rem; }
+.confirm-modal .modal-footer { border: none; padding: 0 1.5rem 1.5rem; gap: 0.5rem; }
+
+.refund-method-badge {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    padding: 0.2rem 0.65rem; border-radius: 20px;
+    font-size: 0.72rem; font-weight: 600;
+}
+.refund-method-badge.gcash { background: rgba(59,122,140,0.12); color: #2c5f6e; }
+.refund-method-badge.paypal { background: rgba(0,112,186,0.1); color: #005a9e; }
+
+.reason-text {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 0.82rem;
+    color: #495057;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.reason-text.expanded { -webkit-line-clamp: unset; }
+
+.empty-state { text-align: center; padding: 3rem 1rem; }
+.empty-state-icon {
+    width: 72px; height: 72px;
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1rem; color: #e65100; font-size: 1.5rem;
+}
+.empty-state-title { font-weight: 700; color: #212529; margin-bottom: 0.25rem; }
+.empty-state-text { font-size: 0.85rem; color: #6c757d; margin-bottom: 0; }
+
+@media (max-width: 768px) {
+    .filter-bar .row > div { margin-bottom: 0.5rem; }
+    .cancel-card .d-flex { flex-wrap: wrap; }
+    .cancel-card .action-group { width: 100%; margin-top: 0.75rem; }
+}
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'staff_dashboard' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'staff_reservations' %}">Reservations</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Cancellations</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-primary text-white me-3">
+                    <i class="fas fa-times-circle fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">{{ total_count }}</div>
+                    <div class="stats-label text-muted">Total Cancellations</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-warning text-white me-3">
+                    <i class="fas fa-hourglass-half fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">{{ pending_count }}</div>
+                    <div class="stats-label text-muted">Pending Review</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-success text-white me-3">
+                    <i class="fas fa-check-circle fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">{{ approved_count }}</div>
+                    <div class="stats-label text-muted">Approved</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-info text-white me-3">
+                    <i class="fas fa-money-bill-wave fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">{{ refund_pending }}</div>
+                    <div class="stats-label text-muted">Refunds Pending</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="filter-bar animate-in animate-in-d3">
+    <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-2">
+            <label class="form-label fw-semibold text-muted small text-uppercase"><i class="fas fa-search me-1"></i>Search</label>
+            <input type="text" name="search" class="form-control" placeholder="ID, user, court..." value="{{ search_query }}">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-semibold text-muted small text-uppercase"><i class="fas fa-filter me-1"></i>Status</label>
+            <select name="status" class="form-select">
+                <option value="">All Status</option>
+                <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved</option>
+                <option value="rejected" {% if status_filter == 'rejected' %}selected{% endif %}>Rejected</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-semibold text-muted small text-uppercase"><i class="fas fa-undo me-1"></i>Refund</label>
+            <select name="refund" class="form-select">
+                <option value="">All</option>
+                <option value="pending" {% if refund_filter == 'pending' %}selected{% endif %}>Refund Pending</option>
+                <option value="processed" {% if refund_filter == 'processed' %}selected{% endif %}>Refunded</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-semibold text-muted small text-uppercase"><i class="fas fa-calendar me-1"></i>From</label>
+            <input type="date" name="date_from" class="form-control" value="{{ date_from }}">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-semibold text-muted small text-uppercase"><i class="fas fa-calendar me-1"></i>To</label>
+            <input type="date" name="date_to" class="form-control" value="{{ date_to }}">
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-primary w-100" style="border-radius: 10px;"><i class="fas fa-search me-1"></i> Search</button>
+            {% if search_query or status_filter or refund_filter or date_from or date_to %}
+            <a href="{% url 'staff_cancellations' %}" class="btn btn-outline-secondary" style="border-radius: 10px;"><i class="fas fa-times"></i></a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<div class="animate-in animate-in-d4">
+    {% for cancellation in cancellations %}
+    {% with r=cancellation.reservation %}
+    {% with cancel_approval=cancellation.approved cancel_refunded=cancellation.refund_processed %}
+    {% with status_class=cancel_refunded|yesno:"refunded,"|default:cancel_approval|yesno:"approved,rejected"|default:"pending" %}
+    <div class="cancel-card {{ status_class }} p-3 p-md-4">
+        <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+            <div class="flex-grow-1" style="min-width: 250px;">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge-staff badge-id" style="font-size: 0.72rem;">#{{ r.id }}</span>
+                    {% if cancellation.approved is None %}
+                        <span class="badge badge-status-pending-approval px-3 py-1" style="border-radius: 20px; font-size: 0.7rem; font-weight: 600;">
+                            <i class="fas fa-clock me-1"></i>Pending Review
+                        </span>
+                    {% elif cancellation.approved and cancellation.refund_processed %}
+                        <span class="badge badge-status-refunded px-3 py-1" style="border-radius: 20px; font-size: 0.7rem; font-weight: 600;">
+                            <i class="fas fa-check-double me-1"></i>Refunded
+                        </span>
+                    {% elif cancellation.approved %}
+                        <span class="badge badge-status-approved px-3 py-1" style="border-radius: 20px; font-size: 0.7rem; font-weight: 600;">
+                            <i class="fas fa-check-circle me-1"></i>Approved
+                        </span>
+                    {% else %}
+                        <span class="badge badge-status-rejected px-3 py-1" style="border-radius: 20px; font-size: 0.7rem; font-weight: 600;">
+                            <i class="fas fa-times-circle me-1"></i>Rejected
+                        </span>
+                    {% endif %}
+                    <span class="text-muted small ms-auto">{{ cancellation.requested_at|date:"M d, Y g:i A" }}</span>
+                </div>
+
+                <div class="row g-3 mt-1">
+                    <div class="col-md-3 col-6">
+                        <div class="detail-item">
+                            <span class="label">Customer</span>
+                            <span class="value">{{ r.user.username }}</span>
+                            <span class="value-sm">{{ r.user.email }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="detail-item">
+                            <span class="label">Court</span>
+                            <span class="value">{{ r.court.name }}</span>
+                            <span class="value-sm">{{ r.court.site.name|default:"" }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-6">
+                        <div class="detail-item">
+                            <span class="label">Date &amp; Time</span>
+                            <span class="value-sm">{{ r.date|date:"M d, Y" }}</span>
+                            <span class="value-sm">{{ r.start_time|time:"g:i A" }} — {{ r.end_time|time:"g:i A" }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-6">
+                        <div class="detail-item">
+                            <span class="label">Amount</span>
+                            <span class="value">₱{{ r.total_amount|floatformat:2 }}</span>
+                            <span class="value-sm text-danger">−₱{{ cancellation.deduction_amount|floatformat:2 }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-6">
+                        <div class="detail-item">
+                            <span class="label">Deduction</span>
+                            <span class="value text-danger">{{ cancellation.deduction_percentage|floatformat:0 }}%</span>
+                            <span class="value-sm">
+                                {% if cancellation.refund_method %}
+                                <span class="refund-method-badge {{ cancellation.refund_method }}">
+                                    <i class="{% if cancellation.refund_method == 'gcash' %}fas fa-mobile-alt{% else %}fab fa-paypal{% endif %}"></i>
+                                    {{ cancellation.get_refund_method_display }}
+                                </span>
+                                {% else %}
+                                <span class="text-muted">Not specified</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-2 pt-2" style="border-top: 1px solid #f0f0f0;">
+                    <div class="detail-item">
+                        <span class="label mb-1">Reason</span>
+                        {% if cancellation.reason_category %}
+                        <span class="badge bg-light text-dark px-3 py-1 mb-1" style="border-radius: 20px; font-size: 0.7rem; font-weight: 500; border: 1px solid #dee2e6; display: inline-block; width: auto;">
+                            {% if cancellation.reason_category == 'other' %}
+                            <i class="fas fa-pen me-1"></i>Other
+                            {% elif cancellation.reason_category == 'change_of_plans' %}
+                            <i class="fas fa-sync-alt me-1"></i>Change of Plans
+                            {% elif cancellation.reason_category == 'scheduling_conflict' %}
+                            <i class="fas fa-calendar-times me-1"></i>Scheduling Conflict
+                            {% elif cancellation.reason_category == 'personal_emergency' %}
+                            <i class="fas fa-exclamation-circle me-1"></i>Personal Emergency
+                            {% elif cancellation.reason_category == 'health_reasons' %}
+                            <i class="fas fa-heartbeat me-1"></i>Health Reasons
+                            {% elif cancellation.reason_category == 'weather_conditions' %}
+                            <i class="fas fa-cloud-rain me-1"></i>Weather Conditions
+                            {% elif cancellation.reason_category == 'court_no_longer_needed' %}
+                            <i class="fas fa-ban me-1"></i>Court No Longer Needed
+                            {% elif cancellation.reason_category == 'found_another_venue' %}
+                            <i class="fas fa-map-pin me-1"></i>Found Another Venue
+                            {% elif cancellation.reason_category == 'duplicate_reservation' %}
+                            <i class="fas fa-copy me-1"></i>Duplicate Reservation
+                            {% elif cancellation.reason_category == 'payment_issue' %}
+                            <i class="fas fa-credit-card me-1"></i>Payment Issue
+                            {% elif cancellation.reason_category == 'booking_mistake' %}
+                            <i class="fas fa-undo me-1"></i>Booking Mistake
+                            {% elif cancellation.reason_category == 'transportation_problem' %}
+                            <i class="fas fa-car me-1"></i>Transportation Problem
+                            {% elif cancellation.reason_category == 'tournament_cancelled' %}
+                            <i class="fas fa-trophy me-1"></i>Tournament Cancelled
+                            {% else %}
+                            {{ cancellation.reason_category }}
+                            {% endif %}
+                        </span>
+                        {% endif %}
+                        <div class="reason-text" onclick="this.classList.toggle('expanded')">{{ cancellation.reason }}</div>
+                    </div>
+                </div>
+
+                {% if cancellation.approved_by and cancellation.approved_at %}
+                <div class="mt-2 pt-2 d-flex gap-4 flex-wrap" style="border-top: 1px solid #f0f0f0;">
+                    <div class="detail-item">
+                        <span class="label">Reviewed by</span>
+                        <span class="value-sm">{{ cancellation.approved_by.get_full_name|default:cancellation.approved_by.username }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Reviewed at</span>
+                        <span class="value-sm">{{ cancellation.approved_at|date:"M d, Y g:i A" }}</span>
+                    </div>
+                    {% if cancellation.refund_processed_at %}
+                    <div class="detail-item">
+                        <span class="label">Refund processed</span>
+                        <span class="value-sm">{{ cancellation.refund_processed_at|date:"M d, Y g:i A" }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="action-group d-flex flex-column gap-2" style="min-width: 120px;">
+                {% if cancellation.approved is None %}
+                    <button type="button" class="btn btn-approve btn-sm" onclick="openModal('approve', {{ cancellation.id }}, {{ r.id }}, '{{ r.user.username|escapejs }}')">
+                        <i class="fas fa-check-circle me-1"></i>Approve
+                    </button>
+                    <button type="button" class="btn btn-reject btn-sm" onclick="openModal('reject', {{ cancellation.id }}, {{ r.id }}, '{{ r.user.username|escapejs }}')">
+                        <i class="fas fa-times-circle me-1"></i>Reject
+                    </button>
+                {% elif cancellation.approved and not cancellation.refund_processed %}
+                    <button type="button" class="btn btn-refund btn-sm" onclick="openModal('refund', {{ cancellation.id }}, {{ r.id }}, '{{ r.user.username|escapejs }}')">
+                        <i class="fas fa-check-double me-1"></i>Mark Refunded
+                    </button>
+                    <a href="{% url 'staff_refund_processing' %}" class="btn btn-outline-info btn-sm w-100" style="border-radius: 8px; font-size: 0.75rem;">
+                        <i class="fas fa-undo-alt me-1"></i>Process Page
+                    </a>
+                {% elif cancellation.refund_processed %}
+                    <span class="badge badge-status-refunded px-3 py-2 text-center" style="border-radius: 10px; font-size: 0.75rem;">
+                        <i class="fas fa-check-double me-1"></i>Done
+                    </span>
+                {% else %}
+                    <span class="badge badge-status-rejected px-3 py-2 text-center" style="border-radius: 10px; font-size: 0.75rem;">
+                        <i class="fas fa-times-circle me-1"></i>Rejected
+                    </span>
+                {% endif %}
+                <a href="{% url 'reservation_detail' r.id %}" class="btn btn-outline-secondary btn-sm w-100" style="border-radius: 8px; font-size: 0.75rem;">
+                    <i class="fas fa-eye me-1"></i>View Booking
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endwith %}
+    {% endwith %}
+    {% endwith %}
+    {% empty %}
+    <div class="card border-0 shadow-sm" style="border-radius: 16px;">
+        <div class="card-body">
+            <div class="empty-state">
+                <div class="empty-state-icon"><i class="fas fa-check-double"></i></div>
+                <h6 class="empty-state-title">No cancellation requests</h6>
+                <p class="empty-state-text">
+                    {% if search_query or status_filter or refund_filter or date_from or date_to %}
+                        No results match your filters.
+                    {% else %}
+                        There are no cancellation requests to review at this time.
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if is_paginated %}
+<nav aria-label="Page navigation" class="mt-4">
+    <ul class="pagination justify-content-center mb-0">
+        {% if page_obj.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page=1{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if refund_filter %}&amp;refund={{ refund_filter }}{% endif %}{% if date_from %}&amp;date_from={{ date_from }}{% endif %}{% if date_to %}&amp;date_to={{ date_to }}{% endif %}"><i class="fas fa-angle-double-left"></i></a></li>
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if refund_filter %}&amp;refund={{ refund_filter }}{% endif %}{% if date_from %}&amp;date_from={{ date_from }}{% endif %}{% if date_to %}&amp;date_to={{ date_to }}{% endif %}"><i class="fas fa-angle-left"></i></a></li>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+            {% if num == page_obj.number %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <li class="page-item"><a class="page-link" href="?page={{ num }}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if refund_filter %}&amp;refund={{ refund_filter }}{% endif %}{% if date_from %}&amp;date_from={{ date_from }}{% endif %}{% if date_to %}&amp;date_to={{ date_to }}{% endif %}">{{ num }}</a></li>
+            {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if refund_filter %}&amp;refund={{ refund_filter }}{% endif %}{% if date_from %}&amp;date_from={{ date_from }}{% endif %}{% if date_to %}&amp;date_to={{ date_to }}{% endif %}"><i class="fas fa-angle-right"></i></a></li>
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if refund_filter %}&amp;refund={{ refund_filter }}{% endif %}{% if date_from %}&amp;date_from={{ date_from }}{% endif %}{% if date_to %}&amp;date_to={{ date_to }}{% endif %}"><i class="fas fa-angle-double-right"></i></a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    'use strict';
+
+    var modalHtml = '' +
+        '<div class="modal fade confirm-modal" id="actionModal" tabindex="-1" aria-hidden="true">' +
+        '  <div class="modal-dialog modal-dialog-centered">' +
+        '    <div class="modal-content">' +
+        '      <div class="modal-header text-center d-block">' +
+        '        <div id="modal-icon-wrapper" style="width: 64px; height: 64px; background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 0.5rem;">' +
+        '          <i id="modal-icon" class="fas fa-check-circle fa-2x" style="color: #2e7d32;"></i>' +
+        '        </div>' +
+        '        <h5 class="fw-bold mb-1" id="modal-title">Confirm Action</h5>' +
+        '        <p class="text-muted small mb-0" id="modal-desc">Are you sure?</p>' +
+        '      </div>' +
+        '      <div class="modal-body text-center">' +
+        '        <div id="modal-warning" class="p-3 rounded-3 d-none" style="background: #fff8e1;">' +
+        '          <i class="fas fa-info-circle text-warning me-2"></i>' +
+        '          <span class="small" id="modal-warning-text"></span>' +
+        '        </div>' +
+        '      </div>' +
+        '      <div class="modal-footer d-flex gap-2 justify-content-center">' +
+        '        <button type="button" class="btn btn-outline-secondary flex-fill" style="border-radius: 10px;" data-bs-dismiss="modal">' +
+        '          <i class="fas fa-times me-1"></i>Cancel' +
+        '        </button>' +
+        '        <form method="post" id="action-form" class="flex-fill">' +
+        '          {% csrf_token %}' +
+        '          <input type="hidden" name="cancellation_id" id="modal-cancel-id">' +
+        '          <input type="hidden" name="action" id="modal-action">' +
+        '          <button type="submit" class="btn w-100" id="modal-submit-btn" style="border-radius: 10px; font-weight: 600;">' +
+        '            <i class="fas fa-check-circle me-1"></i> <span id="modal-submit-text">Confirm</span>' +
+        '          </button>' +
+        '        </form>' +
+        '      </div>' +
+        '    </div>' +
+        '  </div>' +
+        '</div>';
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    window.openModal = function(action, cancelId, reservationId, username) {
+        var icon = document.getElementById('modal-icon');
+        var iconWrapper = document.getElementById('modal-icon-wrapper');
+        var title = document.getElementById('modal-title');
+        var desc = document.getElementById('modal-desc');
+        var warning = document.getElementById('modal-warning');
+        var warningText = document.getElementById('modal-warning-text');
+        var submitBtn = document.getElementById('modal-submit-btn');
+        var submitText = document.getElementById('modal-submit-text');
+
+        document.getElementById('modal-cancel-id').value = cancelId;
+        document.getElementById('modal-action').value = action;
+
+        if (action === 'approve') {
+            icon.className = 'fas fa-check-circle fa-2x';
+            icon.style.color = '#2e7d32';
+            iconWrapper.style.background = 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)';
+            title.textContent = 'Approve Cancellation?';
+            desc.textContent = 'Reservation #' + reservationId + ' by ' + username + ' will be cancelled and refunded.';
+            warning.classList.remove('d-none');
+            warningText.textContent = "The refund amount will be processed via the user's selected method.";
+            submitBtn.className = 'btn btn-approve w-100';
+            submitBtn.style.borderRadius = '10px';
+            submitBtn.style.fontWeight = '600';
+            submitText.textContent = 'Yes, Approve';
+        } else if (action === 'reject') {
+            icon.className = 'fas fa-times-circle fa-2x';
+            icon.style.color = '#c62828';
+            iconWrapper.style.background = 'linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%)';
+            title.textContent = 'Reject Cancellation?';
+            desc.textContent = 'Reservation #' + reservationId + ' by ' + username + ' will NOT be cancelled.';
+            warning.classList.remove('d-none');
+            warningText.textContent = 'The user will be notified that their cancellation request was not approved.';
+            submitBtn.className = 'btn btn-reject w-100';
+            submitBtn.style.borderRadius = '10px';
+            submitBtn.style.fontWeight = '600';
+            submitText.textContent = 'Yes, Reject';
+        } else if (action === 'refund') {
+            icon.className = 'fas fa-check-double fa-2x';
+            icon.style.color = '#138496';
+            iconWrapper.style.background = 'linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%)';
+            title.textContent = 'Mark Refund as Processed?';
+            desc.textContent = 'Confirm that the refund for Reservation #' + reservationId + ' has been sent to the user.';
+            warning.classList.remove('d-none');
+            warningText.textContent = 'The user will receive a notification that their refund is processed.';
+            submitBtn.className = 'btn btn-refund w-100';
+            submitBtn.style.borderRadius = '10px';
+            submitBtn.style.fontWeight = '600';
+            submitText.textContent = 'Yes, Mark Processed';
+        }
+
+        var modalEl = document.getElementById('actionModal');
+        var modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    };
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,239 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}{{ equipment.name }}{% endblock %}
+{% block page_title %}{{ equipment.name }}{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'user_dashboard' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'equipment_list' %}">Equipment</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ equipment.name }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-8">
+        <!-- Main Equipment Card -->
+        <div class="card border-0 shadow-lg mb-4 equipment-main-card" style="border-radius: 16px; overflow: hidden;">
+            <div class="equipment-image-wrapper image-wrapper" style="height: 320px; overflow: hidden;">
+                {% if equipment.image %}
+                    <img src="{{ equipment.image.url }}" class="card-img-top equipment-image equipment-detail-image clickable-image" alt="{{ equipment.name }}" data-lightbox data-caption="{{ equipment.name }} - {{ equipment.get_type_display }}" style="transition: transform 0.5s ease;">
+                {% else %}
+                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center h-100">
+                        <div class="equipment-detail-placeholder" style="width: 100px; height: 100px; background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                            <i class="fas fa-box fa-3x" style="color: #3B7A8C;"></i>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h3 class="fw-bold mb-0" style="font-size: 1.5rem;">{{ equipment.name }}</h3>
+                    <span class="badge px-3 py-2 {% if equipment.is_in_stock %}bg-success{% else %}bg-danger{% endif %}" style="font-size: 0.8rem; border-radius: 8px;">
+                        {% if equipment.is_in_stock %}<i class="fas fa-check-circle me-1"></i>Available{% else %}<i class="fas fa-times-circle me-1"></i>Out of Stock{% endif %}
+                    </span>
+                </div>
+                <p class="text-muted mb-4" style="line-height: 1.7;">{{ equipment.description|default:"Quality equipment available for rental." }}</p>
+                
+                <!-- Info Cards -->
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center gap-3 p-3" style="background: linear-gradient(135deg, rgba(59,122,140,0.05) 0%, rgba(59,122,140,0.02) 100%); border-radius: 12px; border: 1px solid rgba(59,122,140,0.1);">
+                            <div class="stat-icon primary" style="width: 44px; height: 44px;">
+                                <i class="fas fa-tag"></i>
+                            </div>
+                            <div>
+                                <h6 class="text-muted small mb-0">Type</h6>
+                                <p class="mb-0 fw-semibold text-dark">{{ equipment.get_type_display }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center gap-3 p-3" style="background: linear-gradient(135deg, rgba(40,167,69,0.05) 0%, rgba(40,167,69,0.02) 100%); border-radius: 12px; border: 1px solid rgba(40,167,69,0.1);">
+                            <div class="stat-icon success" style="width: 44px; height: 44px;">
+                                <i class="fas fa-boxes"></i>
+                            </div>
+                            <div>
+                                <h6 class="text-muted small mb-0">Available</h6>
+                                <p class="mb-0 fw-semibold text-dark">{{ equipment.quantity_available }} / {{ equipment.quantity_total }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center gap-3 p-3" style="background: linear-gradient(135deg, rgba(255,193,7,0.05) 0%, rgba(255,193,7,0.02) 100%); border-radius: 12px; border: 1px solid rgba(255,193,7,0.15);">
+                            <div class="stat-icon warning" style="width: 44px; height: 44px;">
+                                <i class="fas fa-peso-sign"></i>
+                            </div>
+                            <div>
+                                <h6 class="text-muted small mb-0">Rental Price</h6>
+                                <p class="mb-0 fw-semibold text-dark">₱{{ equipment.rental_price|floatformat:2 }}<small class="text-muted">/day</small></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if equipment.brand %}
+                <div class="mt-3">
+                    <div class="d-flex align-items-center gap-3 p-3" style="background: linear-gradient(135deg, rgba(108,117,125,0.05) 0%, rgba(108,117,125,0.02) 100%); border-radius: 12px; border: 1px solid rgba(108,117,125,0.1);">
+                        <div class="stat-icon" style="width: 44px; height: 44px; background: rgba(108,117,125,0.1); color: #6c757d;">
+                            <i class="fas fa-building"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted small mb-0">Brand</h6>
+                            <p class="mb-0 fw-semibold text-dark">{{ equipment.brand }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if rental_history %}
+        <div class="card border-0 shadow-sm rental-history-card" style="border-radius: 16px; overflow: hidden;">
+            <div class="card-header bg-white border-bottom py-3 px-4">
+                <h5 class="fw-bold mb-0 d-flex align-items-center">
+                    <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+                        <i class="fas fa-history text-white"></i>
+                    </div>
+                    Rental History
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 rental-table">
+                        <thead style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
+                            <tr>
+                                <th class="py-3 px-4 fw-semibold text-muted" style="font-size: 0.85rem;">User</th>
+                                <th class="py-3 px-4 fw-semibold text-muted" style="font-size: 0.85rem;">Rented Date</th>
+                                <th class="py-3 px-4 fw-semibold text-muted" style="font-size: 0.85rem;">Status</th>
+                                <th class="py-3 px-4 fw-semibold text-muted" style="font-size: 0.85rem;">Return Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for rental in rental_history %}
+                            <tr class="rental-row">
+                                <td class="py-3 px-4">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fas fa-user text-white" style="font-size: 0.75rem;"></i>
+                                        </div>
+                                        <span class="fw-medium">{{ rental.user.get_full_name|default:rental.user.username }}</span>
+                                    </div>
+                                </td>
+                                <td class="py-3 px-4">{{ rental.created_at|date:"M d, Y" }}</td>
+                                <td class="py-3 px-4">
+                                    <span class="badge px-3 py-2 {% if rental.status == 'rented' %}bg-warning text-dark{% elif rental.status == 'returned' %}bg-success{% else %}bg-secondary{% endif %}" style="border-radius: 8px; font-size: 0.75rem;">
+                                        <i class="fas {% if rental.status == 'rented' %}fa-clock{% elif rental.status == 'returned' %}fa-check{% else %}fa-question{% endif %} me-1"></i>
+                                        {{ rental.get_status_display }}
+                                    </span>
+                                </td>
+                                <td class="py-3 px-4">
+                                    {% if rental.return_date %}
+                                        <span class="text-success fw-medium">{{ rental.return_date|date:"M d, Y" }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Actions Card -->
+        <div class="card border-0 shadow-sm mb-4 actions-card" style="border-radius: 16px; overflow: hidden;">
+            <div class="card-header bg-white border-bottom py-3 px-4">
+                <h5 class="fw-bold mb-0 d-flex align-items-center">
+                    <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #6c757d 0%, #545b62 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+                        <i class="fas fa-cog text-white"></i>
+                    </div>
+                    Actions
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'equipment_list' %}" class="btn btn-outline-secondary py-2" style="border-radius: 10px; font-weight: 500;">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Equipment List
+                    </a>
+                    <a href="{% url 'reservation_list' %}" class="btn btn-outline-primary py-2" style="border-radius: 10px; font-weight: 500;">
+                        <i class="fas fa-calendar-check me-2"></i>My Rentals
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Stats Card -->
+        <div class="card border-0 shadow-sm" style="border-radius: 16px; background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%);">
+            <div class="card-body p-4">
+                <h6 class="fw-bold text-muted mb-3" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">Quick Stats</h6>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted">Total Units</span>
+                    <span class="fw-bold">{{ equipment.quantity_total }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted">Available Now</span>
+                    <span class="fw-bold {% if equipment.quantity_available > 0 %}text-success{% else %}text-danger{% endif %}">{{ equipment.quantity_available }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-muted">Rental Price</span>
+                    <span class="fw-bold" style="color: #3B7A8C;">₱{{ equipment.rental_price|floatformat:2 }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.breadcrumb {
+    background: transparent;
+    padding: 0;
+    font-size: 0.9rem;
+}
+.breadcrumb-item a {
+    color: #3B7A8C;
+    transition: color 0.2s ease;
+}
+.breadcrumb-item a:hover {
+    color: #1a3a42;
+}
+.equipment-main-card {
+    transition: all 0.3s ease;
+}
+.equipment-main-card:hover {
+    box-shadow: 0 12px 35px rgba(0,0,0,0.12) !important;
+}
+.equipment-main-card:hover .equipment-image {
+    transform: scale(1.05);
+}
+.rental-history-card {
+    transition: all 0.3s ease;
+}
+.rental-history-card:hover {
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
+}
+.rental-row {
+    transition: all 0.25s ease;
+}
+.rental-row:hover {
+    background-color: #f8f9fa;
+    transform: scale(1.01);
+}
+.actions-card {
+    transition: all 0.3s ease;
+}
+.actions-card:hover {
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
+}
+</style>
+{% endblock %}
+

@@ -1,0 +1,247 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Staff Dashboard{% endblock %}
+{% block page_title %}Staff Dashboard{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/staff.css' %}">
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'staff_dashboard' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Dashboard Overview</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<!-- Page Description -->
+<div class="card filter-card mb-4">
+    <div class="card-body">
+        <p class="text-muted small mb-0">
+            <i class="fas fa-info-circle me-1 text-primary"></i>
+            Daily operations overview — monitor today's schedule, pending approvals, payments, matches, and equipment status. All data is scoped to your organization.
+        </p>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="quick-actions animate-fadeInUp">
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{% url 'staff_reservations' %}" class="btn btn-primary">
+            <i class="fas fa-calendar-check me-2"></i>View Reservations
+        </a>
+        <a href="{% url 'staff_payments' %}" class="btn btn-success">
+            <i class="fas fa-money-bill-wave me-2"></i>Verify Payments
+        </a>
+        <a href="{% url 'match_list' %}" class="btn btn-warning text-dark">
+            <i class="fas fa-trophy me-2"></i>Manage Matches
+        </a>
+        <a href="{% url 'staff_equipment' %}" class="btn btn-info text-white">
+            <i class="fas fa-tools me-2"></i>Equipment
+        </a>
+        <a href="{% url 'staff_cancellations' %}" class="btn btn-danger">
+            <i class="fas fa-times-circle me-2"></i>Cancellations
+        </a>
+        <a href="{% url 'staff_refund_processing' %}" class="btn btn-secondary">
+            <i class="fas fa-undo-alt me-2"></i>Refunds
+        </a>
+    </div>
+</div>
+
+<!-- Stats Cards (matching org admin dashboard) -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3 animate-fadeInUp" style="animation-delay: 0.1s;">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-primary text-white me-3">
+                    <i class="fas fa-calendar-day fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">{{ today_reservations|length }}</div>
+                    <div class="stats-label text-muted">Today's Reservations</div>
+                    <small class="text-primary"><i class="fas fa-calendar-alt me-1"></i>Scheduled for today</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 animate-fadeInUp" style="animation-delay: 0.2s;">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-warning text-white me-3">
+                    <i class="fas fa-clock fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">{{ pending_reservations }}</div>
+                    <div class="stats-label text-muted">Pending Approval</div>
+                    <small class="text-warning"><i class="fas fa-hourglass-half me-1"></i>Awaiting confirmation</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 animate-fadeInUp" style="animation-delay: 0.3s;">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-success text-white me-3">
+                    <i class="fas fa-wallet fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">{{ pending_payments }}</div>
+                    <div class="stats-label text-muted">Pending Payments</div>
+                    <small class="text-success"><i class="fas fa-money-bill-wave me-1"></i>Needs verification</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 animate-fadeInUp" style="animation-delay: 0.4s;">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-danger text-white me-3">
+                    <i class="fas fa-play-circle fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">{{ active_matches }}</div>
+                    <div class="stats-label text-muted">Active Matches</div>
+                    <small class="text-danger"><i class="fas fa-trophy me-1"></i>Currently in progress</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Equipment Stats -->
+<div class="staff-card mb-4 animate-fadeInUp" style="animation-delay: 0.5s;">
+    <div class="staff-card-header">
+        <h5 class="staff-card-title">
+            <i class="fas fa-boxes text-primary me-2"></i>
+            Equipment Overview
+        </h5>
+        <span class="badge bg-light text-dark border">{{ equipment_stats.total }} total items</span>
+    </div>
+    <div class="staff-card-body">
+        <p class="text-muted small mb-3">
+            <i class="fas fa-info-circle me-1 text-primary"></i>
+            Current equipment availability, low stock alerts, and active rentals. Keep an eye on items with low stock to ensure smooth operations.
+        </p>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="d-flex align-items-center gap-3 p-3 bg-light rounded-3">
+                    <div style="width:56px;height:56px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(59,122,140,0.12);">
+                        <i class="fas fa-box text-primary" style="font-size:1.4rem;"></i>
+                    </div>
+                    <div>
+                        <h4 class="mb-1 fw-bold">{{ equipment_stats.total }}</h4>
+                        <p class="text-muted mb-0 small">Total Equipment Items</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="d-flex align-items-center gap-3 p-3 bg-light rounded-3">
+                    <div style="width:56px;height:56px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(255,193,7,0.15);">
+                        <i class="fas fa-exclamation-triangle text-warning" style="font-size:1.4rem;"></i>
+                    </div>
+                    <div>
+                        <h4 class="mb-1 fw-bold">{{ equipment_stats.low_stock }}</h4>
+                        <p class="text-muted mb-0 small">Low Stock Items</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="d-flex align-items-center gap-3 p-3 bg-light rounded-3">
+                    <div style="width:56px;height:56px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(40,167,69,0.12);">
+                        <i class="fas fa-handshake text-success" style="font-size:1.4rem;"></i>
+                    </div>
+                    <div>
+                        <h4 class="mb-1 fw-bold">{{ equipment_stats.active_rentals }}</h4>
+                        <p class="text-muted mb-0 small">Active Rentals</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Today's Reservations -->
+    <div class="col-12 animate-fadeInUp" style="animation-delay: 0.6s;">
+        <div class="staff-card h-100">
+            <div class="staff-card-header d-flex justify-content-between align-items-center">
+                <h5 class="staff-card-title">
+                    <i class="fas fa-calendar-alt text-primary me-2"></i>
+                    Today's Schedule
+                </h5>
+                <a href="{% url 'staff_reservations' %}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-list me-1"></i>View All
+                </a>
+            </div>
+            <div class="staff-card-body p-0">
+                <p class="text-muted small mb-0 px-4 pt-3">
+                    <i class="fas fa-info-circle me-1 text-primary"></i>
+                    All reservations scheduled for today. Use the action buttons to start matches or view details.
+                </p>
+                <div class="table-responsive">
+                    <table class="staff-table">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Court</th>
+                                <th>User</th>
+                                <th>Status</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for reservation in today_reservations %}
+                            <tr>
+                                <td data-label="Time">
+                                    <span class="table-cell-main">{{ reservation.start_time|time:"H:i" }} - {{ reservation.end_time|time:"H:i" }}</span>
+                                </td>
+                                <td data-label="Court">{{ reservation.court.name }}</td>
+                                <td data-label="User">
+                                    <span class="table-cell-main">{{ reservation.user.username }}</span>
+                                </td>
+                                <td data-label="Status">
+                                    <span class="badge-staff {% if reservation.status == 'confirmed' %}badge-status-confirmed{% elif reservation.status == 'pending' %}badge-status-pending{% elif reservation.status == 'completed' %}badge-status-completed{% elif reservation.status == 'cancelled' %}badge-status-cancelled{% else %}badge-status-completed{% endif %}">
+                                        <i class="fas fa-{% if reservation.status == 'confirmed' %}check{% elif reservation.status == 'pending' %}clock{% elif reservation.status == 'completed' %}check-double{% elif reservation.status == 'cancelled' %}times{% else %}question{% endif %}"></i>
+                                        {{ reservation.get_status_display }}
+                                    </span>
+                                </td>
+                                <td data-label="Actions" class="text-end">
+                                    <div class="action-buttons justify-content-end">
+                                        {% if reservation.status == 'confirmed' and not reservation.match %}
+                                        <a href="{% url 'start_match' reservation.id %}" class="btn-action btn-action-success" title="Start Match">
+                                            <i class="fas fa-play"></i>
+                                        </a>
+                                        {% endif %}
+                                        <a href="{% url 'reservation_detail' reservation.id %}" class="btn-action btn-action-view" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5">
+                                    <div class="empty-state">
+                                        <div class="empty-state-icon">
+                                            <i class="fas fa-calendar-times"></i>
+                                        </div>
+                                        <h6 class="empty-state-title">No reservations for today</h6>
+                                        <p class="empty-state-text">All caught up! No reservations are scheduled for today.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends 'emails/base_email.html' %}
+
+{% block email_content %}
+    <span class="notification-badge error">❌ Payment Failed</span>
+    <h2>Payment Failed</h2>
+    <p>Hi <strong>{{ user.get_full_name|default:user.username }}</strong>, unfortunately your payment could not be processed.</p>
+    
+    <div class="details-card">
+        <table cellpadding="0" cellspacing="0">
+            <tr>
+                <td class="label">Amount</td>
+                <td class="value">₱{{ amount }}</td>
+            </tr>
+            {% if reason %}
+            <tr>
+                <td class="label">Reason</td>
+                <td class="value">{{ reason }}</td>
+            </tr>
+            {% endif %}
+        </table>
+    </div>
+    
+    <p>Please try again with a different payment method or contact support if the problem persists.</p>
+    
+    <div style="text-align: center;">
+        <a href="{{ action_url }}" class="cta-button">{{ action_text }}</a>
+    </div>
+{% endblock %}

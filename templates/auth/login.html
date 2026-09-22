@@ -1,0 +1,898 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Sign In{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ===== AUTH LAYOUT ===== */
+.auth-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Animated gradient background */
+.auth-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background: linear-gradient(135deg, #0f172a 0%, #1a3a42 30%, #2D5F6E 60%, #1a3a42 100%);
+    background-size: 400% 400%;
+    animation: authGradient 15s ease infinite;
+}
+
+@keyframes authGradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Decorative circles */
+.auth-bg::before,
+.auth-bg::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.08;
+}
+
+.auth-bg::before {
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, #3B7A8C 0%, transparent 70%);
+    top: -200px;
+    right: -200px;
+    animation: floatCircle 20s ease-in-out infinite;
+}
+
+.auth-bg::after {
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, #5A9AA8 0%, transparent 70%);
+    bottom: -150px;
+    left: -150px;
+    animation: floatCircle 25s ease-in-out infinite reverse;
+}
+
+@keyframes floatCircle {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(30px, -30px) scale(1.1); }
+    66% { transform: translate(-20px, 20px) scale(0.9); }
+}
+
+/* ===== AUTH CARD ===== */
+.auth-card {
+    background: rgba(255, 255, 255, 0.97);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5);
+    width: 100%;
+    max-width: 1000px;
+    display: flex;
+    overflow: hidden;
+    animation: authSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+}
+
+@keyframes authSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(40px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* ===== LEFT BRAND PANEL ===== */
+.auth-brand {
+    flex: 1;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.97) 0%, rgba(26, 58, 66, 0.95) 50%, rgba(45, 95, 110, 0.9) 100%),
+                url('https://images.unsplash.com/photo-1622163642998-1ea36b1ade5b?w=800') center/cover;
+    padding: 60px 48px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.auth-brand::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 30% 50%, rgba(59, 122, 140, 0.15) 0%, transparent 50%);
+    animation: brandShimmer 8s ease-in-out infinite;
+}
+
+@keyframes brandShimmer {
+    0%, 100% { transform: translate(-10%, -10%); }
+    50% { transform: translate(10%, 10%); }
+}
+
+.auth-brand-content {
+    position: relative;
+    z-index: 1;
+}
+
+.auth-brand-logo {
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 28px;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.auth-brand-logo:hover {
+    transform: scale(1.05) rotate(-3deg);
+}
+
+.auth-brand-logo i {
+    font-size: 2.2rem;
+    color: white;
+}
+
+.auth-brand h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 12px;
+    line-height: 1.2;
+}
+
+.auth-brand p {
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 0.95rem;
+    line-height: 1.7;
+    margin-bottom: 32px;
+    max-width: 360px;
+}
+
+.auth-benefits {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.auth-benefit-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.9rem;
+    animation: benefitFadeIn 0.5s ease forwards;
+    opacity: 0;
+}
+
+.auth-benefit-item:nth-child(1) { animation-delay: 0.3s; }
+.auth-benefit-item:nth-child(2) { animation-delay: 0.4s; }
+.auth-benefit-item:nth-child(3) { animation-delay: 0.5s; }
+
+@keyframes benefitFadeIn {
+    to { opacity: 1; transform: translateX(0); }
+    from { opacity: 0; transform: translateX(-10px); }
+}
+
+.auth-benefit-icon {
+    width: 36px;
+    height: 36px;
+    background: rgba(90, 154, 168, 0.25);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.auth-benefit-icon i {
+    font-size: 0.85rem;
+    color: #5A9AA8;
+}
+
+/* ===== RIGHT FORM PANEL ===== */
+.auth-form-panel {
+    flex: 1;
+    padding: 48px 48px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-width: 480px;
+}
+
+.auth-form-header {
+    margin-bottom: 32px;
+}
+
+/* Mobile logo (hidden on desktop) */
+.auth-mobile-logo {
+    display: none;
+    text-align: center;
+    margin-bottom: 28px;
+}
+
+.auth-mobile-logo .logo-icon {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #3B7A8C, #1a3a42);
+    border-radius: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.auth-mobile-logo .logo-icon i {
+    font-size: 1.6rem;
+    color: white;
+}
+
+.auth-mobile-logo h2 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #1a1a2e;
+}
+
+.auth-form-header h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 6px;
+}
+
+.auth-form-header p {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* ===== AUTH FORM ELEMENTS ===== */
+.auth-input-group {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.auth-input-group .input-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #adb5bd;
+    font-size: 1rem;
+    z-index: 10;
+    pointer-events: none;
+    transition: color 0.2s ease;
+}
+
+.auth-input-group:focus-within .input-icon {
+    color: #3B7A8C;
+}
+
+.auth-input {
+    height: 50px;
+    padding-left: 46px !important;
+    padding-right: 16px !important;
+    border: 2px solid #e9ecef !important;
+    border-radius: 12px !important;
+    font-size: 0.9rem !important;
+    background: #f8f9fa !important;
+    transition: all 0.25s ease !important;
+    width: 100%;
+}
+
+.auth-input:focus {
+    border-color: #3B7A8C !important;
+    background: white !important;
+    box-shadow: 0 0 0 4px rgba(59, 122, 140, 0.1) !important;
+    transform: translateY(-1px);
+}
+
+.auth-input.is-invalid {
+    border-color: #dc3545 !important;
+    background: #fff5f5 !important;
+}
+
+.auth-input.is-valid {
+    border-color: #28a745 !important;
+    background: #f0fff4 !important;
+}
+
+/* Password input with toggle */
+.password-wrapper {
+    position: relative;
+}
+
+.password-wrapper .auth-input {
+    padding-right: 50px !important;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 42px;
+    height: 42px;
+    border: none;
+    background: transparent;
+    border-radius: 10px;
+    color: #adb5bd;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.password-toggle:hover {
+    background: #f0f0f0;
+    color: #3B7A8C;
+}
+
+.password-toggle:focus {
+    outline: none;
+}
+
+/* ===== VALIDATION MESSAGES ===== */
+.auth-field-error {
+    font-size: 0.78rem;
+    color: #dc3545;
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    animation: errorSlideIn 0.2s ease;
+}
+
+@keyframes errorSlideIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.auth-field-error i {
+    font-size: 0.7rem;
+}
+
+/* ===== ALERTS ===== */
+.auth-alert {
+    padding: 14px 16px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    animation: alertSlideIn 0.3s ease;
+}
+
+@keyframes alertSlideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.auth-alert i {
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.auth-alert-error {
+    background: #fff5f5;
+    border: 1px solid #fecaca;
+    color: #dc3545;
+}
+
+.auth-alert-success {
+    background: #f0fff4;
+    border: 1px solid #bbf7d0;
+    color: #16a34a;
+}
+
+/* ===== FORM OPTIONS ===== */
+.auth-form-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.auth-checkbox {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px !important;
+    border: 2px solid #d1d5db !important;
+    cursor: pointer;
+    margin-top: 0 !important;
+}
+
+.auth-checkbox:checked {
+    background-color: #3B7A8C !important;
+    border-color: #3B7A8C !important;
+}
+
+.auth-checkbox-label {
+    font-size: 0.85rem;
+    color: #6c757d;
+    cursor: pointer;
+    user-select: none;
+}
+
+.auth-forgot-link {
+    font-size: 0.85rem;
+    color: #3B7A8C;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.auth-forgot-link:hover {
+    color: #1a3a42;
+    text-decoration: underline;
+}
+
+/* ===== AUTH BUTTON ===== */
+.auth-btn {
+    width: 100%;
+    height: 52px;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.auth-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.auth-btn:hover::before {
+    left: 100%;
+}
+
+.auth-btn-primary {
+    background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);
+    color: white;
+}
+
+.auth-btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(59, 122, 140, 0.35);
+}
+
+.auth-btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.auth-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.auth-btn .spinner {
+    width: 20px;
+    height: 20px;
+    border: 2.5px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: authSpin 0.6s linear infinite;
+    display: none;
+}
+
+.auth-btn.loading .spinner {
+    display: inline-block;
+}
+
+.auth-btn.loading .btn-text {
+    display: none;
+}
+
+.auth-btn.loading .btn-icon {
+    display: none;
+}
+
+@keyframes authSpin {
+    to { transform: rotate(360deg); }
+}
+
+/* ===== AUTH FOOTER ===== */
+.auth-footer {
+    text-align: center;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.auth-footer p {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin: 0;
+}
+
+.auth-footer a {
+    color: #3B7A8C;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.auth-footer a:hover {
+    color: #1a3a42;
+    text-decoration: underline;
+}
+
+.auth-footer .copyright {
+    font-size: 0.75rem;
+    color: #adb5bd;
+    margin-top: 8px;
+}
+
+/* ===== SHAKE ANIMATION ===== */
+@keyframes authShake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+    20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+.auth-card.shake {
+    animation: authShake 0.5s ease;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 991.98px) {
+    .auth-brand {
+        display: none !important;
+    }
+
+    .auth-card {
+        max-width: 480px;
+    }
+
+    .auth-form-panel {
+        padding: 40px 32px;
+        max-width: 100%;
+    }
+
+    .auth-mobile-logo {
+        display: block;
+    }
+
+    .auth-form-header {
+        text-align: center;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .auth-page {
+        padding: 12px;
+    }
+
+    .auth-card {
+        border-radius: 16px;
+    }
+
+    .auth-form-panel {
+        padding: 28px 20px 24px;
+    }
+
+    .auth-form-header h3 {
+        font-size: 1.3rem;
+    }
+
+    .auth-input {
+        height: 46px;
+        font-size: 0.85rem !important;
+    }
+
+    .auth-btn {
+        height: 48px;
+        font-size: 0.95rem;
+    }
+
+    .auth-form-options {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+}
+
+/* ===== BACK TO HOME ===== */
+.auth-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #6c757d;
+    text-decoration: none;
+    font-size: 0.85rem;
+    margin-bottom: 24px;
+    transition: all 0.2s ease;
+}
+
+.auth-back-link:hover {
+    color: #3B7A8C;
+    transform: translateX(-4px);
+}
+
+/* ===== OR DIVIDER ===== */
+.auth-divider {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 20px 0;
+    color: #adb5bd;
+    font-size: 0.8rem;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #e9ecef;
+}
+
+/* Ensure base modals don't interfere */
+.auth-page .floating-toast-container {
+    z-index: 1060;
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="auth-page">
+    <div class="auth-bg"></div>
+
+    <!-- Floating Toast Notifications -->
+    <div class="floating-toast-container" id="toastContainer">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="floating-toast {{ message.tags }}" role="alert" data-auto-dismiss="5000">
+                    <div class="floating-toast-icon">
+                        {% if message.tags == 'success' %}
+                            <i class="fas fa-check-circle"></i>
+                        {% elif message.tags == 'error' %}
+                            <i class="fas fa-exclamation-circle"></i>
+                        {% elif message.tags == 'warning' %}
+                            <i class="fas fa-exclamation-triangle"></i>
+                        {% else %}
+                            <i class="fas fa-info-circle"></i>
+                        {% endif %}
+                    </div>
+                    <div class="floating-toast-content">{{ message }}</div>
+                    <button type="button" class="floating-toast-close" onclick="dismissToast(this)">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <div class="auth-card" id="authCard">
+        <!-- Left Brand Panel -->
+        <div class="auth-brand">
+            <div class="auth-brand-content">
+                <div class="auth-brand-logo">
+                    <i class="fas fa-table-tennis"></i>
+                </div>
+                <h1>Welcome Back!</h1>
+                <p>Sign in to access your account, manage reservations, track matches, and enjoy exclusive member benefits.</p>
+
+                <div class="auth-benefits">
+                    <div class="auth-benefit-item">
+                        <div class="auth-benefit-icon">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <span>Easy court reservations</span>
+                    </div>
+                    <div class="auth-benefit-item">
+                        <div class="auth-benefit-icon">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <span>Tournament participation</span>
+                    </div>
+                    <div class="auth-benefit-item">
+                        <div class="auth-benefit-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <span>Track match history & stats</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Form Panel -->
+        <div class="auth-form-panel">
+            <!-- Mobile Logo -->
+            <div class="auth-mobile-logo">
+                <div class="logo-icon">
+                    <i class="fas fa-table-tennis"></i>
+                </div>
+                <h2>PickleSphere</h2>
+            </div>
+
+            <!-- Back Link -->
+            <a href="{% url 'home' %}" class="auth-back-link">
+                <i class="fas fa-arrow-left"></i>
+                <span>Back to Home</span>
+            </a>
+
+            <!-- Header -->
+            <div class="auth-form-header">
+                <h3>Sign In</h3>
+                <p>Enter your credentials to access your account</p>
+            </div>
+
+            <!-- Non-field errors -->
+            {% if form.non_field_errors %}
+            <div class="auth-alert auth-alert-error" role="alert">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>{{ form.non_field_errors.0 }}</span>
+            </div>
+            {% endif %}
+
+            <!-- Login Form -->
+            <form method="post" action="{% url 'login' %}" id="loginForm" novalidate>
+                {% csrf_token %}
+
+                <!-- Username / Email -->
+                <div class="auth-input-group">
+                    <i class="fas fa-envelope input-icon"></i>
+                    <input type="text"
+                           name="username"
+                           class="auth-input {% if form.username.errors %}is-invalid{% endif %}"
+                           placeholder="Email or Username"
+                           id="id_login_username"
+                           autocomplete="username"
+                           value="{{ form.username.value|default:'' }}"
+                           required>
+                    {% if form.username.errors %}
+                    <div class="auth-field-error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {{ form.username.errors.0 }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Password -->
+                <div class="auth-input-group">
+                    <i class="fas fa-lock input-icon"></i>
+                    <div class="password-wrapper">
+                        <input type="password"
+                               name="password"
+                               class="auth-input {% if form.password.errors %}is-invalid{% endif %}"
+                               placeholder="Password"
+                               id="id_login_password"
+                               autocomplete="current-password"
+                               required>
+                        <button type="button"
+                                class="password-toggle"
+                                onclick="togglePasswordVisibility('id_login_password', this)"
+                                tabindex="-1"
+                                aria-label="Show password">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    {% if form.password.errors %}
+                    <div class="auth-field-error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {{ form.password.errors.0 }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Remember Me & Forgot Password -->
+                <div class="auth-form-options">
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="checkbox"
+                               name="remember_me"
+                               class="auth-checkbox"
+                               id="id_remember_me"
+                               {% if form.remember_me.value %}checked{% endif %}>
+                        <label for="id_remember_me" class="auth-checkbox-label">Remember me</label>
+                    </div>
+                    <a href="{% url 'password_reset_request' %}" class="auth-forgot-link">Forgot password?</a>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="auth-btn auth-btn-primary" id="loginBtn">
+                    <i class="fas fa-sign-in-alt btn-icon"></i>
+                    <span class="btn-text">Sign In</span>
+                    <div class="spinner"></div>
+                </button>
+            </form>
+
+            <!-- Footer -->
+            <div class="auth-footer">
+                <p>Don't have an account? <a href="{% url 'register' %}">Create one now</a></p>
+                <p class="copyright">&copy; {% now "Y" %} PickleSphere. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    'use strict';
+
+    // ===== FORM SUBMISSION =====
+    const loginForm = document.getElementById('loginForm');
+    const loginBtn = document.getElementById('loginBtn');
+
+    if (loginForm) {
+        loginForm.addEventListener('submit', function(e) {
+            // Client-side validation
+            const username = document.getElementById('id_login_username');
+            const password = document.getElementById('id_login_password');
+            let hasError = false;
+
+            [username, password].forEach(function(field) {
+                if (!field.value || field.value.trim() === '') {
+                    field.classList.add('is-invalid');
+                    hasError = true;
+                    // Add error message if not present
+                    let errorDiv = field.closest('.auth-input-group').querySelector('.auth-field-error');
+                    if (!errorDiv) {
+                        errorDiv = document.createElement('div');
+                        errorDiv.className = 'auth-field-error';
+                        errorDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> This field is required';
+                        field.closest('.auth-input-group').appendChild(errorDiv);
+                    }
+                }
+            });
+
+            if (hasError) {
+                e.preventDefault();
+                return;
+            }
+
+            // Show loading state
+            loginBtn.disabled = true;
+            loginBtn.classList.add('loading');
+        });
+
+        // Clear validation on input
+        loginForm.querySelectorAll('.auth-input').forEach(function(input) {
+            input.addEventListener('input', function() {
+                this.classList.remove('is-invalid', 'is-valid');
+                const errorDiv = this.closest('.auth-input-group').querySelector('.auth-field-error');
+                if (errorDiv && !errorDiv.dataset.serverError) {
+                    errorDiv.remove();
+                }
+            });
+        });
+    }
+})();
+</script>
+{% endblock %}

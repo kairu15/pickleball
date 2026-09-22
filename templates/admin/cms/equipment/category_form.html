@@ -1,0 +1,40 @@
+{% extends 'base/dashboard_base.html' %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="admin-card">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3"><label class="form-label fw-semibold">Name</label><input type="text" name="name" class="form-control" value="{{ category.name|default:'' }}" required></div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Slug</label><input type="text" name="slug" class="form-control" value="{{ category.slug|default:'' }}" required></div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Description</label><textarea name="description" class="form-control" rows="2">{{ category.description|default:'' }}</textarea></div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Icon</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="icon-preview-wrapper" data-icon-preview-for="equipCatIconInput">
+                                <div class="icon-preview-container">
+                                    <i class="fas {{ category.icon|default:'fa-tools' }}"></i>
+                                </div>
+                                <span class="icon-class-label small text-muted">{{ category.icon|default:'fa-tools' }}</span>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm" style="border-radius: 8px;"
+                                    onclick="initIconPicker('equipCatIconInput', '{{ category.icon|default:'fa-tools' }}')">
+                                <i class="fas fa-icons me-1"></i>Choose
+                            </button>
+                        </div>
+                        <input type="hidden" name="icon" id="equipCatIconInput" value="{{ category.icon|default:'fa-tools' }}">
+                    </div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Display Order</label><input type="number" name="display_order" class="form-control" value="{{ category.display_order|default:0 }}"></div>
+                    {% if category %}<div class="mb-3 form-check form-switch"><input type="checkbox" name="is_active" class="form-check-input" id="isActive" {% if category.is_active %}checked{% endif %}><label class="form-check-label" for="isActive">Active</label></div>{% endif %}
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Save</button>
+                    <a href="{% url 'super_admin_equipment_cms' %}" class="btn btn-outline-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% include 'components/icon_picker.html' %}
+{% endblock %}

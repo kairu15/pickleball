@@ -1,0 +1,64 @@
+# Windows reserved device names (can't be indexed by git)
+nul
+null
+
+# ============================================================================
+# SECRETS - NEVER COMMIT THESE
+# ============================================================================
+# Environment files (real credentials). Keep .env.example committed as a template.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+service-account.json
+
+# ============================================================================
+# Python
+# ============================================================================
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+.coverage
+htmlcov/
+.pytest_cache/
+
+# ============================================================================
+# Virtual environment
+# ============================================================================
+venv/
+.venv/
+
+# ============================================================================
+# Django
+# ============================================================================
+*.log
+local_settings.py
+db.sqlite3
+*.sqlite3
+media/
+# Collected static files (build output - run collectstatic to regenerate)
+staticfiles/
+
+# ============================================================================
+# IDE / Editors
+# ============================================================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# ============================================================================
+# OS
+# ============================================================================
+.DS_Store
+Thumbs.db

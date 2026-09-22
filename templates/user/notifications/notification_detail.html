@@ -1,0 +1,365 @@
+{% extends 'base/dashboard_base.html' %}
+{% load notification_tags %}
+
+{% block title %}Notification Details{% endblock %}
+{% block page_title %}Notification Details{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        {% if user.is_super_admin %}
+        <li class="breadcrumb-item"><a href="{% url 'super_admin_analytics' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        {% elif user.is_staff_member %}
+        <li class="breadcrumb-item"><a href="{% url 'staff_dashboard' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        {% else %}
+        <li class="breadcrumb-item"><a href="{% url 'user_dashboard' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        {% endif %}
+        <li class="breadcrumb-item"><a href="{% notification_url 'notification_list' %}"><i class="fas fa-bell me-1"></i>Notifications</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Details</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-xl-7">
+        <!-- Back Button (Mobile-first) -->
+        <a href="{% notification_url 'notification_list' %}" class="btn btn-outline-secondary btn-sm mb-3 px-3 d-inline-flex d-lg-none align-items-center" style="border-radius: 10px; font-weight: 500;">
+            <i class="fas fa-arrow-left me-2"></i>Back to Notifications
+        </a>
+
+        <!-- Main Notification Card -->
+        <div class="card border-0 shadow-sm" style="border-radius: 16px; overflow: hidden;">
+            <!-- Card Header with Gradient Background -->
+            <div class="card-header border-bottom p-4" style="background: linear-gradient(135deg, {{ notification.category_color }}08, {{ notification.category_color }}18);">
+                <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div style="width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; background: {{ notification.category_color }}; color: white; box-shadow: 0 4px 15px {{ notification.category_color }}40;">
+                            <i class="fas {{ notification.icon_class }} fa-lg"></i>
+                        </div>
+                        <div>
+                            <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                                <span class="badge d-inline-flex align-items-center gap-1 px-3 py-2" style="background: {{ notification.category_color }}; color: white; border-radius: 8px; font-size: 0.78rem; font-weight: 600;">
+                                    <i class="fas {{ notification.icon_class }}"></i>{{ notification.get_category_display }}
+                                </span>
+                                {% if not notification.is_read %}
+                                <span class="badge bg-primary" style="font-size: 0.68rem; padding: 4px 8px; border-radius: 5px; font-weight: 600;">New</span>
+                                {% endif %}
+                                {% if notification.priority == 'urgent' %}
+                                <span class="badge bg-danger" style="font-size: 0.68rem; padding: 4px 8px; border-radius: 5px; font-weight: 600;">Urgent</span>
+                                {% elif notification.priority == 'high' %}
+                                <span class="badge bg-warning text-dark" style="font-size: 0.68rem; padding: 4px 8px; border-radius: 5px; font-weight: 600;">High</span>
+                                {% endif %}
+                                {% if notification.is_archived %}
+                                <span class="badge bg-secondary" style="font-size: 0.68rem; padding: 4px 8px; border-radius: 5px; font-weight: 600;">Archived</span>
+                                {% endif %}
+                            </div>
+                            {% if notification.title %}
+                            <h4 class="fw-bold mb-0" style="color: var(--text-dark, #1a1a2e);">{{ notification.title }}</h4>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="text-end flex-shrink-0">
+                        <small class="text-muted d-block fw-medium">{{ notification.created_at|date:"F d, Y" }}</small>
+                        <small class="text-muted d-block">{{ notification.created_at|time:"g:i A" }}</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Body -->
+            <div class="card-body p-4">
+                <!-- Message -->
+                <div class="p-4 mb-4" style="background: linear-gradient(135deg, {{ notification.category_color }}04, {{ notification.category_color }}08); border-radius: 12px; border-left: 4px solid {{ notification.category_color }};">
+                    <p class="mb-0" style="line-height: 1.8; font-size: 1rem; color: #333;">{{ notification.message }}</p>
+                </div>
+
+                <!-- Metadata Grid -->
+                <div class="row g-3 mb-4">
+                    <div class="col-sm-6 col-md-3">
+                        <div class="d-flex flex-column gap-1 p-3" style="background: rgba(59,122,140,0.05); border-radius: 12px; height: 100%;">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <i class="fas fa-clock" style="color: #3B7A8C; font-size: 0.85rem;"></i>
+                                <small class="text-muted fw-medium text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Received</small>
+                            </div>
+                            <span class="fw-semibold" style="font-size: 0.9rem; color: var(--text-dark);">{{ notification.created_at|timesince }} ago</span>
+                            <small class="text-muted" style="font-size: 0.75rem;">{{ notification.created_at|date:"M d, Y g:i A" }}</small>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-md-3">
+                        <div class="d-flex flex-column gap-1 p-3" style="background: rgba(40,167,69,0.05); border-radius: 12px; height: 100%;">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <i class="fas {% if notification.is_read %}fa-envelope-open{% else %}fa-envelope{% endif %}" style="color: {% if notification.is_read %}#28a745{% else %}#ffc107{% endif %}; font-size: 0.85rem;"></i>
+                                <small class="text-muted fw-medium text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Status</small>
+                            </div>
+                            <span class="fw-semibold {% if notification.is_read %}text-success{% else %}text-warning{% endif %}" style="font-size: 0.9rem;">
+                                {% if notification.is_read %}Read{% else %}Unread{% endif %}
+                            </span>
+                            {% if notification.read_at %}
+                            <small class="text-muted" style="font-size: 0.75rem;">{{ notification.read_at|date:"M d, Y g:i A" }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-md-3">
+                        <div class="d-flex flex-column gap-1 p-3" style="background: rgba(255,193,7,0.05); border-radius: 12px; height: 100%;">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <i class="fas fa-flag" style="color: #ffc107; font-size: 0.85rem;"></i>
+                                <small class="text-muted fw-medium text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Priority</small>
+                            </div>
+                            <span class="fw-semibold" style="font-size: 0.9rem; color: var(--text-dark);">
+                                {% if notification.priority == 'urgent' %}
+                                <span class="text-danger">Urgent</span>
+                                {% elif notification.priority == 'high' %}
+                                <span class="text-warning">High</span>
+                                {% elif notification.priority == 'low' %}
+                                <span class="text-muted">Low</span>
+                                {% else %}
+                                Normal
+                                {% endif %}
+                            </span>
+                            <small class="text-muted" style="font-size: 0.75rem;">{{ notification.get_priority_display }} priority</small>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-md-3">
+                        <div class="d-flex flex-column gap-1 p-3" style="background: rgba(23,162,184,0.05); border-radius: 12px; height: 100%;">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <i class="fas fa-tag" style="color: #17a2b8; font-size: 0.85rem;"></i>
+                                <small class="text-muted fw-medium text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Type</small>
+                            </div>
+                            <span class="fw-semibold" style="font-size: 0.9rem; color: var(--text-dark);">
+                                <span class="d-inline-flex align-items-center gap-1">
+                                    <i class="fas {{ notification.icon_class }}" style="color: {{ notification.category_color }}; font-size: 0.8rem;"></i>
+                                    {{ notification.get_category_display }}
+                                </span>
+                            </span>
+                            <small class="text-muted" style="font-size: 0.75rem;">{{ notification.get_notification_type_display }}</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Related Information -->
+                {% if notification.related_reservation or notification.related_payment or notification.related_tournament or notification.related_equipment or notification.related_match %}
+                <div class="mb-4">
+                    <h6 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                        <i class="fas fa-link" style="color: #3B7A8C;"></i> Related Information
+                    </h6>
+                    <div class="row g-3">
+                        {% if notification.related_reservation %}
+                        <div class="col-sm-6">
+                            <div class="p-3 d-flex align-items-center gap-3" style="background: rgba(59,122,140,0.05); border-radius: 12px;">
+                                <div class="stat-icon primary" style="width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;">
+                                    <i class="fas fa-calendar-check"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <small class="text-muted d-block fw-medium text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.5px;">Reservation</small>
+                                    <span class="fw-semibold d-block text-truncate" style="font-size: 0.85rem;">{{ notification.related_reservation.court.name }}</span>
+                                    <small class="text-muted">{{ notification.related_reservation.date|date:"M d, Y" }}</small>
+                                </div>
+                                <a href="{% url 'reservation_list' %}" class="btn btn-sm btn-outline-primary ms-auto flex-shrink-0" style="border-radius: 8px;" aria-label="View reservation">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if notification.related_payment %}
+                        <div class="col-sm-6">
+                            <div class="p-3 d-flex align-items-center gap-3" style="background: rgba(40,167,69,0.05); border-radius: 12px;">
+                                <div class="stat-icon success" style="width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;">
+                                    <i class="fas fa-credit-card"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <small class="text-muted d-block fw-medium text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.5px;">Payment</small>
+                                    <span class="fw-semibold d-block text-truncate" style="font-size: 0.85rem;">₱{{ notification.related_payment.amount }}</span>
+                                    <small class="text-muted">{{ notification.related_payment.get_status_display }}</small>
+                                </div>
+                                <a href="{% url 'payment_history' %}" class="btn btn-sm btn-outline-success ms-auto flex-shrink-0" style="border-radius: 8px;" aria-label="View payment">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if notification.related_tournament %}
+                        <div class="col-sm-6">
+                            <div class="p-3 d-flex align-items-center gap-3" style="background: rgba(255,193,7,0.05); border-radius: 12px;">
+                                <div class="stat-icon warning" style="width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;">
+                                    <i class="fas fa-trophy"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <small class="text-muted d-block fw-medium text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.5px;">Tournament</small>
+                                    <span class="fw-semibold d-block text-truncate" style="font-size: 0.85rem;">{{ notification.related_tournament.name }}</span>
+                                    <small class="text-muted">{{ notification.related_tournament.get_status_display }}</small>
+                                </div>
+                                <a href="{% url 'tournament_list' %}" class="btn btn-sm btn-outline-warning ms-auto flex-shrink-0" style="border-radius: 8px;" aria-label="View tournament">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if notification.related_equipment %}
+                        <div class="col-sm-6">
+                            <div class="p-3 d-flex align-items-center gap-3" style="background: rgba(111,66,193,0.05); border-radius: 12px;">
+                                <div class="stat-icon" style="width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0; background: rgba(111,66,193,0.1); color: #6f42c1;">
+                                    <i class="fas fa-tools"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <small class="text-muted d-block fw-medium text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.5px;">Equipment</small>
+                                    <span class="fw-semibold d-block text-truncate" style="font-size: 0.85rem;">{{ notification.related_equipment.name }}</span>
+                                    <small class="text-muted">{{ notification.related_equipment.get_status_display }}</small>
+                                </div>
+                                <a href="{% url 'equipment_list' %}" class="btn btn-sm btn-outline-secondary ms-auto flex-shrink-0" style="border-radius: 8px; color: #6f42c1; border-color: #6f42c1;" aria-label="View equipment">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if notification.related_match %}
+                        <div class="col-sm-6">
+                            <div class="p-3 d-flex align-items-center gap-3" style="background: rgba(220,53,69,0.05); border-radius: 12px;">
+                                <div class="stat-icon danger" style="width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;">
+                                    <i class="fas fa-gamepad"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <small class="text-muted d-block fw-medium text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.5px;">Match</small>
+                                    <span class="fw-semibold d-block text-truncate" style="font-size: 0.85rem;">Match #{{ notification.related_match.id }}</span>
+                                    <small class="text-muted">{{ notification.related_match.get_status_display }}</small>
+                                </div>
+                                <a href="{% url 'match_list' %}" class="btn btn-sm btn-outline-danger ms-auto flex-shrink-0" style="border-radius: 8px;" aria-label="View match">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Action Buttons -->
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 pt-4 border-top">
+                    <a href="{% notification_url 'notification_list' %}" class="btn btn-outline-secondary px-4 py-2 d-none d-lg-inline-flex align-items-center" style="border-radius: 10px; font-weight: 500;">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Notifications
+                    </a>
+
+                    <div class="d-flex flex-wrap gap-2">
+                        {% if not notification.is_read %}
+                        <a href="{% notification_url 'mark_notification_read' notification.id %}" class="btn px-4 py-2 d-inline-flex align-items-center" style="border-radius: 10px; font-weight: 500; background: linear-gradient(135deg, #3B7A8C, #1a3a42); color: white; border: none; box-shadow: 0 4px 12px rgba(59,122,140,0.25);">
+                            <i class="fas fa-check me-2"></i>Mark as Read
+                        </a>
+                        {% else %}
+                        <a href="{% notification_url 'mark_notification_unread' notification.id %}" class="btn btn-outline-secondary px-4 py-2 d-inline-flex align-items-center" style="border-radius: 10px; font-weight: 500;">
+                            <i class="fas fa-undo me-2"></i>Mark as Unread
+                        </a>
+                        {% endif %}
+
+                        {% if notification.action_url %}
+                        <a href="{{ notification.action_url }}" class="btn btn-outline-primary px-4 py-2 d-inline-flex align-items-center" style="border-radius: 10px; font-weight: 500;">
+                            <i class="fas fa-external-link-alt me-2"></i>{{ notification.action_text }}
+                        </a>
+                        {% endif %}
+
+                        <div class="dropdown d-inline">
+                            <button class="btn btn-outline-secondary px-3 py-2 d-inline-flex align-items-center" data-bs-toggle="dropdown" style="border-radius: 10px; font-weight: 500;" aria-label="More actions" aria-expanded="false">
+                                <i class="fas fa-ellipsis-h"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="border-radius: 12px; border: none; padding: 6px;">
+                                {% if notification.is_archived %}
+                                <li><a class="dropdown-item py-2" href="{% notification_url 'restore_notification' notification.id %}"><i class="fas fa-undo-alt text-info me-2"></i> Restore</a></li>
+                                {% else %}
+                                <li><a class="dropdown-item py-2" href="{% notification_url 'archive_notification' notification.id %}"><i class="fas fa-archive text-warning me-2"></i> Archive</a></li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider my-1"></li>
+                                <li><a class="dropdown-item py-2 text-danger" href="{% notification_url 'delete_notification' notification.id %}" onclick="return confirm('Delete this notification?')"><i class="fas fa-trash me-2"></i> Delete</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification Metadata Footer -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3 px-2">
+            <small class="text-muted">
+                <i class="far fa-clock me-1"></i>Received {{ notification.created_at|timesince }} ago
+                {% if notification.read_at %}
+                · <i class="fas fa-check-circle text-success me-1"></i>Read {{ notification.read_at|timesince }} ago
+                {% endif %}
+            </small>
+            <small class="text-muted">Notification #{{ notification.id }}</small>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Breadcrumb */
+.breadcrumb {
+    background: transparent;
+    padding: 0;
+    font-size: 0.88rem;
+}
+.breadcrumb-item a {
+    color: #3B7A8C;
+    transition: color 0.2s ease;
+    text-decoration: none;
+}
+.breadcrumb-item a:hover {
+    color: #1a3a42;
+}
+.breadcrumb-item.active {
+    color: #6c757d;
+    font-weight: 500;
+}
+
+/* Card Header Icon */
+.stat-icon {
+    transition: transform 0.3s ease;
+}
+
+/* Dropdown Styling */
+.dropdown-menu .dropdown-item {
+    border-radius: 8px;
+    font-size: 0.88rem;
+    transition: all 0.15s ease;
+}
+.dropdown-menu .dropdown-item:hover {
+    background: rgba(59,122,140,0.06);
+    transform: translateX(4px);
+}
+.dropdown-menu .dropdown-item.text-danger:hover {
+    background: rgba(220,53,69,0.08);
+}
+
+/* Smooth Transitions */
+.btn {
+    transition: all 0.25s ease;
+}
+.btn:hover {
+    transform: translateY(-2px);
+}
+
+/* Responsive */
+@media (max-width: 575.98px) {
+    .card-body {
+        padding: 16px !important;
+    }
+    .card-header {
+        padding: 16px !important;
+    }
+    .card-header > div > div:first-child > div:first-child {
+        width: 44px !important;
+        height: 44px !important;
+        border-radius: 12px !important;
+    }
+    .card-header h4 {
+        font-size: 1.1rem !important;
+    }
+    .card-body > div:first-child {
+        padding: 14px !important;
+    }
+    .card-body > div:first-child p {
+        font-size: 0.92rem !important;
+    }
+}
+</style>
+{% endblock %}

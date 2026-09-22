@@ -1,0 +1,25 @@
+{% extends 'emails/base_email.html' %}
+
+{% block email_content %}
+    <span class="notification-badge warning">📅 Schedule Updated</span>
+    <h2>Tournament Schedule Updated</h2>
+    <p>Hi <strong>{{ user.get_full_name|default:user.username }}</strong>,</p>
+    <p>There has been an update to the schedule for <strong>{{ tournament_name }}</strong>.</p>
+    
+    {% if update_info %}
+    <div class="details-card">
+        <table cellpadding="0" cellspacing="0">
+            <tr>
+                <td class="label">Update</td>
+                <td class="value">{{ update_info }}</td>
+            </tr>
+        </table>
+    </div>
+    {% endif %}
+    
+    <p>Please check the tournament schedule for the latest information.</p>
+    
+    <div style="text-align: center;">
+        <a href="{{ action_url }}" class="cta-button">{{ action_text }}</a>
+    </div>
+{% endblock %}

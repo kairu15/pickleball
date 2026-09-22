@@ -1,0 +1,685 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Verify Payment - Admin{% endblock %}
+{% block page_title %}Verify Payment #{{ payment.id }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/admin.css' %}">
+<style>
+    .admin-verify-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .admin-verify-header {
+        background: linear-gradient(135deg, var(--card-bg) 0%, var(--card-bg-secondary, #f8f9fa) 100%);
+        border-bottom: 1px solid var(--border-color);
+        padding: 1.25rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .admin-verify-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .admin-info-item {
+        display: flex;
+        align-items: flex-start;
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color);
+        transition: background 0.2s ease;
+    }
+    .admin-info-item:last-child {
+        border-bottom: none;
+    }
+    .admin-info-item:hover {
+        background: var(--hover-bg, rgba(0,0,0,0.02));
+    }
+    .admin-info-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark, #1a3a42) 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+    .admin-info-icon.bg-success {
+        background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+    }
+    .admin-info-icon.bg-info {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    }
+    .admin-info-icon.bg-warning {
+        background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+    }
+    .admin-info-content {
+        flex: 1;
+    }
+    .admin-info-label {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.25rem;
+    }
+    .admin-info-value {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-color);
+    }
+    .admin-proof-image {
+        max-height: 400px;
+        border-radius: 12px;
+        border: 2px solid var(--border-color);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .admin-proof-image:hover {
+        transform: scale(1.02);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    }
+    .admin-form-group {
+        margin-bottom: 1.5rem;
+    }
+    .admin-form-label {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    .admin-form-control {
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        padding: 0.75rem 1rem;
+        transition: all 0.2s ease;
+    }
+    .admin-form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(59, 122, 140, 0.1);
+    }
+    .admin-btn-group {
+        display: flex;
+        gap: 1rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border-color);
+    }
+    .admin-sidebar-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .admin-sidebar-header {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark, #1a3a42) 100%);
+        color: white;
+        padding: 1rem 1.25rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .verification-timeline {
+        padding: 1rem;
+    }
+    .timeline-item {
+        display: flex;
+        gap: 1rem;
+        padding: 0.75rem 0;
+        border-left: 2px solid var(--border-color);
+        padding-left: 1rem;
+        margin-left: 0.5rem;
+    }
+    .timeline-item::before {
+        content: '';
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        margin-left: -1.6rem;
+        margin-top: 0.25rem;
+        flex-shrink: 0;
+    }
+    .timeline-item:last-child {
+        border-left: 2px solid transparent;
+    }
+    .timeline-content {
+        flex: 1;
+    }
+    .timeline-time {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+    .copy-btn {
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .copy-btn:hover {
+        background: var(--hover-bg, rgba(0,0,0,0.05));
+    }
+
+    /* Refund card */
+    .refund-card {
+        border: 1px solid rgba(23,162,184,0.2) !important;
+    }
+    .refund-header {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%) !important;
+        color: white !important;
+    }
+    .refund-header .admin-info-icon {
+        background: rgba(255,255,255,0.2) !important;
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        {% if user.is_super_admin %}
+        <li class="breadcrumb-item"><a href="{% url 'super_admin_analytics' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        {% elif user.is_staff_member %}
+        <li class="breadcrumb-item"><a href="{% url 'staff_dashboard' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        {% else %}
+        <li class="breadcrumb-item"><a href="{% url 'user_dashboard' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        {% endif %}
+        <li class="breadcrumb-item active" aria-current="page">Verify Payment #{{ payment.id }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-8">
+        <!-- Payment Details Card -->
+        <div class="admin-verify-card mb-4">
+            <div class="admin-verify-header">
+                <h5 class="admin-verify-title">
+                    <i class="fas fa-credit-card text-primary"></i>
+                    Payment Details
+                </h5>
+                <span class="badge {% if payment.status == 'paid' %}bg-success{% elif payment.status == 'pending' %}bg-warning text-dark{% elif payment.status == 'failed' %}bg-danger{% else %}bg-secondary{% endif %} fs-6">
+                    <i class="fas fa-{% if payment.status == 'paid' %}check-circle{% elif payment.status == 'pending' %}clock{% elif payment.status == 'failed' %}times-circle{% else %}question-circle{% endif %} me-1"></i>
+                    {{ payment.get_status_display }}
+                </span>
+            </div>
+            <div class="card-body p-0">
+                <div class="row g-0">
+                    <div class="col-md-6">
+                        <div class="admin-info-item">
+                            <div class="admin-info-icon">
+                                <i class="fas fa-hashtag"></i>
+                            </div>
+                            <div class="admin-info-content">
+                                <div class="admin-info-label">Payment ID</div>
+                                <div class="admin-info-value">#{{ payment.id }}</div>
+                            </div>
+                        </div>
+                        <div class="admin-info-item">
+                            <div class="admin-info-icon">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <div class="admin-info-content">
+                                <div class="admin-info-label">Reservation</div>
+                                <div class="admin-info-value">#{{ payment.reservation.id }}</div>
+                            </div>
+                        </div>
+                        <div class="admin-info-item">
+                            <div class="admin-info-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="admin-info-content">
+                                <div class="admin-info-label">Customer</div>
+                                <div class="admin-info-value">{{ payment.reservation.user.get_full_name|default:payment.reservation.user.username }}</div>
+                                <small class="text-muted d-block">{{ payment.reservation.user.email }}</small>
+                            </div>
+                        </div>
+                        <div class="admin-info-item">
+                            <div class="admin-info-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="admin-info-content">
+                                <div class="admin-info-label">Court</div>
+                                <div class="admin-info-value">{{ payment.reservation.court.name }}</div>
+                                {% if payment.reservation.court.site %}
+                                <small class="text-muted d-block">{{ payment.reservation.court.site.name }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="admin-info-item">
+                            <div class="admin-info-icon bg-success">
+                                <i class="fas fa-peso-sign"></i>
+                            </div>
+                            <div class="admin-info-content">
+                                <div class="admin-info-label">Amount</div>
+                                <div class="admin-info-value text-success">₱{{ payment.amount|floatformat:2 }}</div>
+                            </div>
+                        </div>
+                        <div class="admin-info-item">
+                            <div class="admin-info-icon">
+                                <i class="fas fa-credit-card"></i>
+                            </div>
+                            <div class="admin-info-content">
+                                <div class="admin-info-label">Payment Method</div>
+                                <div class="admin-info-value">
+                                    <span class="badge {% if payment.method == 'gcash' or payment.method == 'maya' or payment.method == 'bank_transfer' %}bg-primary{% elif payment.method == 'cash' %}bg-success{% elif payment.method == 'card' %}bg-info{% else %}bg-secondary{% endif %}">
+                                        {% if payment.method == 'gcash' %}<i class="fas fa-mobile-alt me-1"></i>
+                                        {% elif payment.method == 'maya' %}<i class="fas fa-wallet me-1"></i>
+                                        {% elif payment.method == 'bank_transfer' %}<i class="fas fa-university me-1"></i>
+                                        {% elif payment.method == 'cash' %}<i class="fas fa-money-bill-wave me-1"></i>
+                                        {% elif payment.method == 'card' %}<i class="fas fa-credit-card me-1"></i>
+                                        {% endif %}
+                                        {{ payment.get_method_display|default:"N/A" }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="admin-info-item">
+                            <div class="admin-info-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="admin-info-content">
+                                <div class="admin-info-label">Payment Date</div>
+                                <div class="admin-info-value">
+                                    {% if payment.method == 'cash' and payment.cash_received_at %}
+                                        {{ payment.cash_received_at|date:"F d, Y g:i A" }}
+                                    {% elif payment.status == 'paid' %}
+                                        {{ payment.updated_at|date:"F d, Y g:i A" }}
+                                    {% else %}
+                                        {{ payment.created_at|date:"F d, Y g:i A" }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% if payment.transaction_id %}
+                        <div class="admin-info-item">
+                            <div class="admin-info-icon bg-info">
+                                <i class="fas fa-fingerprint"></i>
+                            </div>
+                            <div class="admin-info-content">
+                                <div class="admin-info-label">Transaction ID</div>
+                                <div class="admin-info-value font-monospace text-info d-flex align-items-center gap-2">{{ payment.transaction_id }}
+                                    <button class="btn btn-sm btn-outline-secondary copy-btn" style="border-radius: 6px; padding: 2px 8px; font-size: 0.7rem;" onclick="navigator.clipboard.writeText('{{ payment.transaction_id }}').then(() => { this.innerHTML='<i class=\'fas fa-check\'></i>'; setTimeout(() => { this.innerHTML='<i class=\'fas fa-copy\'></i>'; }, 2000); }).catch(() => {});">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if payment.gcash_reference %}
+                        <div class="admin-info-item">
+                            <div class="admin-info-icon bg-info">
+                                <i class="fas fa-mobile-alt"></i>
+                            </div>
+                            <div class="admin-info-content">
+                                <div class="admin-info-label">GCash Reference</div>
+                                <div class="admin-info-value font-monospace text-info">{{ payment.gcash_reference }}</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if payment.gcash_proof_image %}
+        <!-- GCash Proof Card -->
+        <div class="admin-verify-card mb-4">
+            <div class="admin-verify-header">
+                <h5 class="admin-verify-title">
+                    <i class="fas fa-image text-primary"></i>
+                    GCash Payment Proof
+                </h5>
+                <a href="{% url 'view_payment_proof' payment.id %}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-expand me-2"></i>View Full Size
+                </a>
+            </div>
+            <div class="card-body text-center p-4">
+                <a href="{% url 'view_payment_proof' payment.id %}" class="d-inline-block">
+                    <img src="{{ payment.gcash_proof_image.url }}" alt="GCash Proof" class="admin-proof-image img-fluid">
+                </a>
+                <p class="text-muted small mt-3 mb-0">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Click image to view full size and verify details. Ensure the reference number matches.
+                </p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Cash Payment Details (only for cash payments that have been received) -->
+        {% if payment.method == 'cash' and payment.cash_received_by %}
+        <div class="admin-verify-card mb-4">
+            <div class="admin-verify-header">
+                <h5 class="admin-verify-title">
+                    <i class="fas fa-money-bill-wave text-success"></i>
+                    Cash Payment Details
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center gap-2">
+                            <div style="width: 36px; height: 36px; background: rgba(40,167,69,0.08); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <i class="fas fa-user-check" style="color: #28a745;"></i>
+                            </div>
+                            <div>
+                                <small class="text-muted d-block" style="font-size: 0.7rem; line-height: 1.2;">Received By</small>
+                                <span class="fw-semibold">{{ payment.cash_received_by.get_full_name|default:payment.cash_received_by.username }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% if payment.cash_received_at %}
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center gap-2">
+                            <div style="width: 36px; height: 36px; background: rgba(40,167,69,0.08); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <i class="fas fa-clock" style="color: #28a745;"></i>
+                            </div>
+                            <div>
+                                <small class="text-muted d-block" style="font-size: 0.7rem; line-height: 1.2;">Received At</small>
+                                <span class="fw-semibold">{{ payment.cash_received_at|date:"M d, Y g:i A" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Refund Details Card -->
+        {% if payment.status == 'refunded' and latest_refund %}
+        <div class="admin-verify-card refund-card mb-4">
+            <div class="admin-verify-header refund-header">
+                <h5 class="admin-verify-title">
+                    <i class="fas fa-undo"></i>
+                    Refund Details
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="admin-info-item">
+                            <div class="admin-info-icon bg-info">
+                                <i class="fas fa-peso-sign"></i>
+                            </div>
+                            <div class="admin-info-content">
+                                <div class="admin-info-label">Refund Amount</div>
+                                <div class="admin-info-value text-info">₱{{ latest_refund.amount|floatformat:2 }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="admin-info-item">
+                            <div class="admin-info-icon bg-info">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="admin-info-content">
+                                <div class="admin-info-label">Status</div>
+                                <div class="admin-info-value">{{ latest_refund.get_status_display }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="admin-info-item">
+                            <div class="admin-info-icon bg-info">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="admin-info-content">
+                                <div class="admin-info-label">Requested By</div>
+                                <div class="admin-info-value">{{ latest_refund.requested_by.get_full_name|default:latest_refund.requested_by.username }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% if latest_refund.approved_by %}
+                    <div class="col-md-6">
+                        <div class="admin-info-item">
+                            <div class="admin-info-icon bg-info">
+                                <i class="fas fa-user-shield"></i>
+                            </div>
+                            <div class="admin-info-content">
+                                <div class="admin-info-label">Approved By</div>
+                                <div class="admin-info-value">{{ latest_refund.approved_by.get_full_name|default:latest_refund.approved_by.username }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="col-md-6">
+                        <div class="admin-info-item">
+                            <div class="admin-info-icon bg-info">
+                                <i class="fas fa-calendar"></i>
+                            </div>
+                            <div class="admin-info-content">
+                                <div class="admin-info-label">Requested At</div>
+                                <div class="admin-info-value">{{ latest_refund.requested_at|date:"M d, Y" }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% if latest_refund.processed_at %}
+                    <div class="col-md-6">
+                        <div class="admin-info-item">
+                            <div class="admin-info-icon bg-info">
+                                <i class="fas fa-check-double"></i>
+                            </div>
+                            <div class="admin-info-content">
+                                <div class="admin-info-label">Processed At</div>
+                                <div class="admin-info-value">{{ latest_refund.processed_at|date:"M d, Y g:i A" }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if latest_refund.reason %}
+                    <div class="col-12">
+                        <div class="admin-info-item">
+                            <div class="admin-info-icon bg-info">
+                                <i class="fas fa-comment"></i>
+                            </div>
+                            <div class="admin-info-content">
+                                <div class="admin-info-label">Reason</div>
+                                <div class="admin-info-value" style="font-size: 0.9rem; font-weight: 400;">{{ latest_refund.reason }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Update Status Form -->
+        <div class="admin-verify-card">
+            <div class="admin-verify-header">
+                <h5 class="admin-verify-title">
+                    <i class="fas fa-edit text-primary"></i>
+                    Update Payment Status
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+                    {% for field in form %}
+                    <div class="admin-form-group">
+                        <label class="admin-form-label" for="{{ field.id_for_label }}">
+                            {{ field.label }}
+                            {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+                        </label>
+                        {{ field }}
+                        {% if field.help_text %}
+                        <div class="form-text text-muted small mt-1">{{ field.help_text }}</div>
+                        {% endif %}
+                        {% if field.errors %}
+                        <div class="invalid-feedback d-block">{{ field.errors }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    <div class="admin-btn-group">
+                        <a href="{% url 'super_admin_payments' %}" class="btn btn-outline-secondary px-4">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Payments
+                        </a>
+                        <button type="submit" class="btn btn-success px-5">
+                            <i class="fas fa-check me-2"></i>Update Payment
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar: Reservation & Activity Details -->
+    <div class="col-lg-4">
+        <!-- Reservation Details -->
+        <div class="admin-sidebar-card mb-4">
+            <div class="admin-sidebar-header">
+                <i class="fas fa-calendar"></i>
+                Reservation Details
+            </div>
+            <div class="card-body p-0">
+                <div class="admin-info-item">
+                    <div class="admin-info-icon">
+                        <i class="fas fa-calendar-day"></i>
+                    </div>
+                    <div class="admin-info-content">
+                        <div class="admin-info-label">Date</div>
+                        <div class="admin-info-value">{{ payment.reservation.date|date:"F d, Y" }}</div>
+                    </div>
+                </div>
+                <div class="admin-info-item">
+                    <div class="admin-info-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="admin-info-content">
+                        <div class="admin-info-label">Time Slot</div>
+                        <div class="admin-info-value">{{ payment.reservation.start_time|time:"g:i A" }} - {{ payment.reservation.end_time|time:"g:i A" }}</div>
+                    </div>
+                </div>
+                <div class="admin-info-item">
+                    <div class="admin-info-icon">
+                        <i class="fas fa-hourglass-half"></i>
+                    </div>
+                    <div class="admin-info-content">
+                        <div class="admin-info-label">Duration</div>
+                        <div class="admin-info-value">{{ payment.reservation.duration_hours|floatformat:1 }} hours</div>
+                    </div>
+                </div>
+                <div class="admin-info-item">
+                    <div class="admin-info-icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <div class="admin-info-content">
+                        <div class="admin-info-label">Court / Site</div>
+                        <div class="admin-info-value">{{ payment.reservation.court.name }}</div>
+                        {% if payment.reservation.court.site %}
+                        <small class="text-muted d-block">{{ payment.reservation.court.site.name }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="admin-info-item">
+                    <div class="admin-info-icon bg-success">
+                        <i class="fas fa-peso-sign"></i>
+                    </div>
+                    <div class="admin-info-content">
+                        <div class="admin-info-label">Court Fee</div>
+                        <div class="admin-info-value text-success">₱{{ payment.reservation.subtotal|floatformat:2 }}</div>
+                    </div>
+                </div>
+                {% if payment.reservation.equipment_fee > 0 %}
+                <div class="admin-info-item">
+                    <div class="admin-info-icon bg-warning">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <div class="admin-info-content">
+                        <div class="admin-info-label">Equipment Fee</div>
+                        <div class="admin-info-value">₱{{ payment.reservation.equipment_fee|floatformat:2 }}</div>
+                    </div>
+                </div>
+                {% endif %}
+                <div class="admin-info-item">
+                    <div class="admin-info-icon" style="background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);">
+                        <i class="fas fa-receipt"></i>
+                    </div>
+                    <div class="admin-info-content">
+                        <div class="admin-info-label">Total Charged</div>
+                        <div class="admin-info-value" style="color: #3B7A8C;">₱{{ payment.amount|floatformat:2 }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Info -->
+        <div class="admin-sidebar-card mb-4">
+            <div class="admin-sidebar-header">
+                <i class="fas fa-user"></i>
+                Customer Info
+            </div>
+            <div class="card-body p-0">
+                <div class="admin-info-item">
+                    <div class="admin-info-content">
+                        <div class="admin-info-label">Name</div>
+                        <div class="admin-info-value">{{ payment.reservation.user.get_full_name|default:payment.reservation.user.username }}</div>
+                    </div>
+                </div>
+                <div class="admin-info-item">
+                    <div class="admin-info-content">
+                        <div class="admin-info-label">Email</div>
+                        <div class="admin-info-value" style="font-size: 0.85rem;">{{ payment.reservation.user.email }}</div>
+                    </div>
+                </div>
+                {% if payment.reservation.user.phone_number %}
+                <div class="admin-info-item">
+                    <div class="admin-info-content">
+                        <div class="admin-info-label">Phone</div>
+                        <div class="admin-info-value">{{ payment.reservation.user.phone_number }}</div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Payment Activity Log -->
+        <div class="admin-sidebar-card">
+            <div class="admin-sidebar-header">
+                <i class="fas fa-history"></i>
+                Payment Activity
+            </div>
+            <div class="verification-timeline">
+                {% for log in logs %}
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <div class="fw-semibold small">{{ log.action }}</div>
+                        {% if log.details %}
+                        <div class="text-muted small">{{ log.details|truncatechars:60 }}</div>
+                        {% endif %}
+                        <div class="timeline-time">
+                            <i class="fas fa-user me-1"></i>
+                            {% if log.performed_by %}{{ log.performed_by.get_full_name|default:log.performed_by.username }}{% else %}System{% endif %}
+                            • {{ log.created_at|timesince }} ago
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-muted text-center mb-0">No activity recorded</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Style form elements
+document.querySelectorAll('select, input[type="text"], input[type="number"], textarea').forEach(function(el) {
+    el.classList.add('form-control', 'admin-form-control');
+});
+document.querySelectorAll('select').forEach(function(select) {
+    select.classList.add('form-select');
+});
+</script>
+{% endblock %}

@@ -1,0 +1,178 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Cache Monitor{% endblock %}
+{% block page_title %}Cache Monitor{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="admin-card">
+            <div class="admin-card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <h5 class="admin-card-title mb-0">
+                    <i class="fas fa-tachometer-alt text-primary"></i>
+                    Cache Configuration
+                </h5>
+                <div class="d-flex gap-2 flex-wrap">
+                    <span class="badge bg-secondary">{{ cache_backend }}</span>
+                    <span class="badge bg-info">Pages TTL: {{ pages_timeout }}s</span>
+                    <span class="badge bg-info">CMS TTL: {{ cms_timeout }}s</span>
+                    {% if monitor_enabled %}
+                    <span class="badge bg-success">Slow-query monitor: ON (≥ {{ slow_query_threshold }}ms)</span>
+                    {% else %}
+                    <span class="badge bg-warning text-dark">Slow-query monitor: OFF</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-0 small">
+                    Caches are stored in <strong>{{ cache_backend }}</strong>.
+                    {% if cache_backend == 'redis' %}Each namespace uses its own Redis database so flushing a cache never touches sessions or other namespaces.{% else %}Local-memory cache (set <code>CACHE_BACKEND=redis</code> in the environment for Redis in production).{% endif %}
+                    Page caches are invalidated automatically whenever CMS content, courts, organizations, equipment, tournaments, or reservations change.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    {% for alias, info in cache_stats.items %}
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="admin-card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="fw-bold text-uppercase small text-muted">{{ alias }}</span>
+                    <i class="fas fa-database text-primary"></i>
+                </div>
+                <div class="small">
+                    <div class="d-flex justify-content-between py-1">
+                        <span class="text-muted">Backend</span>
+                        <span class="fw-semibold">{{ info.backend }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-1">
+                        <span class="text-muted">Keys</span>
+                        <span class="fw-semibold">{{ info.keys }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-1">
+                        <span class="text-muted">Hits</span>
+                        <span class="fw-semibold text-success">{{ info.hits }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-1">
+                        <span class="text-muted">Misses</span>
+                        <span class="fw-semibold text-danger">{{ info.misses }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="row mb-4">
+    <div class="col-lg-6 mb-3">
+        <div class="admin-card h-100">
+            <div class="admin-card-header d-flex align-items-center justify-content-between">
+                <h6 class="admin-card-title mb-0">
+                    <i class="fas fa-bolt text-warning"></i>
+                    Cache Invalidation Events
+                </h6>
+                <span class="badge bg-secondary">{{ invalidation_events|length }} recent</span>
+            </div>
+            <div class="card-body p-0">
+                {% if invalidation_events %}
+                <div class="admin-table-container" style="max-height: 360px; overflow-y: auto;">
+                    <table class="table admin-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Model</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for event in invalidation_events %}
+                            <tr>
+                                <td class="small text-muted">{{ event.time|date:"H:i:s" }}</td>
+                                <td class="small">{{ event.model }}</td>
+                                <td>
+                                    {% if event.action == 'create' %}
+                                    <span class="badge bg-success">created</span>
+                                    {% elif event.action == 'update' %}
+                                    <span class="badge bg-warning text-dark">updated</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">deleted</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="p-4 text-center text-muted">
+                    <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+                    No invalidation events recorded yet. Events are recorded as content changes.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-3">
+        <div class="admin-card h-100">
+            <div class="admin-card-header d-flex align-items-center justify-content-between">
+                <h6 class="admin-card-title mb-0">
+                    <i class="fas fa-hourglass-half text-danger"></i>
+                    Slow Database Queries
+                </h6>
+                <span class="badge bg-secondary">{{ slow_queries|length }} recent</span>
+            </div>
+            <div class="card-body p-0">
+                {% if slow_queries %}
+                <div class="admin-table-container" style="max-height: 360px; overflow-y: auto;">
+                    <table class="table admin-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Duration</th>
+                                <th>Query</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for q in slow_queries %}
+                            <tr>
+                                <td class="small text-muted">{{ q.time|date:"H:i:s" }}</td>
+                                <td><span class="badge bg-danger">{{ q.duration_ms }}ms</span></td>
+                                <td class="small"><code class="text-wrap" style="font-size: 0.72rem;">{{ q.sql }}</code></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="p-4 text-center text-muted">
+                    <i class="fas fa-check-circle fa-2x mb-2 d-block text-success"></i>
+                    No slow queries recorded{% if not monitor_enabled %} (enable CACHE_MONITOR_ENABLED to track them){% endif %}.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="admin-card">
+            <div class="card-body">
+                <h6 class="fw-bold mb-3"><i class="fas fa-lightbulb text-warning me-2"></i>How caching works here</h6>
+                <ul class="small text-muted mb-0" style="line-height: 1.9;">
+                    <li><strong>Public pages</strong> (home, pricing, about, FAQ, privacy, terms, tournament list, organization directory/detail) are full-page cached for <em>anonymous</em> visitors. Logged-in users always get a fresh render.</li>
+                    <li><strong>Dynamic data</strong> (court availability, reservations, payments, dashboards, live scoring, notifications) is never cached.</li>
+                    <li><strong>Query-level caches</strong> hold featured lists, CMS settings and page content; they are invalidated automatically when the underlying records change.</li>
+                    <li><strong>Template fragments</strong> (footer, homepage hero/stats/gallery) are cached with the same invalidation.</li>
+                    <li><strong>Session data</strong> lives in {% if cache_backend == 'redis' %}Redis (cached_db engine){% else %}the database (db engine){% endif %} and is never cleared by cache invalidation.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,372 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}{{ cms_settings.page_title|default:'Tournaments' }} - PickleSphere{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <span class="badge mb-2 px-3 py-2" style="background: var(--primary-lighter); color: var(--primary-color); font-size: 0.8rem; letter-spacing: 1px; text-transform: uppercase; font-weight: 600;">Competitive Play</span>
+            <h1 class="display-5 fw-bold mb-2" style="color: var(--primary-color);">{{ cms_settings.hero_title|default:'Tournaments' }}</h1>
+            <p style="color: var(--text-muted);">{{ cms_settings.hero_subtitle|default:'Join beginner-friendly pickleball competitions' }}</p>
+        </div>
+        {% if user.is_authenticated %}
+        <a href="{% url 'my_tournaments' %}" class="btn btn-outline-primary px-4" style="border-radius: var(--border-radius-sm); font-weight: 500;">
+            <i class="fas fa-user me-2"></i>My Tournaments
+        </a>
+        {% endif %}
+    </div>
+
+    {% if cms_settings.announcement_active and cms_settings.announcement %}
+    <div class="alert alert-warning d-flex align-items-center mb-4" style="border-radius: 10px;">
+        <i class="fas fa-bullhorn me-2"></i>
+        <span>{{ cms_settings.announcement }}</span>
+    </div>
+    {% endif %}
+
+    {% if announcements %}
+    {% for ann in announcements %}
+    <div class="alert alert-{% if ann.announcement_type == 'warning' %}warning{% elif ann.announcement_type == 'danger' %}danger{% elif ann.announcement_type == 'success' %}success{% else %}info{% endif %} d-flex align-items-center justify-content-between mb-3" style="border-radius: 10px;">
+        <div class="d-flex align-items-center gap-2">
+            <i class="fas fa-{% if ann.announcement_type == 'warning' %}exclamation-triangle{% elif ann.announcement_type == 'danger' %}times-circle{% elif ann.announcement_type == 'success' %}check-circle{% else %}info-circle{% endif %}"></i>
+            <strong>{{ ann.title }}:</strong>
+            <span>{{ ann.message }}</span>
+        </div>
+        {% if ann.link_url %}
+        <a href="{{ ann.link_url }}" class="btn btn-sm btn-outline-primary">{{ ann.link_text|default:'Learn More' }}</a>
+        {% endif %}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% if featured_tournaments %}
+    <div class="mb-5">
+        <div class="d-flex align-items-center mb-3">
+            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #6f42c1 0%, #4a2c80 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+                <i class="fas fa-star text-white"></i>
+            </div>
+            <h3 class="fw-bold mb-0" style="color: var(--text-dark);">{{ cms_settings.featured_title|default:'Featured Tournaments' }}</h3>
+        </div>
+        {% if cms_settings.featured_subtitle %}
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">{{ cms_settings.featured_subtitle }}</p>
+        {% endif %}
+        <div class="row g-4 mb-4">
+            {% for featured in featured_tournaments %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 hover-card" style="border-radius: var(--border-radius-lg); overflow: hidden; box-shadow: var(--card-shadow); border: 2px solid #6f42c1 !important;">
+                    <div class="card-header text-white py-3" style="background: linear-gradient(135deg, #6f42c1 0%, #4a2c80 100%);">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="badge fw-bold" style="background: var(--bg-white); color: #6f42c1;">{{ featured.tournament.get_category_display }}</span>
+                            <span class="badge bg-warning text-dark"><i class="fas fa-star me-1"></i>{{ featured.label|default:'Featured' }}</span>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <h5 class="card-title fw-bold mb-2" style="color: var(--text-dark);">{{ featured.tournament.name }}</h5>
+                        <p class="card-text small mb-3" style="color: var(--text-muted);">{{ featured.tournament.description|truncatewords:15|default:"Join this featured tournament!" }}</p>
+                        <div class="mb-3">
+                            <span class="badge me-1" style="background: var(--bg-light); color: var(--text-body); border: 1px solid var(--border-color);"><i class="fas fa-sitemap me-1" style="color: var(--primary-color);"></i>{{ featured.tournament.get_format_display }}</span>
+                            <span class="badge" style="background: var(--bg-light); color: var(--text-body); border: 1px solid var(--border-color);"><i class="fas fa-signal me-1" style="color: var(--success-color);"></i>{{ featured.tournament.get_skill_level_display }}</span>
+                        </div>
+                        <div class="progress mb-2" style="height: 6px; background: var(--bg-light); border-radius: 3px;">
+                            <div class="progress-bar" role="progressbar" data-progress="{{ featured.tournament.approved_registrations_count }}" data-max="{{ featured.tournament.max_participants }}" style="background: #6f42c1; border-radius: 3px;"></div>
+                        </div>
+                        <p class="small mb-3" style="color: var(--text-muted);"><i class="fas fa-users me-1" style="color: var(--primary-color);"></i>{{ featured.tournament.approved_registrations_count }}/{{ featured.tournament.max_participants }} registered</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-0 p-4 pt-0">
+                        <a href="{% url 'tournament_detail' featured.tournament.pk %}" class="btn w-100" style="border-radius: var(--border-radius-sm); background: linear-gradient(135deg, #6f42c1 0%, #4a2c80 100%); color: white; border: none; font-weight: 500;">
+                            <i class="fas fa-eye me-2"></i>View Tournament
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Registration Open -->
+    {% if open_tournaments %}
+    <div class="mb-4">
+        <div class="d-flex align-items-center mb-3">
+            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, var(--success-color) 0%, #1e7e34 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+                <i class="fas fa-door-open text-white"></i>
+            </div>
+            <h3 class="fw-bold mb-0" style="color: var(--text-dark);">Open for Registration</h3>
+            <span class="badge ms-3" style="background: var(--success-color);">{{ open_tournaments|length }}</span>
+        </div>
+        <div class="row g-4 mb-5">
+            {% for tournament in open_tournaments %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 hover-card" style="border-radius: var(--border-radius-lg); overflow: hidden; box-shadow: var(--card-shadow); background: var(--bg-white);">
+                    <div class="card-header text-white py-3" style="background: linear-gradient(135deg, var(--success-color) 0%, #1e7e34 100%);">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="badge fw-bold" style="background: var(--bg-white); color: var(--success-color);">{{ tournament.get_category_display }}</span>
+                            <span class="badge" style="background: var(--warning-color); color: var(--text-dark);"><i class="fas fa-door-open me-1"></i>Open</span>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <h5 class="card-title fw-bold mb-2" style="color: var(--text-dark);">{{ tournament.name }}</h5>
+                        <p class="card-text small mb-3" style="color: var(--text-muted);">{{ tournament.description|truncatewords:15|default:"Join this exciting tournament!" }}</p>
+                        <div class="mb-3">
+                            <span class="badge me-1" style="background: var(--bg-light); color: var(--text-body); border: 1px solid var(--border-color);"><i class="fas fa-sitemap me-1" style="color: var(--primary-color);"></i>{{ tournament.get_format_display }}</span>
+                            <span class="badge" style="background: var(--bg-light); color: var(--text-body); border: 1px solid var(--border-color);"><i class="fas fa-signal me-1" style="color: var(--success-color);"></i>{{ tournament.get_skill_level_display }}</span>
+                        </div>
+                        <div class="progress mb-2" style="height: 6px; background: var(--bg-light); border-radius: 3px;">
+                            <div class="progress-bar" role="progressbar" data-progress="{{ tournament.approved_registrations_count }}" data-max="{{ tournament.max_participants }}" style="background: var(--success-color); border-radius: 3px;"></div>
+                        </div>
+                        <p class="small mb-3" style="color: var(--text-muted);"><i class="fas fa-users me-1" style="color: var(--primary-color);"></i>{{ tournament.approved_registrations_count }}/{{ tournament.max_participants }} registered</p>
+                        <ul class="list-unstyled small mb-0">
+                            <li class="mb-1" style="color: var(--text-body);"><i class="fas fa-calendar me-2" style="color: var(--primary-color);"></i>Starts: {{ tournament.tournament_start|date:"M d, Y" }}</li>
+                            <li style="color: var(--text-body);"><i class="fas fa-clock me-2" style="color: var(--danger-color);"></i>Closes: {{ tournament.registration_end|date:"M d, Y" }}</li>
+                        </ul>
+                    </div>
+                    <div class="card-footer bg-transparent border-0 p-4 pt-0">
+                        <a href="{% url 'tournament_detail' tournament.pk %}" class="btn w-100" style="border-radius: var(--border-radius-sm); background: var(--success-color); color: white; font-weight: 500;">
+                            <i class="fas fa-edit me-2"></i>Register Now
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Active Tournaments -->
+    {% if active_tournaments %}
+    <div class="mb-4">
+        <div class="d-flex align-items-center mb-3">
+            <div style="width: 35px; height: 35px; background: linear-gradient(135deg, #dc3545 0%, #a71d2a 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+                <i class="fas fa-play text-white"></i>
+            </div>
+            <h3 class="fw-bold mb-0">In Progress <span class="badge bg-danger ms-2">LIVE</span></h3>
+        </div>
+        <div class="row g-4 mb-5">
+            {% for tournament in active_tournaments %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 shadow-lg hover-card" style="border-radius: 15px; overflow: hidden; border: 2px solid #dc3545 !important;">
+                    <div class="card-header text-white py-3" style="background: linear-gradient(135deg, #dc3545 0%, #a71d2a 100%);">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="badge bg-white text-danger fw-bold">{{ tournament.get_category_display }}</span>
+                            <span class="badge bg-white text-danger pulse"><i class="fas fa-circle me-1"></i>LIVE</span>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <h5 class="card-title fw-bold mb-2">{{ tournament.name }}</h5>
+                        <p class="card-text text-muted small mb-3">Tournament is currently in progress. Watch the matches live!</p>
+                        <div class="mb-3">
+                            <span class="badge bg-light text-dark border"><i class="fas fa-sitemap me-1 text-primary"></i>{{ tournament.get_format_display }}</span>
+                        </div>
+                        <div class="alert alert-light border mb-0">
+                            <small class="text-muted"><i class="fas fa-info-circle me-1 text-primary"></i>Matches are being played now!</small>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent border-0 p-4 pt-0">
+                        <a href="{% url 'tournament_detail' tournament.pk %}" class="btn btn-danger w-100" style="border-radius: 10px;">
+                            <i class="fas fa-eye me-2"></i>View Live Matches
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Upcoming -->
+    {% if upcoming_tournaments %}
+    <div class="mb-4">
+        <div class="d-flex align-items-center mb-3">
+            <div style="width: 35px; height: 35px; background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+                <i class="fas fa-calendar text-white"></i>
+            </div>
+            <h3 class="fw-bold mb-0">Coming Soon</h3>
+        </div>
+        <div class="row g-4 mb-5">
+            {% for tournament in upcoming_tournaments %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 shadow-lg hover-card" style="border-radius: 15px; overflow: hidden; opacity: 0.9;">
+                    <div class="card-header text-white py-3" style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="badge bg-white text-info fw-bold">{{ tournament.get_category_display }}</span>
+                            <span class="badge bg-white text-dark"><i class="fas fa-clock me-1"></i>Soon</span>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <h5 class="card-title fw-bold mb-2">{{ tournament.name }}</h5>
+                        <p class="card-text text-muted small mb-3">Get ready for this upcoming tournament!</p>
+                        <div class="mb-3">
+                            <span class="badge bg-light text-dark border"><i class="fas fa-sitemap me-1 text-primary"></i>{{ tournament.get_format_display }}</span>
+                        </div>
+                        <ul class="list-unstyled small text-muted mb-0">
+                            <li class="mb-1"><i class="fas fa-calendar text-info me-2"></i>Registration opens: {{ tournament.registration_start|date:"M d, Y" }}</li>
+                            <li><i class="fas fa-play-circle text-primary me-2"></i>Tournament starts: {{ tournament.tournament_start|date:"M d, Y" }}</li>
+                        </ul>
+                    </div>
+                    <div class="card-footer bg-transparent border-0 p-4 pt-0">
+                        <button class="btn btn-outline-info w-100" disabled style="border-radius: 10px;">
+                            <i class="fas fa-clock me-2"></i>Registration Not Open
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Completed -->
+    {% if completed_tournaments %}
+    <div class="mb-4">
+        <div class="d-flex align-items-center mb-3">
+            <div style="width: 35px; height: 35px; background: linear-gradient(135deg, #6c757d 0%, #545b62 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+                <i class="fas fa-trophy text-white"></i>
+            </div>
+            <h3 class="fw-bold mb-0">Past Tournaments</h3>
+        </div>
+        <div class="row g-4">
+            {% for tournament in completed_tournaments %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 shadow-sm hover-card" style="border-radius: 15px; overflow: hidden;">
+                    <div class="card-header bg-light py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="badge bg-secondary">{{ tournament.get_category_display }}</span>
+                            <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Completed</span>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <h5 class="card-title fw-bold mb-2">{{ tournament.name }}</h5>
+                        <p class="text-muted small mb-3"><i class="fas fa-calendar-check me-2 text-success"></i>Completed</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-0 p-4 pt-0">
+                        <a href="{% url 'tournament_detail' tournament.pk %}" class="btn btn-outline-secondary w-100" style="border-radius: 10px;">
+                            <i class="fas fa-list me-2"></i>View Results
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if not open_tournaments and not active_tournaments and not upcoming_tournaments and not completed_tournaments %}
+    <div class="card border-0 shadow-lg" style="border-radius: 15px;">
+        <div class="card-body text-center py-5">
+            <div style="width: 100px; height: 100px; background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+                <i class="fas fa-search fa-3x text-muted"></i>
+            </div>
+            <h4 class="fw-bold text-muted mb-2">No tournaments found</h4>
+            <p class="text-muted mb-4">Try adjusting your filters or check back later for upcoming events!</p>
+            <a href="{% url 'tournament_list' %}" class="btn btn-primary btn-lg px-5" style="border-radius: 10px;">
+                <i class="fas fa-undo me-2"></i>Clear Filters
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+/* Hover Effects */
+.hover-card {
+    transition: transform var(--transition-slow), box-shadow var(--transition-base);
+}
+.hover-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--card-shadow-hover) !important;
+}
+
+/* Pulse animation for live indicator */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
+}
+.pulse {
+    animation: pulse 2s infinite;
+}
+
+/* Enhanced Cards */
+.card {
+    transition: all var(--transition-slow);
+}
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--card-shadow-hover);
+}
+
+/* Enhanced Buttons */
+.btn {
+    transition: all var(--transition-slow);
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--btn-shadow);
+}
+
+/* Enhanced Form Controls */
+.form-select {
+    transition: all var(--transition-fast);
+    border: 1px solid var(--border-color);
+}
+.form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(59,122,140,0.1);
+    transform: translateY(-1px);
+}
+
+/* Enhanced Badges */
+.badge {
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    padding: 6px 12px;
+    border-radius: var(--border-radius-sm);
+}
+
+/* Enhanced Progress Bar */
+.progress {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--bg-light);
+}
+.progress-bar {
+    transition: width 0.6s ease;
+}
+
+/* Enhanced Empty State */
+.empty-state-icon {
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+/* Enhanced Icon Circles */
+.icon-circle {
+    transition: all var(--transition-base);
+}
+.icon-circle:hover {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: var(--btn-shadow);
+}
+</style>
+
+<script>
+// Set progress bar widths
+document.querySelectorAll('.progress-bar[data-progress]').forEach(function(bar) {
+    var progress = parseInt(bar.getAttribute('data-progress')) || 0;
+    var max = parseInt(bar.getAttribute('data-max')) || 1;
+    var percentage = Math.min(100, Math.round((progress / max) * 100));
+    bar.style.width = percentage + '%';
+});
+</script>
+{% endblock %}
+
+

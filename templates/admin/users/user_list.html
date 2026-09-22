@@ -1,0 +1,138 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}User Management{% endblock %}
+{% block page_title %}User Management{% endblock %}
+
+{% block content %}
+{% include 'components/filter_bar_start.html' %}
+            <div class="col-md-4">
+                <label class="filter-label"><i class="fas fa-search me-1 text-primary"></i>Search</label>
+                <input type="text" name="search" class="filter-input" placeholder="Username or email..." value="{{ search_query }}">
+            </div>
+            <div class="col-md-3">
+                <label class="filter-label"><i class="fas fa-user-tag me-1 text-primary"></i>Role</label>
+                <select name="role" class="filter-select">
+                    <option value="">All Roles</option>
+                    <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Admin</option>
+                    <option value="staff" {% if role_filter == 'staff' %}selected{% endif %}>Staff</option>
+                    <option value="user" {% if role_filter == 'user' %}selected{% endif %}>User</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <div class="filter-btn-row">
+                    <button type="submit" class="btn btn-primary flex-grow-1"><i class="fas fa-search me-1"></i>Search</button>
+                    {% if search_query or role_filter %}
+                    <a href="{% url 'super_admin_user_list' %}" class="btn btn-outline-secondary" title="Clear filters"><i class="fas fa-times"></i></a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-md-3">
+                <a href="{% url 'super_admin_user_create' %}" class="btn btn-success w-100"><i class="fas fa-user-plus me-1"></i>Create User</a>
+            </div>
+{% include 'components/filter_bar_end.html' %}
+
+<!-- Users Table -->
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-users text-primary"></i>
+            All Users
+        </h5>
+        <span class="badge bg-primary">{{ users|length }} total</span>
+    </div>
+    <div class="card-body p-0">
+        {% if users %}
+        <div class="admin-table-container">
+            <table class="table admin-table mb-0">
+                <thead>
+                    <tr>
+                        <th><a href="?sort_by=username&amp;sort_order={% if sort_by == 'username' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if role_filter %}&amp;role={{ role_filter }}{% endif %}" class="sort-link">User {% if sort_by == 'username' %}<i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %}"></i>{% elif sort_by == '-username' %}<i class="fas fa-sort-down"></i>{% endif %}</a></th>
+                        <th><a href="?sort_by=email&amp;sort_order={% if sort_by == 'email' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if role_filter %}&amp;role={{ role_filter }}{% endif %}" class="sort-link">Email {% if sort_by == 'email' %}<i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %}"></i>{% elif sort_by == '-email' %}<i class="fas fa-sort-down"></i>{% endif %}</a></th>
+                        <th><a href="?sort_by=role&amp;sort_order={% if sort_by == 'role' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if role_filter %}&amp;role={{ role_filter }}{% endif %}" class="sort-link">Role {% if sort_by == 'role' %}<i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %}"></i>{% elif sort_by == '-role' %}<i class="fas fa-sort-down"></i>{% endif %}</a></th>
+                        <th><a href="?sort_by=is_active&amp;sort_order={% if sort_by == 'is_active' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if role_filter %}&amp;role={{ role_filter }}{% endif %}" class="sort-link">Status {% if sort_by == 'is_active' %}<i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %}"></i>{% elif sort_by == '-is_active' %}<i class="fas fa-sort-down"></i>{% endif %}</a></th>
+                        <th><a href="?sort_by=created_at&amp;sort_order={% if sort_by == 'created_at' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if role_filter %}&amp;role={{ role_filter }}{% endif %}" class="sort-link">Joined {% if sort_by == 'created_at' %}<i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %}"></i>{% elif sort_by == '-created_at' %}<i class="fas fa-sort-down"></i>{% endif %}</a></th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td data-label="User">
+                            <div class="d-flex align-items-center">
+                                {% if user.profile_picture %}
+                                    <img src="{{ user.profile_picture.url }}" alt="{{ user.username }}" class="avatar avatar-sm me-2">
+                                {% else %}
+                                    <div class="avatar avatar-sm avatar-placeholder me-2">
+                                        {{ user.first_name|first|default:user.username|first|upper }}
+                                    </div>
+                                {% endif %}
+                                <span class="fw-semibold">{{ user.username }}</span>
+                            </div>
+                        </td>
+                        <td data-label="Email">{{ user.email|default:"N/A" }}</td>
+                        <td data-label="Role">
+                            <span class="status-badge {{ user.role }}">{{ user.get_role_display }}</span>
+                        </td>
+                        <td data-label="Status">
+                            {% if user.is_active %}
+                            <span class="status-badge active">Active</span>
+                            {% else %}
+                            <span class="status-badge inactive">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Joined">{{ user.created_at|date:"M d, Y" }}</td>
+                        <td data-label="Actions">
+                            <div class="action-buttons justify-content-end">
+                                <a href="{% url 'super_admin_user_edit' user.id %}" class="action-btn edit" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% if user != request.user %}
+                                <form method="post" action="{% url 'super_admin_user_delete' user.id %}" class="d-inline" data-confirm-message="Deactivate this user account?">
+                                    {% csrf_token %}
+                                    <button type="submit" class="action-btn delete" title="Deactivate" onclick="event.preventDefault(); customConfirm(this.closest('form').dataset.confirmMessage, () => { this.closest('form').submit(); })">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+        {% if is_paginated %}
+        <nav aria-label="Page navigation" class="px-3 py-3 border-top">
+            <ul class="pagination justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if role_filter %}&amp;role={{ role_filter }}{% endif %}{% if sort_by %}&amp;sort_by={{ sort_by }}{% endif %}{% if sort_order %}&amp;sort_order={{ sort_order }}{% endif %}"><i class="fas fa-angle-double-left"></i></a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if role_filter %}&amp;role={{ role_filter }}{% endif %}{% if sort_by %}&amp;sort_by={{ sort_by }}{% endif %}{% if sort_order %}&amp;sort_order={{ sort_order }}{% endif %}"><i class="fas fa-angle-left"></i></a>
+                </li>
+                {% endif %}
+                {% for num in page_obj.paginator.page_range %}
+                    {% if num == page_obj.number %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item"><a class="page-link" href="?page={{ num }}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if role_filter %}&amp;role={{ role_filter }}{% endif %}{% if sort_by %}&amp;sort_by={{ sort_by }}{% endif %}{% if sort_order %}&amp;sort_order={{ sort_order }}{% endif %}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if role_filter %}&amp;role={{ role_filter }}{% endif %}{% if sort_by %}&amp;sort_by={{ sort_by }}{% endif %}{% if sort_order %}&amp;sort_order={{ sort_order }}{% endif %}"><i class="fas fa-angle-right"></i></a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if role_filter %}&amp;role={{ role_filter }}{% endif %}{% if sort_by %}&amp;sort_by={{ sort_by }}{% endif %}{% if sort_order %}&amp;sort_order={{ sort_order }}{% endif %}"><i class="fas fa-angle-double-right"></i></a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

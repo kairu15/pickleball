@@ -1,0 +1,521 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Payment Management{% endblock %}
+{% block page_title %}Payment Management{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/staff.css' %}">
+<style>
+@keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-in {
+    animation: fadeSlideUp 0.4s ease forwards;
+    opacity: 0;
+}
+.animate-in-d1 { animation-delay: 0.05s; }
+.animate-in-d2 { animation-delay: 0.1s; }
+.animate-in-d3 { animation-delay: 0.15s; }
+.animate-in-d4 { animation-delay: 0.2s; }
+.animate-in-d5 { animation-delay: 0.25s; }
+.animate-in-d6 { animation-delay: 0.3s; }
+
+.filter-bar {
+    background: white;
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 1.5rem;
+}
+.filter-bar .form-control,
+.filter-bar .form-select {
+    border-radius: 10px;
+    border: 1.5px solid #e9ecef;
+    transition: all 0.2s;
+}
+.filter-bar .form-control:focus,
+.filter-bar .form-select:focus {
+    border-color: #3B7A8C;
+    box-shadow: 0 0 0 3px rgba(59,122,140,0.12);
+}
+
+.pay-card {
+    border-radius: 14px;
+    border: 1.5px solid #e9ecef;
+    transition: all 0.25s ease;
+    background: white;
+    overflow: hidden;
+}
+.pay-card:hover {
+    border-color: #dee2e6;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+}
+
+.pay-table { margin-bottom: 0; }
+.pay-table thead th {
+    background: #f8f9fa;
+    border-bottom: 2px solid #e9ecef;
+    padding: 0.75rem 1rem;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #495057;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.pay-table tbody td {
+    padding: 0.85rem 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.85rem;
+}
+.pay-table tbody tr:hover { background: #f8f9fa; }
+
+.badge-payment-paid { background: rgba(40,167,69,0.12); color: #1e7e34; border: 1px solid rgba(40,167,69,0.2); border-radius: 20px; padding: 0.25rem 0.65rem; font-size: 0.72rem; font-weight: 600; }
+.badge-payment-pending { background: rgba(253,126,20,0.12); color: #d46300; border: 1px solid rgba(253,126,20,0.2); border-radius: 20px; padding: 0.25rem 0.65rem; font-size: 0.72rem; font-weight: 600; }
+.badge-payment-refunded { background: rgba(23,162,184,0.1); color: #138496; border: 1px solid rgba(23,162,184,0.15); border-radius: 20px; padding: 0.25rem 0.65rem; font-size: 0.72rem; font-weight: 600; }
+.badge-payment-failed { background: rgba(220,53,69,0.1); color: #c82333; border: 1px solid rgba(220,53,69,0.15); border-radius: 20px; padding: 0.25rem 0.65rem; font-size: 0.72rem; font-weight: 600; }
+
+.method-chip {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    padding: 0.2rem 0.6rem; border-radius: 20px;
+    font-size: 0.72rem; font-weight: 600;
+}
+.method-chip.gcash { background: rgba(0,123,255,0.1); color: #0056b3; }
+.method-chip.cash { background: rgba(40,167,69,0.1); color: #1e7e34; }
+.method-chip.card { background: rgba(23,162,184,0.1); color: #0c5460; }
+
+.btn-action-pay {
+    width: 34px; height: 34px; border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: none; transition: all 0.2s; font-size: 0.8rem;
+    text-decoration: none;
+}
+.btn-action-pay:hover { transform: translateY(-1px); text-decoration: none; }
+.btn-view-pay { background: rgba(59,122,140,0.1); color: #2c5f6e; }
+.btn-view-pay:hover { background: rgba(59,122,140,0.2); color: #1a3a42; }
+.btn-approve-pay { background: rgba(40,167,69,0.12); color: #1e7e34; }
+.btn-approve-pay:hover { background: rgba(40,167,69,0.25); }
+.btn-reject-pay { background: rgba(220,53,69,0.1); color: #c82333; }
+.btn-reject-pay:hover { background: rgba(220,53,69,0.2); }
+.btn-cash-pay { background: rgba(255,152,0,0.12); color: #e65100; }
+.btn-cash-pay:hover { background: rgba(255,152,0,0.25); }
+
+.proof-thumb-wrapper {
+    display: inline-flex; width: 36px; height: 36px;
+    border-radius: 6px; overflow: hidden;
+    border: 1.5px solid #e9ecef;
+    cursor: pointer; transition: all 0.2s ease;
+}
+.proof-thumb-wrapper:hover {
+    border-color: #3B7A8C; transform: scale(2.5);
+    z-index: 10; box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    border-radius: 4px;
+}
+.proof-thumb { width: 100%; height: 100%; object-fit: cover; }
+
+.empty-state { text-align: center; padding: 3rem 1rem; }
+.empty-state-icon {
+    width: 72px; height: 72px;
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1rem; color: #e65100; font-size: 1.5rem;
+}
+.empty-state-title { font-weight: 700; color: #212529; margin-bottom: 0.25rem; }
+.empty-state-text { font-size: 0.85rem; color: #6c757d; margin-bottom: 0; }
+
+.confirm-modal .modal-content { border-radius: 16px; border: none; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+.confirm-modal .modal-header { border: none; padding: 1.5rem 1.5rem 0; }
+.confirm-modal .modal-body { padding: 1rem 1.5rem 1.25rem; }
+.confirm-modal .modal-footer { border: none; padding: 0 1.5rem 1.5rem; gap: 0.5rem; }
+
+@media (max-width: 768px) {
+    .filter-bar .row > div { margin-bottom: 0.5rem; }
+}
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'staff_dashboard' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Payment Management</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<!-- Stats Cards (matching org admin dashboard) -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-success text-white me-3">
+                    <i class="fas fa-check-circle fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">₱{{ total_paid|floatformat:0 }}</div>
+                    <div class="stats-label text-muted">Total Paid</div>
+                    <small class="text-success"><i class="fas fa-coins me-1"></i>All-time revenue</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-warning text-white me-3">
+                    <i class="fas fa-clock fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">{{ pending_count }}</div>
+                    <div class="stats-label text-muted">Pending</div>
+                    <small class="text-warning"><i class="fas fa-hourglass-half me-1"></i>Awaiting verification</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-primary text-white me-3">
+                    <i class="fas fa-receipt fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">{{ paid_count }}</div>
+                    <div class="stats-label text-muted">Paid Count</div>
+                    <small class="text-primary"><i class="fas fa-check-circle me-1"></i>Completed payments</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-info text-white me-3">
+                    <i class="fas fa-calendar-day fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">₱{{ today_revenue|floatformat:0 }}</div>
+                    <div class="stats-label text-muted">Today's Revenue</div>
+                    <small class="text-info"><i class="fas fa-calendar-alt me-1"></i>Earned today</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include 'components/filter_bar_start.html' %}
+            <div class="col-md-3">
+                <label class="filter-label"><i class="fas fa-search me-1 text-primary"></i>Search</label>
+                <input type="text" name="search" class="filter-input" placeholder="User email, name, or ref #..." value="{{ search_query }}">
+            </div>
+            <div class="col-md-2">
+                <label class="filter-label"><i class="fas fa-filter me-1 text-primary"></i>Status</label>
+                <select name="status" class="filter-select">
+                    <option value="">All Status</option>
+                    <option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Paid</option>
+                    <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="refunded" {% if status_filter == 'refunded' %}selected{% endif %}>Refunded</option>
+                    <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>Failed</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="filter-label"><i class="fas fa-credit-card me-1 text-primary"></i>Method</label>
+                <select name="method" class="filter-select">
+                    <option value="">All Methods</option>
+                    <option value="gcash" {% if method_filter == 'gcash' %}selected{% endif %}>GCash</option>
+                    <option value="maya" {% if method_filter == 'maya' %}selected{% endif %}>Maya</option>
+                    <option value="bank_transfer" {% if method_filter == 'bank_transfer' %}selected{% endif %}>Bank Transfer</option>
+                    <option value="cash" {% if method_filter == 'cash' %}selected{% endif %}>Cash</option>
+                    <option value="card" {% if method_filter == 'card' %}selected{% endif %}>Card</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="filter-label"><i class="fas fa-calendar me-1 text-primary"></i>From</label>
+                <input type="date" name="date_from" class="filter-input" value="{{ date_from }}">
+            </div>
+            <div class="col-md-2">
+                <label class="filter-label"><i class="fas fa-calendar me-1 text-primary"></i>To</label>
+                <input type="date" name="date_to" class="filter-input" value="{{ date_to }}">
+            </div>
+            <div class="col-md-1">
+                <div class="filter-btn-row">
+                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search"></i></button>
+                    {% if search_query or status_filter or method_filter or date_from or date_to %}
+                    <a href="{% url 'staff_payments' %}" class="btn btn-outline-secondary" title="Clear filters"><i class="fas fa-times"></i></a>
+                    {% endif %}
+                </div>
+            </div>
+{% include 'components/filter_bar_end.html' %}
+
+<!-- Payments Card -->
+<div class="pay-card animate-in animate-in-d4">
+    <div class="px-3 py-3 d-flex justify-content-between align-items-center" style="border-bottom: 1px solid #e9ecef;">
+        <h5 class="fw-bold mb-0" style="font-size: 0.95rem;">
+            <i class="fas fa-list text-primary me-2"></i>All Payments
+        </h5>
+        <span class="badge bg-primary rounded-pill" style="font-size: 0.7rem;">{{ page_obj.paginator.count }} records</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table pay-table">
+            <thead>
+                <tr>
+                    <th><a href="?sort_by=id&amp;sort_order={% if sort_by == 'id' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if method_filter %}&amp;method={{ method_filter }}{% endif %}{% if date_from %}&amp;date_from={{ date_from }}{% endif %}{% if date_to %}&amp;date_to={{ date_to }}{% endif %}" class="sort-link text-decoration-none text-reset"># {% if sort_by == 'id' or sort_by == '-id' %}<i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+                    <th>User</th>
+                    <th>Reservation</th>
+                    <th><a href="?sort_by=amount&amp;sort_order={% if sort_by == 'amount' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if method_filter %}&amp;method={{ method_filter }}{% endif %}{% if date_from %}&amp;date_from={{ date_from }}{% endif %}{% if date_to %}&amp;date_to={{ date_to }}{% endif %}" class="sort-link text-decoration-none text-reset">Amount {% if sort_by == 'amount' or sort_by == '-amount' %}<i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+                    <th><a href="?sort_by=method&amp;sort_order={% if sort_by == 'method' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if method_filter %}&amp;method={{ method_filter }}{% endif %}{% if date_from %}&amp;date_from={{ date_from }}{% endif %}{% if date_to %}&amp;date_to={{ date_to }}{% endif %}" class="sort-link text-decoration-none text-reset">Method {% if sort_by == 'method' or sort_by == '-method' %}<i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+                    <th class="text-center">Proof</th>
+                    <th><a href="?sort_by=status&amp;sort_order={% if sort_by == 'status' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if method_filter %}&amp;method={{ method_filter }}{% endif %}{% if date_from %}&amp;date_from={{ date_from }}{% endif %}{% if date_to %}&amp;date_to={{ date_to }}{% endif %}" class="sort-link text-decoration-none text-reset">Status {% if sort_by == 'status' or sort_by == '-status' %}<i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+                    <th><a href="?sort_by=created_at&amp;sort_order={% if sort_by == 'created_at' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if method_filter %}&amp;method={{ method_filter }}{% endif %}{% if date_from %}&amp;date_from={{ date_from }}{% endif %}{% if date_to %}&amp;date_to={{ date_to }}{% endif %}" class="sort-link text-decoration-none text-reset">Date {% if sort_by == 'created_at' or sort_by == '-created_at' %}<i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment in payments %}
+                <tr>
+                    <td><span class="fw-bold" style="font-size: 0.8rem;">#{{ payment.id }}</span></td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            {% if payment.reservation.user.profile_picture %}
+                            <img src="{{ payment.reservation.user.profile_picture.url }}" alt="" class="rounded-circle" width="28" height="28" style="object-fit: cover;">
+                            {% else %}
+                            <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; background: rgba(59,122,140,0.1);">
+                                <span class="fw-bold small" style="color: #2c5f6e;">{{ payment.reservation.user.username|first|upper }}</span>
+                            </div>
+                            {% endif %}
+                            <div>
+                                <div class="fw-semibold" style="font-size: 0.85rem;">{{ payment.reservation.user.username }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <small class="text-muted">Res #{{ payment.reservation.id }}</small>
+                    </td>
+                    <td class="fw-semibold" style="color: #198754;">₱{{ payment.amount|floatformat:2 }}</td>
+                    <td>
+                        <span class="method-chip {{ payment.method }}">
+                            <i class="fas fa-{% if payment.method == 'gcash' %}mobile-alt{% elif payment.method == 'maya' %}wallet{% elif payment.method == 'bank_transfer' %}university{% elif payment.method == 'cash' %}money-bill-wave{% else %}credit-card{% endif %}"></i>
+                            {{ payment.get_method_display|default:"N/A" }}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        {% if payment.method == 'gcash' or payment.method == 'maya' or payment.method == 'bank_transfer' %}
+                            {% if payment.gcash_proof_image %}
+                            <div class="proof-thumb-wrapper" title="Click to preview">
+                                <img src="{{ payment.gcash_proof_image.url }}" alt="Proof" class="proof-thumb" loading="lazy"
+                                     onclick="openProofLightbox(this.src)">
+                            </div>
+                            {% else %}
+                            <span class="text-muted small"><i class="fas fa-times"></i></span>
+                            {% endif %}
+                        {% else %}
+                        <span class="text-muted small">&mdash;</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="{% if payment.status == 'paid' %}badge-payment-paid{% elif payment.status == 'pending' %}badge-payment-pending{% elif payment.status == 'refunded' %}badge-payment-refunded{% elif payment.status == 'failed' %}badge-payment-failed{% endif %}">
+                            <i class="fas fa-{% if payment.status == 'paid' %}check-circle{% elif payment.status == 'pending' %}clock{% elif payment.status == 'refunded' %}undo{% else %}times-circle{% endif %} me-1"></i>
+                            {{ payment.get_status_display }}
+                        </span>
+                    </td>
+                    <td><small class="text-muted">{{ payment.created_at|date:"M d, Y" }}</small></td>
+                    <td class="text-end">
+                        <div class="d-flex gap-1 justify-content-end">
+                            <a href="{% url 'payment_status' payment.id %}" class="btn-action-pay btn-view-pay" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            {% if payment.status == 'pending' %}
+                                {% if payment.method == 'gcash' or payment.method == 'maya' or payment.method == 'bank_transfer' %}
+                                <button type="button" class="btn-action-pay btn-approve-pay" title="Approve"
+                                        onclick="openActionModal('approve', {{ payment.id }}, '{{ payment.reservation.user.username|escapejs }}', {{ payment.amount|floatformat:2 }})">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button type="button" class="btn-action-pay btn-reject-pay" title="Reject"
+                                        onclick="openActionModal('reject', {{ payment.id }}, '{{ payment.reservation.user.username|escapejs }}', {{ payment.amount|floatformat:2 }})">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                                {% endif %}
+                                {% if payment.method == 'cash' %}
+                                <a href="{% url 'staff_cash_payment_confirm' payment.id %}" class="btn-action-pay btn-cash-pay" title="Cash Counter">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </a>
+                                {% endif %}
+                                {% if payment.method == 'card' %}
+                                <span class="text-success small fw-semibold"><i class="fas fa-check-circle"></i> Auto</span>
+                                {% endif %}
+                            {% endif %}
+                            {% if payment.gcash_proof_image %}
+                            <a href="{% url 'view_payment_proof' payment.id %}" class="btn-action-pay btn-view-pay" title="View Proof">
+                                <i class="fas fa-image"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9">
+                        <div class="empty-state">
+                            <div class="empty-state-icon"><i class="fas fa-receipt"></i></div>
+                            <h6 class="empty-state-title">No payments found</h6>
+                            <p class="empty-state-text">
+                                {% if status_filter or method_filter or date_from or date_to %}
+                                    No results match your filters.
+                                {% else %}
+                                    There are no payments to display at this time.
+                                {% endif %}
+                            </p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if is_paginated %}
+    <div class="px-3 py-3 border-top">
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page=1{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if method_filter %}&amp;method={{ method_filter }}{% endif %}{% if date_from %}&amp;date_from={{ date_from }}{% endif %}{% if date_to %}&amp;date_to={{ date_to }}{% endif %}{% if sort_by %}&amp;sort_by={{ sort_by }}{% endif %}{% if sort_order %}&amp;sort_order={{ sort_order }}{% endif %}"><i class="fas fa-angle-double-left"></i></a></li>
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if method_filter %}&amp;method={{ method_filter }}{% endif %}{% if date_from %}&amp;date_from={{ date_from }}{% endif %}{% if date_to %}&amp;date_to={{ date_to }}{% endif %}{% if sort_by %}&amp;sort_by={{ sort_by }}{% endif %}{% if sort_order %}&amp;sort_order={{ sort_order }}{% endif %}"><i class="fas fa-angle-left"></i></a></li>
+                {% endif %}
+                {% for num in page_obj.paginator.page_range %}
+                    {% if num == page_obj.number %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item"><a class="page-link" href="?page={{ num }}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if method_filter %}&amp;method={{ method_filter }}{% endif %}{% if date_from %}&amp;date_from={{ date_from }}{% endif %}{% if date_to %}&amp;date_to={{ date_to }}{% endif %}{% if sort_by %}&amp;sort_by={{ sort_by }}{% endif %}{% if sort_order %}&amp;sort_order={{ sort_order }}{% endif %}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if method_filter %}&amp;method={{ method_filter }}{% endif %}{% if date_from %}&amp;date_from={{ date_from }}{% endif %}{% if date_to %}&amp;date_to={{ date_to }}{% endif %}{% if sort_by %}&amp;sort_by={{ sort_by }}{% endif %}{% if sort_order %}&amp;sort_order={{ sort_order }}{% endif %}"><i class="fas fa-angle-right"></i></a></li>
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if method_filter %}&amp;method={{ method_filter }}{% endif %}{% if date_from %}&amp;date_from={{ date_from }}{% endif %}{% if date_to %}&amp;date_to={{ date_to }}{% endif %}{% if sort_by %}&amp;sort_by={{ sort_by }}{% endif %}{% if sort_order %}&amp;sort_order={{ sort_order }}{% endif %}"><i class="fas fa-angle-double-right"></i></a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    'use strict';
+
+    // ===== Proof Image Lightbox =====
+    window.openProofLightbox = function(src) {
+        var lb = document.getElementById('proof-lightbox');
+        if (!lb) {
+            lb = document.createElement('div');
+            lb.id = 'proof-lightbox';
+            lb.innerHTML = '<button class="lightbox-close" onclick="closeProofLightbox()"><i class="fas fa-times"></i></button><img id="lightbox-img" src="" alt="Full Size">';
+            Object.assign(lb.style, {
+                display: 'none', position: 'fixed', inset: '0', zIndex: '99999',
+                background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(4px)',
+                alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+            });
+            lb.onclick = function(e) { if (e.target === e.currentTarget) closeProofLightbox(); };
+            document.body.appendChild(lb);
+        }
+        document.getElementById('lightbox-img').src = src;
+        lb.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    };
+
+    window.closeProofLightbox = function() {
+        var lb = document.getElementById('proof-lightbox');
+        if (lb) { lb.style.display = 'none'; document.body.style.overflow = ''; }
+    };
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeProofLightbox();
+    });
+
+    // ===== Confirmation Modals =====
+    if (!document.getElementById('actionModal')) {
+        document.body.insertAdjacentHTML('beforeend',
+            '<div class="modal fade confirm-modal" id="actionModal" tabindex="-1" aria-hidden="true">' +
+            '  <div class="modal-dialog modal-dialog-centered modal-sm">' +
+            '    <div class="modal-content">' +
+            '      <div class="modal-header text-center d-block">' +
+            '        <div id="modal-icon-wrapper" style="width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 0.5rem;">' +
+            '          <i id="modal-icon" class="fas fa-check-circle fa-2x" style="color: #2e7d32;"></i>' +
+            '        </div>' +
+            '        <h6 class="fw-bold mb-1" id="modal-title">Confirm Action</h6>' +
+            '        <p class="text-muted small mb-0" id="modal-desc">Are you sure?</p>' +
+            '      </div>' +
+            '      <div class="modal-body text-center">' +
+            '        <div id="modal-warning" class="p-2 rounded-3 d-none" style="background: #fff8e1;">' +
+            '          <small class="text-muted" id="modal-warning-text"></small>' +
+            '        </div>' +
+            '      </div>' +
+            '      <div class="modal-footer justify-content-center">' +
+            '        <button type="button" class="btn btn-outline-secondary" style="border-radius: 10px;" data-bs-dismiss="modal">Cancel</button>' +
+            '        <form method="post" id="action-form" style="display: inline;">' +
+            '          {% csrf_token %}' +
+            '          <input type="hidden" name="status" id="modal-status">' +
+            '          <input type="hidden" name="payment_notes" id="modal-notes" value="">' +
+            '          <button type="submit" class="btn" id="modal-submit-btn" style="border-radius: 10px; font-weight: 600;">' +
+            '            <i class="fas fa-check-circle me-1"></i> <span id="modal-submit-text">Confirm</span>' +
+            '          </button>' +
+            '        </form>' +
+            '      </div>' +
+            '    </div>' +
+            '  </div>' +
+            '</div>'
+        );
+    }
+
+    window.openActionModal = function(action, paymentId, username, amount) {
+        var icon = document.getElementById('modal-icon');
+        var iconWrapper = document.getElementById('modal-icon-wrapper');
+        var title = document.getElementById('modal-title');
+        var desc = document.getElementById('modal-desc');
+        var warning = document.getElementById('modal-warning');
+        var warningText = document.getElementById('modal-warning-text');
+        var submitBtn = document.getElementById('modal-submit-btn');
+        var submitText = document.getElementById('modal-submit-text');
+        var form = document.getElementById('action-form');
+        var statusInput = document.getElementById('modal-status');
+
+        form.action = '{% url "staff_verify_payment" 0 %}'.replace('0', paymentId);
+        statusInput.value = action === 'approve' ? 'paid' : 'failed';
+
+        if (action === 'approve') {
+            icon.className = 'fas fa-check-circle fa-2x';
+            icon.style.color = '#2e7d32';
+            iconWrapper.style.background = 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)';
+            title.textContent = 'Approve Payment?';
+            desc.innerHTML = 'Approve payment of <strong>₱' + amount.toFixed(2) + '</strong> from <strong>' + username + '</strong>?';
+            warning.classList.remove('d-none');
+            warningText.textContent = 'The reservation will be confirmed and the user will be notified.';
+            submitBtn.className = 'btn btn-success';
+            submitBtn.style.borderRadius = '10px';
+            submitBtn.style.fontWeight = '600';
+            submitText.textContent = 'Yes, Approve';
+        } else {
+            icon.className = 'fas fa-times-circle fa-2x';
+            icon.style.color = '#c62828';
+            iconWrapper.style.background = 'linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%)';
+            title.textContent = 'Reject Payment?';
+            desc.innerHTML = 'Reject payment from <strong>' + username + '</strong>?';
+            warning.classList.remove('d-none');
+            warningText.textContent = 'The payment will be marked as failed.';
+            submitBtn.className = 'btn btn-danger';
+            submitBtn.style.borderRadius = '10px';
+            submitBtn.style.fontWeight = '600';
+            submitText.textContent = 'Yes, Reject';
+        }
+
+        var modal = new bootstrap.Modal(document.getElementById('actionModal'));
+        modal.show();
+    };
+})();
+</script>
+{% endblock %}

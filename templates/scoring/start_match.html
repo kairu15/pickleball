@@ -1,0 +1,1293 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Start Match{% endblock %}
+{% block page_title %}Start Match - Reservation #{{ reservation.id }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .player-slot {
+        background: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        border-radius: 12px;
+        padding: 1rem;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    .player-slot.filled {
+        border-style: solid;
+        border-color: var(--primary-color, #3B7A8C);
+        background: linear-gradient(135deg, #e7f3ff 0%, #f0f9ff 100%);
+    }
+    .player-slot.guest-mode {
+        border-color: #ffc107;
+        background: linear-gradient(135deg, #fff8e1 0%, #fff3cd 100%);
+    }
+    .player-avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        object-fit: cover;
+        background: var(--primary-color, #3B7A8C);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+    .player-avatar-sm {
+        width: 32px;
+        height: 32px;
+        font-size: 0.8rem;
+    }
+    .search-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 10px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        max-height: 250px;
+        overflow-y: auto;
+        display: none;
+        margin-top: 4px;
+    }
+    .search-dropdown.show {
+        display: block;
+    }
+    .search-dropdown-item {
+        padding: 0.625rem 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        transition: background 0.15s ease;
+    }
+    .search-dropdown-item:hover {
+        background: #f0f7ff;
+    }
+    .search-dropdown-item:not(:last-child) {
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .search-input-wrapper {
+        position: relative;
+    }
+    .search-input-wrapper input {
+        padding-right: 40px;
+    }
+    .search-input-wrapper .search-spinner {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: none;
+    }
+    .guest-badge {
+        background: #ffc107;
+        color: #856404;
+        font-size: 0.7rem;
+        padding: 2px 8px;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+    .team-header-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid #eee;
+    }
+    .team-header-bar .team-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+    .clear-player-btn {
+        position: absolute;
+        right: 8px;
+        top: 8px;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(220,53,69,0.1);
+        color: #dc3545;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 0.7rem;
+        transition: all 0.2s;
+        z-index: 5;
+    }
+    .player-slot.filled .clear-player-btn {
+        display: flex;
+    }
+    .clear-player-btn:hover {
+        background: #dc3545;
+        color: white;
+    }
+    .guest-form-row {
+        display: none;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+    }
+    .guest-form-row.show {
+        display: flex;
+    }
+    .guest-toggle-btn {
+        font-size: 0.8rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        border: 1px dashed #adb5bd;
+        background: transparent;
+        color: #6c757d;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .guest-toggle-btn:hover {
+        border-color: #ffc107;
+        color: #856404;
+        background: #fff8e1;
+    }
+    .guest-toggle-btn.active {
+        border-style: solid;
+        border-color: #ffc107;
+        background: #fff8e1;
+        color: #856404;
+    }
+    .skill-badge {
+        font-size: 0.7rem;
+        padding: 2px 8px;
+        border-radius: 20px;
+        background: #e9ecef;
+        color: #495057;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card border-0 shadow-lg" style="border-radius: 15px; overflow: hidden;">
+            <div class="card-header text-white p-4" style="background: linear-gradient(135deg, #3B7A8C 0%, #1a3a42 100%);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <div style="width: 45px; height: 45px; background: rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-play fa-lg text-white"></i>
+                        </div>
+                        <div class="ms-3">
+                            <h5 class="mb-0 fw-bold">Match Setup</h5>
+                            <p class="mb-0 opacity-75">Configure match settings before starting</p>
+                        </div>
+                    </div>
+                    {% if user.is_super_admin %}
+                    <a href="{% url 'super_admin_reservation_list' %}" class="btn btn-outline-light btn-sm" style="border-radius: 8px;">
+                        <i class="fas fa-arrow-left me-1"></i>Back
+                    </a>
+                    {% else %}
+                    <a href="{% url 'staff_reservations' %}" class="btn btn-outline-light btn-sm" style="border-radius: 8px;">
+                        <i class="fas fa-arrow-left me-1"></i>Back
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <!-- Reservation Info -->
+                <div class="card border-0 mb-4" style="background: linear-gradient(135deg, #e7f3ff 0%, #f0f9ff 100%); border-radius: 12px;">
+                    <div class="card-body p-4">
+                        <h6 class="fw-bold mb-3"><i class="fas fa-info-circle text-primary me-2"></i>Reservation Details</h6>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="d-flex align-items-center">
+                                    <div style="width: 30px; height: 30px; background: rgba(59,122,140,0.1); border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                                        <i class="fas fa-map-marker-alt text-primary"></i>
+                                    </div>
+                                    <strong class="ms-2">Court:</strong> {{ reservation.court.name }}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="d-flex align-items-center">
+                                    <div style="width: 30px; height: 30px; background: rgba(59,122,140,0.1); border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                                        <i class="fas fa-calendar text-primary"></i>
+                                    </div>
+                                    <strong class="ms-2">Date:</strong> {{ reservation.date|date:"M d, Y" }}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="d-flex align-items-center">
+                                    <div style="width: 30px; height: 30px; background: rgba(59,122,140,0.1); border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                                        <i class="fas fa-clock text-primary"></i>
+                                    </div>
+                                    <strong class="ms-2">Time:</strong> {{ reservation.start_time|time:"H:i" }} - {{ reservation.end_time|time:"H:i" }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if can_override %}
+                <div class="alert alert-info d-flex align-items-center mb-4" style="border-radius: 12px;">
+                    <i class="fas fa-lock-open fa-lg me-3"></i>
+                    <div>
+                        <strong class="d-block">Override Mode Enabled</strong>
+                        <small>You have permission to modify the match settings from the reservation defaults.</small>
+                    </div>
+                </div>
+                {% else %}
+                <div class="alert alert-warning d-flex align-items-center mb-4" style="border-radius: 12px;">
+                    <i class="fas fa-lock fa-lg me-3"></i>
+                    <div>
+                        <strong class="d-block">Settings Locked</strong>
+                        <small>Match settings are automatically loaded from the reservation and cannot be modified.</small>
+                    </div>
+                </div>
+                {% endif %}
+
+                <form method="post" id="matchSetupForm">
+                    {% csrf_token %}
+                    {{ form.guest_team1_p1 }}
+                    {{ form.guest_team1_p2 }}
+                    {{ form.guest_team2_p1 }}
+                    {{ form.guest_team2_p2 }}
+
+                    <!-- ===== TEAM ASSIGNMENT SECTION ===== -->
+                    <div class="card border-0 mb-4" style="background: #f8f9fa; border-radius: 12px;">
+                        <div class="card-body p-4">
+                            <h6 class="fw-bold mb-4"><i class="fas fa-users text-primary me-2"></i>Team Assignment</h6>
+
+                            <div id="playerValidationErrors" class="alert alert-danger d-none" style="border-radius: 10px;"></div>
+
+                            <div class="row g-4">
+                                <!-- Team 1 -->
+                                <div class="col-md-6">
+                                    <div class="team-header-bar">
+                                        <div class="team-icon" style="background: var(--primary-color, #3B7A8C); color: white;">
+                                            <i class="fas fa-shield-alt"></i>
+                                        </div>
+                                        <div>
+                                            <strong>Team 1</strong>
+                                            <small class="text-muted d-block">Home Team</small>
+                                        </div>
+                                    </div>
+
+                                    <!-- Team 1 Player 1 -->
+                                    {% if can_override %}
+                                    <div class="player-slot mb-3 filled" id="slot_t1_p1">
+                                        <!-- Display Mode (always shown since user is always Team 1 P1) -->
+                                        <div id="displayMode_t1_p1">
+                                            <div class="d-flex align-items-center gap-2 p-2" style="background: rgba(59,122,140,0.08); border-radius: 8px;">
+                                                <div class="player-avatar player-avatar-sm" id="avatar_t1_p1" style="background: #3B7A8C; color: white; display: flex; align-items: center; justify-content: center;">
+                                                    {{ reservation.user.username|first|upper }}
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bold small" id="name_t1_p1">{{ reservation.user.get_full_name|default:reservation.user.username }}</div>
+                                                    <div class="d-flex gap-1 align-items-center">
+                                                        <small class="text-muted" id="username_t1_p1">@{{ reservation.user.username }}</small>
+                                                        {% if reservation.user.skill_level %}
+                                                        <span class="skill-badge" id="skillBadge_t1_p1">{{ reservation.user.get_skill_level_display }}</span>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                <span class="badge bg-primary" style="font-size: 0.65rem;">Auto</span>
+                                            </div>
+                                        </div>
+                                        <!-- Edit Mode (hidden by default) -->
+                                        <div id="editMode_t1_p1" class="d-none">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <small class="fw-bold text-muted">Player 1</small>
+                                            </div>
+                                            <div class="search-input-wrapper">
+                                                <input type="text" class="form-control player-search-input"
+                                                       placeholder="Search for a player..."
+                                                       id="search_t1_p1"
+                                                       data-target="t1_p1"
+                                                       data-team="1"
+                                                       data-player="1"
+                                                       autocomplete="off">
+                                                <div class="search-spinner"><i class="fas fa-spinner fa-spin text-muted"></i></div>
+                                                <div class="search-dropdown" id="dropdown_t1_p1"></div>
+                                            </div>
+                                        </div>
+                                        <input type="hidden" name="team1_player1" value="{{ reservation.user.id }}" id="input_t1_p1">
+                                        <!-- Selected player display (for JS updates) -->
+                                        <div class="selected-player-info d-none mt-2" id="selected_t1_p1">
+                                            <div class="d-flex align-items-center gap-2 p-2" style="background: rgba(59,122,140,0.08); border-radius: 8px;">
+                                                <div class="player-avatar player-avatar-sm" id="selectedAvatar_t1_p1"></div>
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bold small" id="selectedName_t1_p1"></div>
+                                                    <small class="text-muted" id="selectedSkill_t1_p1"></small>
+                                                </div>
+                                                <button type="button" class="clear-player-btn" onclick="clearPlayer('t1_p1')" title="Remove player">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <div class="player-slot filled mb-3" id="slot_t1_p1">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="player-avatar" id="avatar_t1_p1">
+                                                {{ reservation.user.username|first|upper }}
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="fw-bold small" id="name_t1_p1">{{ reservation.user.get_full_name|default:reservation.user.username }}</div>
+                                                <div class="d-flex gap-1 align-items-center">
+                                                    <small class="text-muted">@{{ reservation.user.username }}</small>
+                                                    {% if reservation.user.skill_level %}
+                                                    <span class="skill-badge">{{ reservation.user.get_skill_level_display }}</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <span class="badge bg-primary" style="font-size: 0.65rem;">Auto</span>
+                                        </div>
+                                        <input type="hidden" name="team1_player1" value="{{ reservation.user.id }}" id="input_t1_p1">
+                                    </div>
+                                    {% endif %}
+
+                                    <!-- Team 1 Player 2 (Doubles only) -->
+                                    <div class="player-slot mb-3 d-none" id="slot_t1_p2" data-format="doubles,mixed_doubles">
+                                        {% if can_override %}
+                                        <!-- Display Mode -->
+                                        <div id="displayMode_t1_p2" class="{% if not reservation.team1_player2 %}d-none{% endif %}">
+                                            <div class="d-flex align-items-center gap-2 p-2" style="background: rgba(59,122,140,0.08); border-radius: 8px;">
+                                                <div class="player-avatar player-avatar-sm" id="avatar_t1_p2" style="background: #3B7A8C; color: white; display: flex; align-items: center; justify-content: center;">
+                                                    {% if reservation.team1_player2 %}{{ reservation.team1_player2.username|first|upper }}{% else %}?{% endif %}
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bold small" id="name_t1_p2">
+                                                        {% if reservation.team1_player2 %}{{ reservation.team1_player2.get_full_name|default:reservation.team1_player2.username }}{% else %}Select Player{% endif %}
+                                                    </div>
+                                                    <div class="d-flex gap-1 align-items-center">
+                                                        <small class="text-muted" id="username_t1_p2">
+                                                            {% if reservation.team1_player2 %}@{{ reservation.team1_player2.username }}{% endif %}
+                                                        </small>
+                                                        {% if reservation.team1_player2 and reservation.team1_player2.skill_level %}
+                                                        <span class="skill-badge" id="skillBadge_t1_p2">{{ reservation.team1_player2.get_skill_level_display }}</span>
+                                                        {% endif %}
+                                                        <span class="guest-badge d-none" id="guestBadge_t1_p2">Guest</span>
+                                                    </div>
+                                                </div>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleEditMode('t1_p2')" style="border-radius: 8px;" id="changeBtn_t1_p2">
+                                                    <i class="fas fa-pen me-1"></i>Change
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <!-- Edit Mode -->
+                                        <div id="editMode_t1_p2" class="{% if reservation.team1_player2 %}d-none{% endif %}">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <small class="fw-bold text-muted">Player 2</small>
+                                                <button type="button" class="guest-toggle-btn" onclick="toggleGuest('t1_p2')" id="guestToggle_t1_p2">
+                                                    <i class="fas fa-user-plus me-1"></i>Add Guest
+                                                </button>
+                                            </div>
+                                            <div class="search-input-wrapper">
+                                                <input type="text" class="form-control player-search-input" 
+                                                       placeholder="Search for a player..." 
+                                                       id="search_t1_p2"
+                                                       data-target="t1_p2"
+                                                       data-team="1"
+                                                       data-player="2"
+                                                       autocomplete="off">
+                                                <div class="search-spinner"><i class="fas fa-spinner fa-spin text-muted"></i></div>
+                                                <div class="search-dropdown" id="dropdown_t1_p2"></div>
+                                            </div>
+                                            <div class="guest-form-row" id="guestForm_t1_p2">
+                                                <input type="text" class="form-control form-control-sm" placeholder="Full Name *" id="guestName_t1_p2" style="border-radius: 8px;">
+                                                <input type="text" class="form-control form-control-sm" placeholder="Nickname (optional)" id="guestNickname_t1_p2" style="border-radius: 8px;">
+                                                <button type="button" class="btn btn-sm btn-warning" onclick="confirmGuest('t1_p2', '1', '2')" style="border-radius: 8px;">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {% else %}
+                                        <!-- Read-only mode -->
+                                        <div class="d-flex align-items-center gap-2 p-2" style="background: rgba(59,122,140,0.08); border-radius: 8px;">
+                                            <div class="player-avatar player-avatar-sm" id="avatar_t1_p2" style="background: #3B7A8C; color: white; display: flex; align-items: center; justify-content: center;">
+                                                {% if reservation.team1_player2 %}{{ reservation.team1_player2.username|first|upper }}{% else %}?{% endif %}
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="fw-bold small" id="name_t1_p2">
+                                                    {% if reservation.team1_player2 %}{{ reservation.team1_player2.get_full_name|default:reservation.team1_player2.username }}{% else %}No player assigned{% endif %}
+                                                </div>
+                                                <div class="d-flex gap-1 align-items-center">
+                                                    <small class="text-muted" id="username_t1_p2">
+                                                        {% if reservation.team1_player2 %}@{{ reservation.team1_player2.username }}{% endif %}
+                                                    </small>
+                                                    {% if reservation.team1_player2 and reservation.team1_player2.skill_level %}
+                                                    <span class="skill-badge" id="skillBadge_t1_p2">{{ reservation.team1_player2.get_skill_level_display }}</span>
+                                                    {% endif %}
+                                                    <span class="guest-badge d-none" id="guestBadge_t1_p2">Guest</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        <input type="hidden" name="team1_player2" value="{{ reservation.team1_player2_id|default:'' }}" id="input_t1_p2"
+                                            {% if reservation.team1_player2 %}
+                                            data-preload-name="{{ reservation.team1_player2.get_full_name|default:reservation.team1_player2.username }}"
+                                            data-preload-username="{{ reservation.team1_player2.username }}"
+                                            data-preload-skill="{{ reservation.team1_player2.get_skill_level_display|default:'' }}"
+                                            {% endif %}>
+                                        <div class="selected-player-info d-none mt-2" id="selected_t1_p2">
+                                            <div class="d-flex align-items-center gap-2 p-2" style="background: rgba(59,122,140,0.08); border-radius: 8px;">
+                                                <div class="player-avatar player-avatar-sm" id="selectedAvatar_t1_p2"></div>
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bold small" id="selectedName_t1_p2"></div>
+                                                    <small class="text-muted" id="selectedSkill_t1_p2"></small>
+                                                </div>
+                                                <button type="button" class="clear-player-btn" onclick="clearPlayer('t1_p2')" title="Remove player">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Team 1 Name -->
+                                    <div class="mt-2">
+                                        {{ form.team1_name }}
+                                    </div>
+                                </div>
+
+                                <!-- Team 2 -->
+                                <div class="col-md-6">
+                                    <div class="team-header-bar">
+                                        <div class="team-icon" style="background: #28a745; color: white;">
+                                            <i class="fas fa-shield-alt"></i>
+                                        </div>
+                                        <div>
+                                            <strong>Team 2</strong>
+                                            <small class="text-muted d-block">Opponent</small>
+                                        </div>
+                                    </div>
+
+                                    <!-- Team 2 Player 1 -->
+                                    <div class="player-slot mb-3" id="slot_t2_p1">
+                                        {% if can_override %}
+                                        <!-- Display Mode (shown when pre-populated) -->
+                                        <div id="displayMode_t2_p1" class="{% if not reservation.team2_player1 and not guest_data_list %}d-none{% endif %}">
+                                            <div class="d-flex align-items-center gap-2 p-2" style="background: rgba(40,167,69,0.08); border-radius: 8px;">
+                                                <div class="player-avatar player-avatar-sm" id="avatar_t2_p1" style="background: #28a745; color: white; display: flex; align-items: center; justify-content: center;">
+                                                    {% if reservation.team2_player1 %}{{ reservation.team2_player1.username|first|upper }}{% else %}?{% endif %}
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bold small" id="name_t2_p1">
+                                                        {% if reservation.team2_player1 %}{{ reservation.team2_player1.get_full_name|default:reservation.team2_player1.username }}{% else %}Select Player{% endif %}
+                                                    </div>
+                                                    <div class="d-flex gap-1 align-items-center">
+                                                        <small class="text-muted" id="username_t2_p1">
+                                                            {% if reservation.team2_player1 %}@{{ reservation.team2_player1.username }}{% endif %}
+                                                        </small>
+                                                        {% if reservation.team2_player1 and reservation.team2_player1.skill_level %}
+                                                        <span class="skill-badge" id="skillBadge_t2_p1">{{ reservation.team2_player1.get_skill_level_display }}</span>
+                                                        {% endif %}
+                                                        <span class="guest-badge d-none" id="guestBadge_t2_p1">Guest</span>
+                                                    </div>
+                                                </div>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleEditMode('t2_p1')" style="border-radius: 8px;" id="changeBtn_t2_p1">
+                                                    <i class="fas fa-pen me-1"></i>Change
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <!-- Edit Mode (shown when empty or after clicking Change) -->
+                                        <div id="editMode_t2_p1" class="{% if reservation.team2_player1 or guest_data_list %}d-none{% endif %}">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <small class="fw-bold text-muted">Player 1</small>
+                                                <button type="button" class="guest-toggle-btn" onclick="toggleGuest('t2_p1')" id="guestToggle_t2_p1">
+                                                    <i class="fas fa-user-plus me-1"></i>Add Guest
+                                                </button>
+                                            </div>
+                                            <div class="search-input-wrapper">
+                                                <input type="text" class="form-control player-search-input" 
+                                                       placeholder="Search for a player..." 
+                                                       id="search_t2_p1"
+                                                       data-target="t2_p1"
+                                                       data-team="2"
+                                                       data-player="1"
+                                                       autocomplete="off">
+                                                <div class="search-spinner"><i class="fas fa-spinner fa-spin text-muted"></i></div>
+                                                <div class="search-dropdown" id="dropdown_t2_p1"></div>
+                                            </div>
+                                            <!-- Guest form -->
+                                            <div class="guest-form-row" id="guestForm_t2_p1">
+                                                <input type="text" class="form-control form-control-sm" placeholder="Full Name *" id="guestName_t2_p1" style="border-radius: 8px;">
+                                                <input type="text" class="form-control form-control-sm" placeholder="Nickname (optional)" id="guestNickname_t2_p1" style="border-radius: 8px;">
+                                                <button type="button" class="btn btn-sm btn-warning" onclick="confirmGuest('t2_p1', '2', '1')" style="border-radius: 8px;">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {% else %}
+                                        <!-- Read-only mode (no override) -->
+                                        <div class="d-flex align-items-center gap-2 p-2" style="background: rgba(40,167,69,0.08); border-radius: 8px;">
+                                            <div class="player-avatar" id="avatar_t2_p1" style="background: #28a745; color: white; display: flex; align-items: center; justify-content: center;">
+                                                {% if reservation.team2_player1 %}{{ reservation.team2_player1.username|first|upper }}{% else %}?{% endif %}
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="fw-bold small" id="name_t2_p1">
+                                                    {% if reservation.team2_player1 %}{{ reservation.team2_player1.get_full_name|default:reservation.team2_player1.username }}{% else %}No player assigned{% endif %}
+                                                </div>
+                                                <div class="d-flex gap-1 align-items-center">
+                                                    <small class="text-muted" id="username_t2_p1">
+                                                        {% if reservation.team2_player1 %}@{{ reservation.team2_player1.username }}{% endif %}
+                                                    </small>
+                                                    {% if reservation.team2_player1 and reservation.team2_player1.skill_level %}
+                                                    <span class="skill-badge" id="skillBadge_t2_p1">{{ reservation.team2_player1.get_skill_level_display }}</span>
+                                                    {% endif %}
+                                                    <span class="guest-badge d-none" id="guestBadge_t2_p1">Guest</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        <input type="hidden" name="team2_player1" value="{{ reservation.team2_player1_id|default:'' }}" id="input_t2_p1"
+                                            {% if reservation.team2_player1 %}
+                                            data-preload-name="{{ reservation.team2_player1.get_full_name|default:reservation.team2_player1.username }}"
+                                            data-preload-username="{{ reservation.team2_player1.username }}"
+                                            data-preload-skill="{{ reservation.team2_player1.get_skill_level_display|default:'' }}"
+                                            {% endif %}>
+                                        <!-- Selected player display (for JS selectPlayer updates) -->
+                                        <div class="selected-player-info d-none mt-2" id="selected_t2_p1">
+                                            <div class="d-flex align-items-center gap-2 p-2" style="background: rgba(40,167,69,0.08); border-radius: 8px;">
+                                                <div class="player-avatar player-avatar-sm" id="selectedAvatar_t2_p1"></div>
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bold small" id="selectedName_t2_p1"></div>
+                                                    <small class="text-muted" id="selectedSkill_t2_p1"></small>
+                                                </div>
+                                                <button type="button" class="clear-player-btn" onclick="clearPlayer('t2_p1')" title="Remove player">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Team 2 Player 2 (Doubles only) -->
+                                    <div class="player-slot mb-3 d-none" id="slot_t2_p2" data-format="doubles,mixed_doubles">
+                                        {% if can_override %}
+                                        <!-- Display Mode -->
+                                        <div id="displayMode_t2_p2" class="{% if not reservation.team2_player2 %}d-none{% endif %}">
+                                            <div class="d-flex align-items-center gap-2 p-2" style="background: rgba(40,167,69,0.08); border-radius: 8px;">
+                                                <div class="player-avatar player-avatar-sm" id="avatar_t2_p2" style="background: #28a745; color: white; display: flex; align-items: center; justify-content: center;">
+                                                    {% if reservation.team2_player2 %}{{ reservation.team2_player2.username|first|upper }}{% else %}?{% endif %}
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bold small" id="name_t2_p2">
+                                                        {% if reservation.team2_player2 %}{{ reservation.team2_player2.get_full_name|default:reservation.team2_player2.username }}{% else %}Select Player{% endif %}
+                                                    </div>
+                                                    <div class="d-flex gap-1 align-items-center">
+                                                        <small class="text-muted" id="username_t2_p2">
+                                                            {% if reservation.team2_player2 %}@{{ reservation.team2_player2.username }}{% endif %}
+                                                        </small>
+                                                        {% if reservation.team2_player2 and reservation.team2_player2.skill_level %}
+                                                        <span class="skill-badge" id="skillBadge_t2_p2">{{ reservation.team2_player2.get_skill_level_display }}</span>
+                                                        {% endif %}
+                                                        <span class="guest-badge d-none" id="guestBadge_t2_p2">Guest</span>
+                                                    </div>
+                                                </div>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleEditMode('t2_p2')" style="border-radius: 8px;" id="changeBtn_t2_p2">
+                                                    <i class="fas fa-pen me-1"></i>Change
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <!-- Edit Mode -->
+                                        <div id="editMode_t2_p2" class="{% if reservation.team2_player2 %}d-none{% endif %}">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <small class="fw-bold text-muted">Player 2</small>
+                                                <button type="button" class="guest-toggle-btn" onclick="toggleGuest('t2_p2')" id="guestToggle_t2_p2">
+                                                    <i class="fas fa-user-plus me-1"></i>Add Guest
+                                                </button>
+                                            </div>
+                                            <div class="search-input-wrapper">
+                                                <input type="text" class="form-control player-search-input" 
+                                                       placeholder="Search for a player..." 
+                                                       id="search_t2_p2"
+                                                       data-target="t2_p2"
+                                                       data-team="2"
+                                                       data-player="2"
+                                                       autocomplete="off">
+                                                <div class="search-spinner"><i class="fas fa-spinner fa-spin text-muted"></i></div>
+                                                <div class="search-dropdown" id="dropdown_t2_p2"></div>
+                                            </div>
+                                            <div class="guest-form-row" id="guestForm_t2_p2">
+                                                <input type="text" class="form-control form-control-sm" placeholder="Full Name *" id="guestName_t2_p2" style="border-radius: 8px;">
+                                                <input type="text" class="form-control form-control-sm" placeholder="Nickname (optional)" id="guestNickname_t2_p2" style="border-radius: 8px;">
+                                                <button type="button" class="btn btn-sm btn-warning" onclick="confirmGuest('t2_p2', '2', '2')" style="border-radius: 8px;">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {% else %}
+                                        <!-- Read-only mode -->
+                                        <div class="d-flex align-items-center gap-2 p-2" style="background: rgba(40,167,69,0.08); border-radius: 8px;">
+                                            <div class="player-avatar player-avatar-sm" id="avatar_t2_p2" style="background: #28a745; color: white; display: flex; align-items: center; justify-content: center;">
+                                                {% if reservation.team2_player2 %}{{ reservation.team2_player2.username|first|upper }}{% else %}?{% endif %}
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="fw-bold small" id="name_t2_p2">
+                                                    {% if reservation.team2_player2 %}{{ reservation.team2_player2.get_full_name|default:reservation.team2_player2.username }}{% else %}No player assigned{% endif %}
+                                                </div>
+                                                <div class="d-flex gap-1 align-items-center">
+                                                    <small class="text-muted" id="username_t2_p2">
+                                                        {% if reservation.team2_player2 %}@{{ reservation.team2_player2.username }}{% endif %}
+                                                    </small>
+                                                    {% if reservation.team2_player2 and reservation.team2_player2.skill_level %}
+                                                    <span class="skill-badge" id="skillBadge_t2_p2">{{ reservation.team2_player2.get_skill_level_display }}</span>
+                                                    {% endif %}
+                                                    <span class="guest-badge d-none" id="guestBadge_t2_p2">Guest</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        <input type="hidden" name="team2_player2" value="{{ reservation.team2_player2_id|default:'' }}" id="input_t2_p2"
+                                            {% if reservation.team2_player2 %}
+                                            data-preload-name="{{ reservation.team2_player2.get_full_name|default:reservation.team2_player2.username }}"
+                                            data-preload-username="{{ reservation.team2_player2.username }}"
+                                            data-preload-skill="{{ reservation.team2_player2.get_skill_level_display|default:'' }}"
+                                            {% endif %}>
+                                        <div class="selected-player-info d-none mt-2" id="selected_t2_p2">
+                                            <div class="d-flex align-items-center gap-2 p-2" style="background: rgba(40,167,69,0.08); border-radius: 8px;">
+                                                <div class="player-avatar player-avatar-sm" id="selectedAvatar_t2_p2"></div>
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bold small" id="selectedName_t2_p2"></div>
+                                                    <small class="text-muted" id="selectedSkill_t2_p2"></small>
+                                                </div>
+                                                <button type="button" class="clear-player-btn" onclick="clearPlayer('t2_p2')" title="Remove player">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Team 2 Name -->
+                                    <div class="mt-2">
+                                        {{ form.team2_name }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== MATCH SETTINGS SECTION ===== -->
+                    <div class="card border-0 mb-4" style="background: #f8f9fa; border-radius: 12px;">
+                        <div class="card-body p-4">
+                            <h6 class="fw-bold mb-4"><i class="fas fa-cog text-primary me-2"></i>Match Configuration</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold"><i class="fas fa-users me-2 text-primary"></i>Format</label>
+                                    {{ form.format }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold"><i class="fas fa-gamepad me-2 text-primary"></i>Game Type</label>
+                                    {{ form.game_type }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold"><i class="fas fa-star me-2 text-primary"></i>Scoring Format</label>
+                                    {{ form.scoring_format }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold"><i class="fas fa-trophy me-2 text-primary"></i>Games to Win</label>
+                                    {{ form.games_to_win }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold"><i class="fas fa-hashtag me-2 text-primary"></i>Points per Game</label>
+                                    {{ form.points_per_game }}
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check mt-4">
+                                        {{ form.win_by_two }}
+                                        <label class="form-check-label fw-bold" for="{{ form.win_by_two.id_for_label }}"><i class="fas fa-check-double me-2 text-primary"></i>Win by Two Points</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between pt-2">
+                        {% if user.is_super_admin %}
+                        <a href="{% url 'super_admin_reservation_list' %}" class="btn btn-outline-secondary px-4" style="border-radius: 10px;">
+                            <i class="fas fa-arrow-left me-2"></i>Cancel
+                        </a>
+                        {% else %}
+                        <a href="{% url 'staff_reservations' %}" class="btn btn-outline-secondary px-4" style="border-radius: 10px;">
+                            <i class="fas fa-arrow-left me-2"></i>Cancel
+                        </a>
+                        {% endif %}
+                        <button type="submit" class="btn btn-success px-5" style="border-radius: 10px; background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%); border: none;" id="startMatchBtn">
+                            <i class="fas fa-play me-2"></i>Start Match
+                        </button>
+                    </div>
+                </form>
+                <!-- Safe JSON data for guest player auto-population -->
+                {% if guest_data_list %}{{ guest_data_list|json_script:"guestData" }}{% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ===== FORMAT TOGGLING =====
+var formatSelect = document.querySelector('[name="format"]');
+if (formatSelect) {
+    formatSelect.addEventListener('change', function() {
+        var value = this.value;
+        var isDoubles = value === 'doubles' || value === 'mixed_doubles';
+        document.querySelectorAll('[data-format]').forEach(function(el) {
+            var formats = el.dataset.format.split(',');
+            if (isDoubles && formats.indexOf('doubles') !== -1) {
+                el.classList.remove('d-none');
+            } else {
+                el.classList.add('d-none');
+            }
+        });
+    });
+}
+
+// ===== SEARCHABLE PLAYER DROPDOWN =====
+var searchTimeout = null;
+var currentSearchTarget = null;
+var reservationId = {{ reservation.id }};
+
+// Initialize search inputs
+document.querySelectorAll('.player-search-input').forEach(function(input) {
+    input.addEventListener('focus', function() {
+        var target = this.dataset.target;
+        currentSearchTarget = target;
+        var dropdown = document.getElementById('dropdown_' + target);
+        if (this.value.length >= 1) {
+            dropdown.classList.add('show');
+        }
+    });
+
+    input.addEventListener('input', function() {
+        var target = this.dataset.target;
+        currentSearchTarget = target;
+        var query = this.value.trim();
+        var dropdown = document.getElementById('dropdown_' + target);
+        var spinner = this.parentElement.querySelector('.search-spinner');
+
+        clearTimeout(searchTimeout);
+
+        if (query.length < 1) {
+            dropdown.classList.remove('show');
+            dropdown.innerHTML = '';
+            return;
+        }
+
+        spinner.style.display = 'block';
+
+        searchTimeout = setTimeout(function() {
+            // Get IDs already selected to exclude
+            var excludeIds = getSelectedUserIds();
+
+            fetch('/scoring/api/search-users/?q=' + encodeURIComponent(query) + '&exclude_ids=' + excludeIds.join(',') + '&reservation_id=' + reservationId)
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    spinner.style.display = 'none';
+                    if (data.users && data.users.length > 0) {
+                        dropdown.innerHTML = '';
+                        data.users.forEach(function(user) {
+                            var item = document.createElement('div');
+                            item.className = 'search-dropdown-item';
+                            var initials = (user.full_name || user.username).charAt(0).toUpperCase();
+                            var picHtml = user.profile_picture 
+                                ? '<img src="' + user.profile_picture + '" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">'
+                                : '<div class="player-avatar player-avatar-sm" style="width: 32px; height: 32px; font-size: 0.8rem;">' + initials + '</div>';
+                            var skillHtml = user.skill_level 
+                                ? '<span class="skill-badge ms-2">' + user.skill_level + '</span>' 
+                                : '';
+                            // Store user data as JSON data attribute for delegated click handling
+                            item.setAttribute('data-dropdown-target', target);
+                            item.setAttribute('data-user', JSON.stringify(user));
+                            item.innerHTML = picHtml + '<div class="flex-grow-1"><div class="fw-bold small">' + user.full_name + ' ' + skillHtml + '</div><small class="text-muted">@' + user.username + '</small></div>';
+                            dropdown.appendChild(item);
+                        });
+                        dropdown.classList.add('show');
+                    } else {
+                        dropdown.innerHTML = '<div class="p-3 text-center text-muted small">No players found. <a href="#" onclick="toggleGuest(\'' + target + '\'); return false;">Add as guest</a></div>';
+                        dropdown.classList.add('show');
+                    }
+                })
+                .catch(function() {
+                    spinner.style.display = 'none';
+                });
+        }, 300);
+    });
+
+    input.addEventListener('blur', function() {
+        var target = this.dataset.target;
+        setTimeout(function() {
+            var dropdown = document.getElementById('dropdown_' + target);
+            if (dropdown) dropdown.classList.remove('show');
+        }, 200);
+    });
+});
+
+// ===== DELEGATED SELECTION HANDLER for dropdown items =====
+// Uses mousedown (fires BEFORE blur) as primary, with click as fallback.
+// This avoids timing issues where blur hides the dropdown before click fires.
+var _selectGuard = false;
+
+function _handlePlayerSelection(e) {
+    if (_selectGuard) return;
+    var item = e.target.closest('.search-dropdown-item');
+    if (!item) return;
+    // Only handle left-click (button === 0) for mousedown
+    if (e.type === 'mousedown' && e.button !== 0) return;
+    
+    var target = item.getAttribute('data-dropdown-target');
+    var userData = item.getAttribute('data-user');
+    if (target && userData) {
+        try {
+            _selectGuard = true;
+            var user = JSON.parse(userData);
+            selectPlayer(target, user);
+            setTimeout(function() { _selectGuard = false; }, 50);
+        } catch (err) {
+            _selectGuard = false;
+            console.error('Error selecting player:', err);
+        }
+    }
+}
+
+document.addEventListener('mousedown', _handlePlayerSelection);
+document.addEventListener('click', _handlePlayerSelection);
+
+function syncDisplayMode(target, mode) {
+    var displayMode = document.getElementById('displayMode_' + target);
+    var editMode = document.getElementById('editMode_' + target);
+    if (!displayMode || !editMode) return;
+    if (mode === 'display') {
+        displayMode.classList.remove('d-none');
+        editMode.classList.add('d-none');
+    } else {
+        displayMode.classList.add('d-none');
+        editMode.classList.remove('d-none');
+    }
+}
+
+function toggleEditMode(target) {
+    syncDisplayMode(target, 'edit');
+    // Focus the search input when entering edit mode
+    var searchInput = document.getElementById('search_' + target);
+    if (searchInput) {
+        setTimeout(function() { searchInput.focus(); }, 100);
+    }
+}
+
+function getSelectedUserIds() {
+    var ids = [];
+    // Team 1 Player 1
+    var t1p1 = document.getElementById('input_t1_p1');
+    if (t1p1) {
+        var val = parseInt(t1p1.value);
+        if (val) ids.push(val);
+    }
+    // Other selectable slots
+    var inputs = ['t1_p2', 't2_p1', 't2_p2'];
+    inputs.forEach(function(name) {
+        var el = document.getElementById('input_' + name);
+        if (el) {
+            var val = parseInt(el.value);
+            if (val) ids.push(val);
+        }
+    });
+    return ids;
+}
+
+function getSlotTeamAndPlayer(target) {
+    // target is like 't2_p1' -> team=2, player=1
+    var parts = target.split('_');
+    return { team: parts[0].replace('t', ''), player: parts[1] };
+}
+
+function selectPlayer(target, user) {
+    var input = document.getElementById('input_' + target);
+    var selectedInfo = document.getElementById('selected_' + target);
+    var selectedName = document.getElementById('selectedName_' + target);
+    var selectedAvatar = document.getElementById('selectedAvatar_' + target);
+    var selectedSkill = document.getElementById('selectedSkill_' + target);
+    var searchInput = document.getElementById('search_' + target);
+    var dropdown = document.getElementById('dropdown_' + target);
+    var slot = document.getElementById('slot_' + target);
+    var guestToggle = document.getElementById('guestToggle_' + target);
+
+    input.value = user.id;
+    selectedName.textContent = user.full_name;
+    selectedSkill.textContent = user.skill_level ? user.skill_level : '';
+
+    var initials = (user.full_name || user.username).charAt(0).toUpperCase();
+    if (user.profile_picture) {
+        selectedAvatar.innerHTML = '<img src="' + user.profile_picture + '" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">';
+    } else {
+        selectedAvatar.textContent = initials;
+        selectedAvatar.style.background = 'var(--primary-color, #3B7A8C)';
+        selectedAvatar.style.color = 'white';
+    }
+
+    searchInput.value = '';
+    searchInput.style.display = 'none';
+    dropdown.classList.remove('show');
+    slot.classList.add('filled');
+    slot.classList.remove('guest-mode');
+    if (guestToggle) guestToggle.classList.remove('active');
+
+    // Hide guest form if visible
+    var guestForm = document.getElementById('guestForm_' + target);
+    if (guestForm) guestForm.classList.remove('show');
+
+    // Clear any stale guest field for this slot
+    var tp = getSlotTeamAndPlayer(target);
+    var guestField = document.querySelector('input[name="guest_team' + tp.team + '_p' + tp.player + '"]');
+    if (guestField) guestField.value = '';
+
+    // Update display mode elements if they exist, otherwise use old selectedInfo
+    var displayMode = document.getElementById('displayMode_' + target);
+    if (displayMode) {
+        var nameEl = document.getElementById('name_' + target);
+        var usernameEl = document.getElementById('username_' + target);
+        var avatarEl = document.getElementById('avatar_' + target);
+        var skillBadge = document.getElementById('skillBadge_' + target);
+        var guestBadge = document.getElementById('guestBadge_' + target);
+        if (nameEl) nameEl.textContent = user.full_name;
+        if (usernameEl) usernameEl.textContent = '@' + (user.username || '');
+        if (avatarEl) {
+            avatarEl.textContent = initials;
+            avatarEl.style.background = 'var(--primary-color, #3B7A8C)';
+            avatarEl.style.color = 'white';
+        }
+        if (skillBadge) {
+            if (user.skill_level) {
+                skillBadge.textContent = user.skill_level;
+                skillBadge.classList.remove('d-none');
+            } else {
+                skillBadge.classList.add('d-none');
+            }
+        }
+        if (guestBadge) guestBadge.classList.add('d-none');
+        // Switch to display mode (keeps selectedInfo hidden)
+        syncDisplayMode(target, 'display');
+    } else {
+        // Fallback: show the old selected-info display
+        selectedInfo.classList.remove('d-none');
+    }
+
+    updatePlayerValidation();
+}
+
+// ===== VALIDATION: Check if a player slot has a valid assignment =====
+function isSlotValid(slotId, team, playerNum) {
+    var userInput = document.getElementById('input_' + slotId);
+    var selectedInfo = document.getElementById('selected_' + slotId);
+    var guestField = document.querySelector('input[name="guest_team' + team + '_p' + playerNum + '"]');
+
+    // Valid if: registered user is selected (hidden input has a value)
+    if (userInput && userInput.value) return true;
+
+    // Valid if: display mode is showing (player/guest was selected and card is visible)
+    var displayMode = document.getElementById('displayMode_' + slotId);
+    if (displayMode && !displayMode.classList.contains('d-none')) return true;
+
+    // Valid if: guest info is filled AND showing (old fallback for non-override)
+    if (selectedInfo && !selectedInfo.classList.contains('d-none')) {
+        if (guestField && guestField.value) return true;
+    }
+
+    return false;
+}
+
+function updatePlayerValidation() {
+    var formatSelect = document.querySelector('[name="format"]');
+    if (!formatSelect) return;
+    var format = formatSelect.value;
+    var isDoubles = format === 'doubles' || format === 'mixed_doubles';
+    var errors = [];
+
+    // Always check Team 1 P1
+    if (!isSlotValid('t1_p1', '1', '1')) {
+        errors.push('Team 1 - Player 1 is required.');
+    }
+
+    // Always check Team 2 P1
+    if (!isSlotValid('t2_p1', '2', '1')) {
+        errors.push('Please assign Team 2 - Player 1 (registered user or guest).');
+    }
+
+    // For doubles, also check Player 2 slots
+    if (isDoubles) {
+        if (!isSlotValid('t1_p2', '1', '2')) {
+            errors.push('Team 1 - Player 2 is required for doubles.');
+        }
+        if (!isSlotValid('t2_p2', '2', '2')) {
+            errors.push('Team 2 - Player 2 is required for doubles.');
+        }
+    }
+
+    // Show/hide errors and disable/enable button
+    var startBtn = document.getElementById('startMatchBtn');
+    var errorContainer = document.getElementById('playerValidationErrors');
+    if (errors.length > 0) {
+        errorContainer.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i>' + errors.join('<br>');
+        errorContainer.classList.remove('d-none');
+        startBtn.disabled = true;
+        startBtn.style.opacity = '0.5';
+        startBtn.style.cursor = 'not-allowed';
+    } else {
+        errorContainer.classList.add('d-none');
+        startBtn.disabled = false;
+        startBtn.style.opacity = '';
+        startBtn.style.cursor = '';
+    }
+}
+
+function clearPlayer(target) {
+    var input = document.getElementById('input_' + target);
+    var selectedInfo = document.getElementById('selected_' + target);
+    var searchInput = document.getElementById('search_' + target);
+    var slot = document.getElementById('slot_' + target);
+
+    input.value = '';
+    selectedInfo.classList.add('d-none');
+    searchInput.style.display = 'block';
+    searchInput.value = '';
+    slot.classList.remove('filled');
+    slot.classList.remove('guest-mode');
+
+    // Clear guest field using proper field name (guest_teamX_pY)
+    var tp = getSlotTeamAndPlayer(target);
+    var guestField = document.querySelector('input[name="guest_team' + tp.team + '_p' + tp.player + '"]');
+    if (guestField) guestField.value = '';
+
+    // Switch to edit mode for override users
+    var displayMode = document.getElementById('displayMode_' + target);
+    if (displayMode) {
+        var nameEl = document.getElementById('name_' + target);
+        var usernameEl = document.getElementById('username_' + target);
+        var avatarEl = document.getElementById('avatar_' + target);
+        var guestBadge = document.getElementById('guestBadge_' + target);
+        if (nameEl) nameEl.textContent = 'Select Player';
+        if (usernameEl) usernameEl.textContent = '';
+        if (avatarEl) { avatarEl.textContent = '?'; avatarEl.style.background = '#6c757d'; avatarEl.style.color = 'white'; }
+        if (guestBadge) guestBadge.classList.add('d-none');
+        syncDisplayMode(target, 'edit');
+    }
+
+    updatePlayerValidation();
+}
+
+// ===== GUEST PLAYER =====
+function toggleGuest(target) {
+    var guestForm = document.getElementById('guestForm_' + target);
+    var guestToggle = document.getElementById('guestToggle_' + target);
+    var slot = document.getElementById('slot_' + target);
+    var searchInput = document.getElementById('search_' + target);
+    
+    if (guestForm.classList.contains('show')) {
+        guestForm.classList.remove('show');
+        guestToggle.classList.remove('active');
+        slot.classList.remove('guest-mode');
+        searchInput.style.display = 'block';
+    } else {
+        guestForm.classList.add('show');
+        guestToggle.classList.add('active');
+        slot.classList.add('guest-mode');
+        searchInput.style.display = 'none';
+    }
+}
+
+function confirmGuest(target, team, playerNum) {
+    var nameInput = document.getElementById('guestName_' + target);
+    var nicknameInput = document.getElementById('guestNickname_' + target);
+    var guestForm = document.getElementById('guestForm_' + target);
+    var guestToggle = document.getElementById('guestToggle_' + target);
+    var slot = document.getElementById('slot_' + target);
+    var selectedInfo = document.getElementById('selected_' + target);
+    var selectedName = document.getElementById('selectedName_' + target);
+    var selectedSkill = document.getElementById('selectedSkill_' + target);
+    var selectedAvatar = document.getElementById('selectedAvatar_' + target);
+    var searchInput = document.getElementById('search_' + target);
+
+    var fullName = nameInput.value.trim();
+    if (!fullName) {
+        nameInput.classList.add('is-invalid');
+        return;
+    }
+    nameInput.classList.remove('is-invalid');
+
+    var nickname = nicknameInput.value.trim();
+
+    // Set the guest hidden field (guest_teamX_pY naming)
+    var guestFormFieldName = 'guest_team' + team + '_p' + playerNum;
+    var guestFormField = document.querySelector('input[name="' + guestFormFieldName + '"]');
+    if (guestFormField) {
+        guestFormField.value = nickname ? fullName + '|' + nickname : fullName;
+    }
+
+    // Clear the user hidden input
+    var userInput = document.getElementById('input_' + target);
+    if (userInput) userInput.value = '';
+
+    // Update UI
+    guestForm.classList.remove('show');
+    guestToggle.classList.remove('active');
+    slot.classList.add('filled');
+    slot.classList.add('guest-mode');
+    searchInput.style.display = 'none';
+
+    // Update display mode elements if they exist, otherwise use old selectedInfo
+    var displayMode = document.getElementById('displayMode_' + target);
+    if (displayMode) {
+        var nameEl = document.getElementById('name_' + target);
+        var usernameEl = document.getElementById('username_' + target);
+        var avatarEl = document.getElementById('avatar_' + target);
+        var guestBadge = document.getElementById('guestBadge_' + target);
+        if (nameEl) nameEl.textContent = fullName;
+        if (usernameEl) usernameEl.textContent = '';
+        if (avatarEl) { avatarEl.textContent = fullName.charAt(0).toUpperCase(); avatarEl.style.background = '#ffc107'; avatarEl.style.color = '#856404'; }
+        if (guestBadge) guestBadge.classList.remove('d-none');
+        syncDisplayMode(target, 'display');
+    } else {
+        // Display guest info in old selected-info
+        selectedName.textContent = fullName;
+        selectedSkill.textContent = 'Guest';
+        selectedAvatar.textContent = fullName.charAt(0).toUpperCase();
+        selectedAvatar.style.background = '#ffc107';
+        selectedAvatar.style.color = '#856404';
+        selectedInfo.classList.remove('d-none');
+    }
+
+    updatePlayerValidation();
+}
+
+// Skip adding change listener to search inputs to avoid validation flash before selection is made
+document.querySelectorAll('select:not(.player-search-input), input:not(.player-search-input)').forEach(function(el) {
+    el.addEventListener('change', updatePlayerValidation);
+});
+
+// Initial validation check
+setTimeout(updatePlayerValidation, 500);
+
+// ===== AUTO-POPULATE PRE-SELECTED PLAYERS & GUESTS FROM RESERVATION =====
+(function() {
+    var slots = ['t1_p2', 't2_p1', 't2_p2'];
+    
+    // 1. Auto-populate registered users
+    slots.forEach(function(target) {
+        var input = document.getElementById('input_' + target);
+        if (!input || !input.value) return;
+        var slot = document.getElementById('slot_' + target);
+        if (!slot) return;
+        var name = input.getAttribute('data-preload-name');
+        var username = input.getAttribute('data-preload-username');
+        var skill = input.getAttribute('data-preload-skill');
+        if (!name) return;
+        
+        var user = {
+            id: parseInt(input.value),
+            full_name: name,
+            username: username || '',
+            profile_picture: null,
+            skill_level: skill || null,
+        };
+        selectPlayer(target, user);
+    });
+    
+    // 2. Auto-populate guest players from reservation
+    {% if guest_data_list %}
+    var guestMap = {
+        '1_2': 't1_p2',
+        '2_1': 't2_p1',
+        '2_2': 't2_p2'
+    };
+    var guestEl = document.getElementById('guestData');
+    var guestData = guestEl ? JSON.parse(guestEl.textContent) : [];
+    guestData.forEach(function(guest) {
+        var key = guest.team + '_' + guest.player;
+        var target = guestMap[key];
+        if (!target) return;
+        // Check if this slot is already filled by a registered user
+        var input = document.getElementById('input_' + target);
+        if (input && input.value) return;
+        var slot = document.getElementById('slot_' + target);
+        if (!slot) return;
+        var fullName = guest.full_name || 'Guest';
+        var nickname = guest.nickname || '';
+        
+        // Set guest hidden field
+        var tp = getSlotTeamAndPlayer(target);
+        var guestField = document.querySelector('input[name="guest_team' + tp.team + '_p' + tp.player + '"]');
+        if (guestField) {
+            guestField.value = nickname ? fullName + '|' + nickname : fullName;
+        }
+        
+        var searchInput = document.getElementById('search_' + target);
+        var guestToggle = document.getElementById('guestToggle_' + target);
+        
+        if (searchInput) { searchInput.value = ''; searchInput.style.display = 'none'; }
+        if (guestToggle) guestToggle.classList.remove('active');
+        if (slot) { slot.classList.add('filled'); slot.classList.add('guest-mode'); }
+        
+        // Update display mode elements if they exist, otherwise use old selected-info
+        var displayMode = document.getElementById('displayMode_' + target);
+        if (displayMode) {
+            var nameEl = document.getElementById('name_' + target);
+            var avatarEl = document.getElementById('avatar_' + target);
+            var guestBadge = document.getElementById('guestBadge_' + target);
+            if (nameEl) nameEl.textContent = fullName;
+            if (avatarEl) { avatarEl.textContent = fullName.charAt(0).toUpperCase(); avatarEl.style.background = '#ffc107'; avatarEl.style.color = '#856404'; }
+            if (guestBadge) guestBadge.classList.remove('d-none');
+            syncDisplayMode(target, 'display');
+        } else {
+            var selectedInfo = document.getElementById('selected_' + target);
+            var selectedName = document.getElementById('selectedName_' + target);
+            var selectedSkill = document.getElementById('selectedSkill_' + target);
+            var selectedAvatar = document.getElementById('selectedAvatar_' + target);
+            if (selectedName) selectedName.textContent = fullName;
+            if (selectedSkill) selectedSkill.textContent = 'Guest';
+            if (selectedAvatar) {
+                selectedAvatar.textContent = fullName.charAt(0).toUpperCase();
+                selectedAvatar.style.background = '#ffc107';
+                selectedAvatar.style.color = '#856404';
+            }
+            if (selectedInfo) selectedInfo.classList.remove('d-none');
+        }
+    });
+    {% endif %}
+    
+    // 3. Force validation update after all auto-population
+    setTimeout(updatePlayerValidation, 100);
+})();
+
+// ===== STYLE HELPERS =====
+document.querySelectorAll('select').forEach(function(select) {
+    select.classList.add('form-select');
+    select.style.borderRadius = '10px';
+});
+document.querySelectorAll('input[type="number"]').forEach(function(input) {
+    input.style.borderRadius = '10px';
+});
+
+// ===== DISABLE FIELDS WHEN NO OVERRIDE =====
+{% if not can_override %}
+(function() {
+    var form = document.getElementById('matchSetupForm');
+    if (!form) return;
+    var fields = form.querySelectorAll('select, input, textarea, button[type="submit"]');
+    fields.forEach(function(field) {
+        field.disabled = true;
+        field.style.opacity = '0.7';
+        field.style.cursor = 'not-allowed';
+    });
+})();
+{% endif %}
+</script>
+{% endblock %}

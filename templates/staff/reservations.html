@@ -1,0 +1,409 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Reservation Management{% endblock %}
+{% block page_title %}Reservation Management{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/staff.css' %}">
+<style>
+:root {
+    --rsv-green: #28a745;
+    --rsv-blue: #17a2b8;
+    --rsv-orange: #fd7e14;
+    --rsv-purple: #6f42c1;
+}
+
+@keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-in {
+    animation: fadeSlideUp 0.4s ease forwards;
+    opacity: 0;
+}
+.animate-in-d1 { animation-delay: 0.05s; }
+.animate-in-d2 { animation-delay: 0.1s; }
+.animate-in-d3 { animation-delay: 0.15s; }
+.animate-in-d4 { animation-delay: 0.2s; }
+.animate-in-d5 { animation-delay: 0.25s; }
+.animate-in-d6 { animation-delay: 0.3s; }
+
+.filter-bar {
+    background: white;
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 1.5rem;
+}
+.filter-bar .form-control,
+.filter-bar .form-select {
+    border-radius: 10px;
+    border: 1.5px solid #e9ecef;
+    transition: all 0.2s;
+}
+.filter-bar .form-control:focus,
+.filter-bar .form-select:focus {
+    border-color: #3B7A8C;
+    box-shadow: 0 0 0 3px rgba(59,122,140,0.12);
+}
+
+/* Stat labels use base .stat-value / .stat-label from dashboard_base.html */
+
+.rsv-card {
+    border-radius: 14px;
+    border: 1.5px solid #e9ecef;
+    transition: all 0.25s ease;
+    background: white;
+    overflow: hidden;
+}
+.rsv-card:hover {
+    border-color: #dee2e6;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+}
+
+.rsv-table { margin-bottom: 0; }
+.rsv-table thead th {
+    background: #f8f9fa;
+    border-bottom: 2px solid #e9ecef;
+    padding: 0.75rem 1rem;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #495057;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.rsv-table tbody td {
+    padding: 0.85rem 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.85rem;
+}
+.rsv-table tbody tr:hover { background: #f8f9fa; }
+
+.badge-status-pending { background: rgba(253,126,20,0.12); color: #d46300; border: 1px solid rgba(253,126,20,0.2); }
+.badge-status-confirmed { background: rgba(40,167,69,0.12); color: #1e7e34; border: 1px solid rgba(40,167,69,0.2); }
+.badge-status-completed { background: rgba(23,162,184,0.1); color: #138496; border: 1px solid rgba(23,162,184,0.15); }
+.badge-status-cancelled { background: rgba(220,53,69,0.1); color: #c82333; border: 1px solid rgba(220,53,69,0.15); }
+.badge-payment-paid { background: rgba(40,167,69,0.12); color: #1e7e34; border: 1px solid rgba(40,167,69,0.2); border-radius: 20px; padding: 0.25rem 0.65rem; font-size: 0.72rem; font-weight: 600; }
+.badge-payment-pending { background: rgba(253,126,20,0.12); color: #d46300; border: 1px solid rgba(253,126,20,0.2); border-radius: 20px; padding: 0.25rem 0.65rem; font-size: 0.72rem; font-weight: 600; }
+
+.btn-action-resv {
+    width: 34px; height: 34px; border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: none; transition: all 0.2s; font-size: 0.8rem;
+    text-decoration: none;
+}
+.btn-action-resv:hover { transform: translateY(-1px); }
+.btn-action-view-resv { background: rgba(59,122,140,0.1); color: #2c5f6e; }
+.btn-action-view-resv:hover { background: rgba(59,122,140,0.2); color: #1a3a42; }
+.btn-action-approve { background: rgba(40,167,69,0.12); color: #1e7e34; }
+.btn-action-approve:hover { background: rgba(40,167,69,0.25); }
+.btn-action-play { background: rgba(23,162,184,0.1); color: #138496; }
+.btn-action-play:hover { background: rgba(23,162,184,0.2); }
+
+.empty-state { text-align: center; padding: 3rem 1rem; }
+.empty-state-icon {
+    width: 72px; height: 72px;
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1rem; color: #1565c0; font-size: 1.5rem;
+}
+.empty-state-title { font-weight: 700; color: #212529; margin-bottom: 0.25rem; }
+.empty-state-text { font-size: 0.85rem; color: #6c757d; margin-bottom: 0; }
+
+.confirm-modal .modal-content { border-radius: 16px; border: none; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+.confirm-modal .modal-header { border: none; padding: 1.5rem 1.5rem 0; }
+.confirm-modal .modal-body { padding: 1rem 1.5rem 1.25rem; }
+.confirm-modal .modal-footer { border: none; padding: 0 1.5rem 1.5rem; gap: 0.5rem; }
+
+@media (max-width: 768px) {
+    .filter-bar .row > div { margin-bottom: 0.5rem; }
+}
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'staff_dashboard' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'staff_reservations' %}">Reservations</a></li>
+        <li class="breadcrumb-item active" aria-current="page">All Reservations</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<!-- Stats Cards (matching org admin dashboard) -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-info text-white me-3">
+                    <i class="fas fa-calendar-check fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">{{ total_count }}</div>
+                    <div class="stats-label text-muted">Total Reservations</div>
+                    <small class="text-info"><i class="fas fa-list me-1"></i>All time records</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-warning text-white me-3">
+                    <i class="fas fa-clock fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">{{ pending_count }}</div>
+                    <div class="stats-label text-muted">Pending</div>
+                    <small class="text-warning"><i class="fas fa-hourglass-half me-1"></i>Awaiting confirmation</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-success text-white me-3">
+                    <i class="fas fa-check-circle fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">{{ confirmed_count }}</div>
+                    <div class="stats-label text-muted">Confirmed</div>
+                    <small class="text-success"><i class="fas fa-check-circle me-1"></i>Ready for play</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-primary text-white me-3">
+                    <i class="fas fa-check-double fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">{{ completed_count }}</div>
+                    <div class="stats-label text-muted">Completed</div>
+                    <small class="text-primary"><i class="fas fa-calendar-check me-1"></i>Finished bookings</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include 'components/filter_bar_start.html' %}
+            <div class="col-md-3">
+                <label class="filter-label"><i class="fas fa-search me-1 text-primary"></i>Search</label>
+                <input type="text" name="search" class="filter-input" placeholder="User email or ID..." value="{{ search_query }}">
+            </div>
+            <div class="col-md-2">
+                <label class="filter-label"><i class="fas fa-filter me-1 text-primary"></i>Status</label>
+                <select name="status" class="filter-select">
+                    <option value="">All Status</option>
+                    <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="confirmed" {% if status_filter == 'confirmed' %}selected{% endif %}>Confirmed</option>
+                    <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+                    <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="filter-label"><i class="fas fa-calendar me-1 text-primary"></i>Date</label>
+                <input type="date" name="date" class="filter-input" value="{{ date_filter }}">
+            </div>
+            <div class="col-md-3">
+                <div class="filter-btn-row">
+                    <button type="submit" class="btn btn-primary flex-grow-1"><i class="fas fa-search me-1"></i>Search</button>
+                    {% if search_query or status_filter or date_filter %}
+                    <a href="{% url 'staff_reservations' %}" class="btn btn-outline-secondary" title="Clear filters"><i class="fas fa-times"></i></a>
+                    {% endif %}
+                </div>
+            </div>
+{% include 'components/filter_bar_end.html' %}
+
+<!-- Reservations Card -->
+<div class="rsv-card animate-in animate-in-d4">
+    <div class="px-3 py-3 d-flex justify-content-between align-items-center" style="border-bottom: 1px solid #e9ecef;">
+        <h5 class="fw-bold mb-0" style="font-size: 0.95rem;">
+            <i class="fas fa-calendar-check text-primary me-2"></i>All Reservations
+        </h5>
+        <span class="badge bg-primary rounded-pill" style="font-size: 0.7rem;">{{ page_obj.paginator.count }} records</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table rsv-table">
+            <thead>
+                <tr>
+                    <th><a href="?sort_by=id&amp;sort_order={% if sort_by == 'id' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if date_filter %}&amp;date={{ date_filter }}{% endif %}" class="sort-link text-decoration-none text-reset"># {% if sort_by == 'id' or sort_by == '-id' %}<i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+                    <th>Customer</th>
+                    <th>Court / Site</th>
+                    <th><a href="?sort_by=date&amp;sort_order={% if sort_by == 'date' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if date_filter %}&amp;date={{ date_filter }}{% endif %}" class="sort-link text-decoration-none text-reset">Date &amp; Time {% if sort_by == 'date' or sort_by == '-date' %}<i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+                    <th>Duration</th>
+                    <th>Amount</th>
+                    <th>Payment</th>
+                    <th><a href="?sort_by=status&amp;sort_order={% if sort_by == 'status' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if date_filter %}&amp;date={{ date_filter }}{% endif %}" class="sort-link text-decoration-none text-reset">Status {% if sort_by == 'status' or sort_by == '-status' %}<i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for reservation in reservations %}
+                <tr>
+                    <td><span class="fw-bold" style="font-size: 0.8rem;">#{{ reservation.id }}</span></td>
+                    <td>
+                        <div class="fw-semibold" style="font-size: 0.85rem;">{{ reservation.user.username }}</div>
+                        <small class="text-muted">{{ reservation.user.email }}</small>
+                    </td>
+                    <td>
+                        <div style="font-size: 0.85rem;">{{ reservation.court.name }}</div>
+                        <small class="text-muted">{{ reservation.court.site.name }}</small>
+                    </td>
+                    <td>
+                        <div style="font-size: 0.85rem;">{{ reservation.date|date:"M d, Y" }}</div>
+                        <small class="text-muted">{{ reservation.start_time|time:"g:i A" }} - {{ reservation.end_time|time:"g:i A" }}</small>
+                    </td>
+                    <td>{{ reservation.duration_hours|floatformat:1 }} hrs</td>
+                    <td class="fw-semibold" style="color: #198754;">₱{{ reservation.total_amount|floatformat:2 }}</td>
+                    <td>
+                        {% with reservation.payment as payment %}
+                            {% if payment %}
+                            <span class="{% if payment.status == 'paid' %}badge-payment-paid{% elif payment.status == 'pending' %}badge-payment-pending{% else %}badge-status-completed{% endif %}" style="display: inline-block; border-radius: 20px; padding: 0.25rem 0.65rem; font-size: 0.72rem; font-weight: 600;">
+                                <i class="fas fa-{% if payment.status == 'paid' %}check-circle{% elif payment.status == 'pending' %}clock{% else %}question{% endif %} me-1"></i>
+                                {{ payment.get_status_display }}
+                            </span>
+                            {% else %}
+                            <span class="badge-status-cancelled" style="display: inline-block; border-radius: 20px; padding: 0.25rem 0.65rem; font-size: 0.72rem; font-weight: 600;">
+                                <i class="fas fa-minus-circle me-1"></i>None
+                            </span>
+                            {% endif %}
+                        {% endwith %}
+                    </td>
+                    <td>
+                        <span class="badge
+                            {% if reservation.status == 'confirmed' %}bg-success
+                            {% elif reservation.status == 'pending' %}bg-warning text-dark
+                            {% elif reservation.status == 'cancelled' %}bg-secondary
+                            {% elif reservation.status == 'completed' %}bg-info
+                            {% elif reservation.status == 'rejected' %}bg-danger
+                            {% endif %}"
+                            style="border-radius: 20px; font-size: 0.7rem; font-weight: 600;">
+                            <i class="fas fa-{% if reservation.status == 'confirmed' %}check-circle{% elif reservation.status == 'pending' %}clock{% elif reservation.status == 'cancelled' %}times-circle{% elif reservation.status == 'completed' %}check-double{% elif reservation.status == 'rejected' %}ban{% endif %} me-1"></i>
+                            {{ reservation.get_status_display }}
+                        </span>
+                    </td>
+                    <td class="text-end">
+                        <div class="d-flex gap-1 justify-content-end">
+                            <a href="{% url 'reservation_detail' reservation.id %}" class="btn-action-resv btn-action-view-resv" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            {% if reservation.status == 'pending' %}
+                            <button type="button" class="btn-action-resv btn-action-approve" title="Approve"
+                                    onclick="openModal({{ reservation.id }}, {{ reservation.user.id }}, '{{ reservation.user.username|escapejs }}')">
+                                <i class="fas fa-check"></i>
+                            </button>
+
+                            {% endif %}
+                            {% if reservation.status == 'confirmed' %}
+                            <a href="{% url 'start_match' reservation.id %}" class="btn-action-resv btn-action-play" title="Start Match">
+                                <i class="fas fa-play"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9">
+                        <div class="empty-state">
+                            <div class="empty-state-icon"><i class="fas fa-calendar-times"></i></div>
+                            <h6 class="empty-state-title">No reservations found</h6>
+                            <p class="empty-state-text">
+                                {% if search_query or status_filter or date_filter %}
+                                    No results match your filters.
+                                {% else %}
+                                    There are no reservations to display at this time.
+                                {% endif %}
+                            </p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if is_paginated %}
+    <div class="px-3 py-3 border-top">
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page=1{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if date_filter %}&amp;date={{ date_filter }}{% endif %}{% if sort_by %}&amp;sort_by={{ sort_by }}{% endif %}{% if sort_order %}&amp;sort_order={{ sort_order }}{% endif %}"><i class="fas fa-angle-double-left"></i></a></li>
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if date_filter %}&amp;date={{ date_filter }}{% endif %}{% if sort_by %}&amp;sort_by={{ sort_by }}{% endif %}{% if sort_order %}&amp;sort_order={{ sort_order }}{% endif %}"><i class="fas fa-angle-left"></i></a></li>
+                {% endif %}
+                {% for num in page_obj.paginator.page_range %}
+                    {% if num == page_obj.number %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item"><a class="page-link" href="?page={{ num }}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if date_filter %}&amp;date={{ date_filter }}{% endif %}{% if sort_by %}&amp;sort_by={{ sort_by }}{% endif %}{% if sort_order %}&amp;sort_order={{ sort_order }}{% endif %}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if date_filter %}&amp;date={{ date_filter }}{% endif %}{% if sort_by %}&amp;sort_by={{ sort_by }}{% endif %}{% if sort_order %}&amp;sort_order={{ sort_order }}{% endif %}"><i class="fas fa-angle-right"></i></a></li>
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&amp;search={{ search_query }}{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if date_filter %}&amp;date={{ date_filter }}{% endif %}{% if sort_by %}&amp;sort_by={{ sort_by }}{% endif %}{% if sort_order %}&amp;sort_order={{ sort_order }}{% endif %}"><i class="fas fa-angle-double-right"></i></a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    'use strict';
+
+    // ===== Confirmation Modal =====
+    var modalHtml = '' +
+        '<div class="modal fade confirm-modal" id="actionModal" tabindex="-1" aria-hidden="true">' +
+        '  <div class="modal-dialog modal-dialog-centered modal-sm">' +
+        '    <div class="modal-content">' +
+        '      <div class="modal-header text-center d-block">' +
+        '        <div style="width: 56px; height: 56px; background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 0.5rem;">' +
+        '          <i class="fas fa-check-circle fa-2x" style="color: #2e7d32;"></i>' +
+        '        </div>' +
+        '        <h6 class="fw-bold mb-1">Approve Reservation</h6>' +
+        '        <p class="text-muted small mb-0" id="modal-desc">Approve reservation for <strong></strong>?</p>' +
+        '      </div>' +
+        '      <div class="modal-body text-center">' +
+        '        <div class="p-2 rounded-3" style="background: #fff8e1;">' +
+        '          <small class="text-muted"><i class="fas fa-info-circle text-warning me-1"></i>The user will be notified once approved.</small>' +
+        '        </div>' +
+        '      </div>' +
+        '      <div class="modal-footer justify-content-center">' +
+        '        <button type="button" class="btn btn-outline-secondary" style="border-radius: 10px;" data-bs-dismiss="modal">Cancel</button>' +
+        '        <form method="post" action="{% url 'staff_approve_reservation' 0 %}" id="approve-form" style="display: inline;">' +
+        '          {% csrf_token %}' +
+        '          <input type="hidden" name="status" value="confirmed">' +
+        '          <button type="submit" class="btn btn-success" style="border-radius: 10px; font-weight: 600;">' +
+        '            <i class="fas fa-check-circle me-1"></i>Approve' +
+        '          </button>' +
+        '        </form>' +
+        '      </div>' +
+        '    </div>' +
+        '  </div>' +
+        '</div>';
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    window.openModal = function(reservationId, userId, username) {
+        document.getElementById('modal-desc').innerHTML = 'Approve reservation for <strong>' + username + '</strong>?';
+        var form = document.getElementById('approve-form');
+        form.action = "{% url 'staff_approve_reservation' 999 %}".replace('999', reservationId);
+        var modal = new bootstrap.Modal(document.getElementById('actionModal'));
+        modal.show();
+    };
+})();
+</script>
+{% endblock %}

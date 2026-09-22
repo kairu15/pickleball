@@ -1,0 +1,270 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}SMTP Settings - PickleSphere Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1 fw-bold">SMTP Configuration</h4>
+            <p class="text-muted mb-0">Configure email server settings for transactional emails</p>
+        </div>
+        <div>
+            <span class="badge {% if config and config.status == 'enabled' %}bg-success{% else %}bg-secondary{% endif %} fs-6 px-3 py-2">
+                {% if config and config.status == 'enabled' %}✅ Enabled{% else %}⛔ Disabled{% endif %}
+            </span>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Settings Form -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fw-semibold">
+                        <i class="fas fa-cog me-2 text-primary"></i>SMTP Server Settings
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="smtpForm">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="save">
+
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                <label class="form-label fw-medium">SMTP Host <span class="text-danger">*</span></label>
+                                <input type="text" name="smtp_host" class="form-control" 
+                                       value="{{ config.smtp_host|default:'smtp.gmail.com' }}" required
+                                       placeholder="e.g. smtp.gmail.com">
+                                <div class="form-text">The hostname of your SMTP server</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-medium">SMTP Port <span class="text-danger">*</span></label>
+                                <input type="number" name="smtp_port" class="form-control" 
+                                       value="{{ config.smtp_port|default:587 }}" required
+                                       placeholder="587">
+                                <div class="form-text">Common: 587 (TLS), 465 (SSL)</div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">SMTP Username</label>
+                                <input type="text" name="smtp_username" class="form-control" 
+                                       value="{{ config.smtp_username|default:'' }}"
+                                       placeholder="your@email.com">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">SMTP Password</label>
+                                <div class="input-group">
+                                    <input type="password" name="smtp_password" class="form-control" 
+                                           value="" placeholder="{% if config.smtp_password %}•••••••• (leave blank to keep){% else %}Enter password{% endif %}">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="togglePassword()">
+                                        <i class="fas fa-eye" id="toggleIcon"></i>
+                                    </button>
+                                </div>
+                                <div class="form-text">{% if config.smtp_password %}Leave blank to keep existing password.{% endif %}</div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-medium">Encryption</label>
+                                <select name="encryption" class="form-select">
+                                    <option value="tls" {% if config.encryption == 'tls' or not config.encryption %}selected{% endif %}>TLS</option>
+                                    <option value="ssl" {% if config.encryption == 'ssl' %}selected{% endif %}>SSL</option>
+                                    <option value="none" {% if config.encryption == 'none' %}selected{% endif %}>None</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-medium">Sender Name</label>
+                                <input type="text" name="sender_name" class="form-control" 
+                                       value="{{ config.sender_name|default:'PickleSphere' }}"
+                                       placeholder="Your System Name">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-medium">Sender Email <span class="text-danger">*</span></label>
+                                <input type="email" name="sender_email" class="form-control" 
+                                       value="{{ config.sender_email|default:'noreply@picklesphere.com' }}" required
+                                       placeholder="noreply@example.com">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Status</label>
+                                <select name="status" class="form-select">
+                                    <option value="enabled" {% if config.status == 'enabled' or not config.status %}selected{% endif %}>Enabled</option>
+                                    <option value="disabled" {% if config.status == 'disabled' %}selected{% endif %}>Disabled</option>
+                                </select>
+                                <div class="form-text">Disable to stop all email sending</div>
+                            </div>
+                        </div>
+
+                        <hr>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="fas fa-save me-1"></i> Save Settings
+                            </button>
+                            {% if config %}
+                            <button type="submit" name="action" value="toggle" class="btn btn-outline-secondary px-4">
+                                {% if config.status == 'enabled' %}
+                                    <i class="fas fa-pause me-1"></i> Disable
+                                {% else %}
+                                    <i class="fas fa-play me-1"></i> Enable
+                                {% endif %}
+                            </button>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Test Email Card -->
+            <div class="card shadow-sm border-0 mt-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fw-semibold">
+                        <i class="fas fa-paper-plane me-2 text-success"></i>Send Test Email
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Send a test email to verify your SMTP configuration is working.</p>
+                    <form method="POST" action="{% url 'super_admin_smtp_test' %}">
+                        {% csrf_token %}
+                        <div class="input-group">
+                            <input type="email" name="test_email" class="form-control" 
+                                   placeholder="test@example.com" value="{{ request.user.email }}" required>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-paper-plane me-1"></i> Send Test
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Current Config Info -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fw-semibold">
+                        <i class="fas fa-info-circle me-2 text-info"></i>Active Configuration
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if config %}
+                    <table class="table table-sm">
+                        <tr>
+                            <td class="text-muted">Host:</td>
+                            <td class="fw-medium">{{ config.smtp_host }}:{{ config.smtp_port }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Username:</td>
+                            <td class="fw-medium">{{ config.smtp_username|default:'Not set' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Encryption:</td>
+                            <td class="fw-medium">{{ config.get_encryption_display }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Sender:</td>
+                            <td class="fw-medium">{{ config.get_sender_display }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Updated:</td>
+                            <td class="fw-medium">{{ config.updated_at|date:"M j, Y g:i A" }}</td>
+                        </tr>
+                    </table>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-envelope fa-3x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">No custom SMTP configuration yet.</p>
+                        <small class="text-muted">Using settings from environment variables.</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Environment Fallback Info -->
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fw-semibold">
+                        <i class="fas fa-server me-2 text-warning"></i>Environment Fallback
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">If no DB configuration is active, these environment settings are used:</p>
+                    <table class="table table-sm small">
+                        <tr>
+                            <td class="text-muted">Host:</td>
+                            <td class="fw-medium">{{ env_config.host|default:'Not set' }}:{{ env_config.port|default:'-' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Sender:</td>
+                            <td class="fw-medium">{{ env_config.sender_email|default:'Not set' }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="card shadow-sm border-0 mt-4">
+                <div class="card-body">
+                    <h6 class="fw-semibold mb-3"><i class="fas fa-link me-2"></i>Quick Links</h6>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'super_admin_email_logs' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-history me-1"></i> View Email Logs
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function togglePassword() {
+    const input = document.querySelector('input[name="smtp_password"]');
+    const icon = document.getElementById('toggleIcon');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+</script>
+
+<style>
+.card {
+    border-radius: 12px;
+    transition: box-shadow 0.2s;
+}
+.card:hover {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1) !important;
+}
+.form-label {
+    font-size: 0.9rem;
+    color: #555;
+}
+.form-control, .form-select {
+    border-radius: 8px;
+    padding: 10px 14px;
+    border: 1.5px solid #e0e0e0;
+    transition: border-color 0.2s;
+}
+.form-control:focus, .form-select:focus {
+    border-color: #3B7A8C;
+    box-shadow: 0 0 0 0.2rem rgba(59,122,140,0.15);
+}
+.table-sm td {
+    padding: 6px 4px;
+    border: none;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,416 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Payment Management{% endblock %}
+{% block page_title %}Payment Management{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/admin.css' %}">
+<style>
+    .method-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.25rem 0.6rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .method-chip.gcash {
+        background: rgba(0, 123, 255, 0.1);
+        color: #0056b3;
+    }
+    .method-chip.cash {
+        background: rgba(40, 167, 69, 0.1);
+        color: #1e7e34;
+    }
+    .method-chip.card {
+        background: rgba(23, 162, 184, 0.1);
+        color: #0c5460;
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'super_admin_analytics' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Payment Management</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<!-- Stats Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-success text-white me-3">
+                    <i class="fas fa-calendar-day fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">₱{{ today_revenue|floatformat:0 }}</div>
+                    <div class="stats-label text-muted">Today's Revenue</div>
+                    <small class="text-muted"><i class="fas fa-receipt me-1"></i>{{ today_count }} transactions</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-primary text-white me-3">
+                    <i class="fas fa-calendar-week fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">₱{{ week_revenue|floatformat:0 }}</div>
+                    <div class="stats-label text-muted">This Week</div>
+                    <small class="text-muted"><i class="fas fa-receipt me-1"></i>{{ week_count }} transactions</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-info text-white me-3">
+                    <i class="fas fa-calendar-alt fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">₱{{ month_revenue|floatformat:0 }}</div>
+                    <div class="stats-label text-muted">This Month</div>
+                    <small class="text-muted"><i class="fas fa-receipt me-1"></i>{{ month_count }} transactions</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="admin-card h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="stats-icon bg-gradient-warning text-white me-3">
+                    <i class="fas fa-clock fa-lg"></i>
+                </div>
+                <div>
+                    <div class="stats-value">₱{{ total_pending|floatformat:0 }}</div>
+                    <div class="stats-label text-muted">Pending Amount</div>
+                    <small class="text-warning"><i class="fas fa-hourglass-half me-1"></i>Awaiting verification</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="admin-card h-100">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-credit-card text-primary"></i>
+                    Payment Methods
+                </h5>
+            </div>
+            <div class="card-body">
+                {% for method in method_breakdown %}
+                <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="method-chip {{ method.method }}">
+                            <i class="fas fa-{% if method.method == 'gcash' %}mobile-alt{% elif method.method == 'maya' %}wallet{% elif method.method == 'bank_transfer' %}university{% elif method.method == 'cash' %}money-bill-wave{% else %}credit-card{% endif %}"></i>
+                            {% if method.method == 'bank_transfer' %}Bank Transfer{% elif method.method == 'maya' %}Maya{% elif method.method == 'gcash' %}GCash{% else %}{{ method.method|title }}{% endif %}
+                        </span>
+                    </div>
+                    <div class="text-end">
+                        <div class="fw-bold" style="color: #28a745;">₱{{ method.total|floatformat:0 }}</div>
+                        <small class="text-muted">{{ method.count }} transactions</small>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-muted text-center mb-0 py-3">No payment data available</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="admin-card h-100">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-user-check text-primary"></i>
+                    Verification By
+                </h5>
+            </div>
+            <div class="card-body">
+                {% for stat in verification_stats %}
+                <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="method-chip {% if stat.cash_received_by__role == 'admin' %}cash{% else %}gcash{% endif %}">
+                            <i class="fas fa-{% if stat.cash_received_by__role == 'admin' %}user-shield{% else %}user{% endif %}"></i>
+                            {{ stat.cash_received_by__role|title }}
+                        </span>
+                    </div>
+                    <div class="text-end">
+                        <div class="fw-bold" style="color: #28a745;">₱{{ stat.total|floatformat:0 }}</div>
+                        <small class="text-muted">{{ stat.count }} verifications</small>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-muted text-center mb-0 py-3">No verification data available</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="admin-card h-100">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-chart-pie text-primary"></i>
+                    Total Revenue
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <h2 class="fw-bold mb-1" style="color: #28a745;">₱{{ total_paid|floatformat:0 }}</h2>
+                    <small class="text-muted">Total collected payments</small>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted">Refunded:</span>
+                    <span class="text-danger fw-semibold">₱{{ total_refunded|floatformat:0 }}</span>
+                </div>
+                <div class="d-flex justify-content-between mt-1">
+                    <span class="text-muted">Pending Online Payments:</span>
+                    <span class="fw-semibold">{{ pending_gcash }}</span>
+                </div>
+                <div class="d-flex justify-content-between mt-1">
+                    <span class="text-muted">Pending Cash:</span>
+                    <span class="fw-semibold">{{ pending_cash }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="admin-card h-100">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-clock text-primary"></i>
+                    Recent Activity
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_logs %}
+                <div style="max-height: 260px; overflow-y: auto;">
+                    {% for log in recent_logs %}
+                    <div class="px-3 py-2 border-bottom" style="border-left: 3px solid var(--primary-color);">
+                        <div class="fw-semibold small">{{ log.action }}</div>
+                        <small class="text-muted">{{ log.created_at|timesince }} ago</small>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center mb-0 py-4">No recent activity</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include 'components/filter_bar_start.html' %}
+        <div class="col-lg-2 col-md-4">
+            <label class="filter-label"><i class="fas fa-filter me-1 text-primary"></i>Status</label>
+            <select name="status" class="filter-select">
+                <option value="">All Status</option>
+                <option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Paid</option>
+                <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>Failed</option>
+                <option value="refunded" {% if status_filter == 'refunded' %}selected{% endif %}>Refunded</option>
+            </select>
+        </div>
+        <div class="col-lg-2 col-md-4">
+            <label class="filter-label"><i class="fas fa-credit-card me-1 text-primary"></i>Method</label>
+            <select name="method" class="filter-select">
+                <option value="">All Methods</option>
+                <option value="gcash" {% if method_filter == 'gcash' %}selected{% endif %}>GCash</option>
+                <option value="maya" {% if method_filter == 'maya' %}selected{% endif %}>Maya</option>
+                <option value="bank_transfer" {% if method_filter == 'bank_transfer' %}selected{% endif %}>Bank Transfer</option>
+                <option value="cash" {% if method_filter == 'cash' %}selected{% endif %}>Cash</option>
+                <option value="card" {% if method_filter == 'card' %}selected{% endif %}>Card</option>
+            </select>
+        </div>
+        <div class="col-lg-2 col-md-4">
+            <label class="filter-label"><i class="fas fa-user-check me-1 text-primary"></i>Verified By</label>
+            <select name="verified_by" class="filter-select">
+                <option value="">All</option>
+                <option value="admin" {% if verified_by_filter == 'admin' %}selected{% endif %}>Admin</option>
+                <option value="staff" {% if verified_by_filter == 'staff' %}selected{% endif %}>Staff</option>
+                <option value="system" {% if verified_by_filter == 'system' %}selected{% endif %}>System (Card)</option>
+            </select>
+        </div>
+        <div class="col-lg-2 col-md-4">
+            <label class="filter-label"><i class="fas fa-calendar me-1 text-primary"></i>From</label>
+            <input type="date" name="date_from" class="filter-input" value="{{ date_from }}">
+        </div>
+        <div class="col-lg-2 col-md-4">
+            <label class="filter-label"><i class="fas fa-calendar me-1 text-primary"></i>To</label>
+            <input type="date" name="date_to" class="filter-input" value="{{ date_to }}">
+        </div>
+        <div class="col-lg-2 col-md-4">
+            <div class="filter-btn-row">
+                <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search me-1"></i>Search</button>
+                {% if status_filter or method_filter or date_from or date_to or verified_by_filter %}
+                <a href="{% url 'super_admin_payments' %}" class="btn btn-outline-secondary" title="Clear filters"><i class="fas fa-times"></i></a>
+                {% endif %}
+            </div>
+        </div>
+{% include 'components/filter_bar_end.html' %}
+
+<!-- Payments Table -->
+<div class="admin-card">
+    <div class="admin-card-header d-flex justify-content-between align-items-center">
+        <h5 class="admin-card-title">
+            <i class="fas fa-list text-primary"></i>
+            All Payments
+        </h5>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'super_admin_revenue_report' %}" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-chart-bar me-2"></i>Revenue Reports
+            </a>
+            <span class="badge bg-primary">{{ page_obj.paginator.count }} records</span>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        {% if payments %}
+        <div class="admin-table-container">
+            <table class="table admin-table mb-0">
+                <thead>
+                    <tr>
+                        <th><a href="?sort_by=id&amp;sort_order={% if sort_by == 'id' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if method_filter %}&amp;method={{ method_filter }}{% endif %}{% if date_from %}&amp;date_from={{ date_from }}{% endif %}{% if date_to %}&amp;date_to={{ date_to }}{% endif %}" class="sort-link"># {% if sort_by == 'id' or sort_by == '-id' %}<i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+                        <th>User</th>
+                        <th>Reservation</th>
+                        <th><a href="?sort_by=amount&amp;sort_order={% if sort_by == 'amount' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if method_filter %}&amp;method={{ method_filter }}{% endif %}{% if date_from %}&amp;date_from={{ date_from }}{% endif %}{% if date_to %}&amp;date_to={{ date_to }}{% endif %}" class="sort-link">Amount {% if sort_by == 'amount' or sort_by == '-amount' %}<i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+                        <th><a href="?sort_by=method&amp;sort_order={% if sort_by == 'method' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if method_filter %}&amp;method={{ method_filter }}{% endif %}{% if date_from %}&amp;date_from={{ date_from }}{% endif %}{% if date_to %}&amp;date_to={{ date_to }}{% endif %}" class="sort-link">Method {% if sort_by == 'method' or sort_by == '-method' %}<i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+                        <th><a href="?sort_by=status&amp;sort_order={% if sort_by == 'status' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if method_filter %}&amp;method={{ method_filter }}{% endif %}{% if date_from %}&amp;date_from={{ date_from }}{% endif %}{% if date_to %}&amp;date_to={{ date_to }}{% endif %}" class="sort-link">Status {% if sort_by == 'status' or sort_by == '-status' %}<i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+                        <th><a href="?sort_by=created_at&amp;sort_order={% if sort_by == 'created_at' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if method_filter %}&amp;method={{ method_filter }}{% endif %}{% if date_from %}&amp;date_from={{ date_from }}{% endif %}{% if date_to %}&amp;date_to={{ date_to }}{% endif %}" class="sort-link">Date {% if sort_by == 'created_at' or sort_by == '-created_at' %}<i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}</a></th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in payments %}
+                    <tr>
+                        <td data-label="#" class="fw-semibold">#{{ payment.id }}</td>
+                        <td data-label="User">
+                            <div class="d-flex align-items-center">
+                                {% if payment.reservation.user.profile_picture %}
+                                <img src="{{ payment.reservation.user.profile_picture.url }}" alt="" class="rounded-circle me-2" width="28" height="28">
+                                {% else %}
+                                <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center me-2" style="width: 28px; height: 28px;">
+                                    <span class="text-primary fw-bold small">{{ payment.reservation.user.username|first|upper }}</span>
+                                </div>
+                                {% endif %}
+                                <span>{{ payment.reservation.user.username }}</span>
+                            </div>
+                        </td>
+                        <td data-label="Reservation">
+                            <small class="text-muted">Res #{{ payment.reservation.id }}</small><br>
+                            <small>{{ payment.reservation.court.name|default:"N/A" }}</small>
+                        </td>
+                        <td data-label="Amount" class="fw-semibold" style="color: #198754;">₱{{ payment.amount|floatformat:2 }}</td>
+                        <td data-label="Method">
+                            <span class="method-chip {{ payment.method }}">
+                                <i class="fas fa-{% if payment.method == 'gcash' %}mobile-alt{% elif payment.method == 'maya' %}wallet{% elif payment.method == 'bank_transfer' %}university{% elif payment.method == 'cash' %}money-bill-wave{% else %}credit-card{% endif %}"></i>
+                                {{ payment.get_method_display|default:"N/A" }}
+                            </span>
+                        </td>
+                        <td data-label="Status">
+                            <span class="badge
+                                {% if payment.status == 'paid' %}bg-success
+                                {% elif payment.status == 'pending' %}bg-warning text-dark
+                                {% elif payment.status == 'failed' %}bg-danger
+                                {% elif payment.status == 'refunded' %}bg-secondary
+                                {% else %}bg-secondary{% endif %}">
+                                <i class="fas fa-{% if payment.status == 'paid' %}check-circle{% elif payment.status == 'pending' %}clock{% elif payment.status == 'failed' %}times-circle{% elif payment.status == 'refunded' %}undo{% endif %} me-1"></i>
+                                {{ payment.get_status_display }}
+                            </span>
+                        </td>
+                        <td data-label="Date">
+                            <small class="text-muted">{{ payment.created_at|date:"M d, Y" }}</small>
+                        </td>
+                        <td data-label="Actions" class="text-end">
+                            <div class="d-flex gap-1 justify-content-end">
+                                <a href="{% url 'payment_status' payment.id %}" class="btn btn-sm btn-outline-primary" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% if payment.status == 'pending' %}
+                                <a href="{% url 'admin_verify_payment' payment.id %}" class="btn btn-sm btn-outline-success" title="Verify Payment">
+                                    <i class="fas fa-check"></i>
+                                </a>
+                                {% endif %}
+                                {% if payment.gcash_proof_image %}
+                                <a href="{% url 'view_payment_proof' payment.id %}" class="btn btn-sm btn-outline-info" title="View Proof">
+                                    <i class="fas fa-image"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">
+                                    <i class="fas fa-receipt fa-2x text-muted"></i>
+                                </div>
+                                <h5 class="empty-state-title">No payments found</h5>
+                                <p class="empty-state-text">Try adjusting your filters or check back later.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if is_paginated %}
+        <div class="px-3 py-3 border-top">
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if method_filter %}&amp;method={{ method_filter }}{% endif %}{% if date_from %}&amp;date_from={{ date_from }}{% endif %}{% if date_to %}&amp;date_to={{ date_to }}{% endif %}{% if verified_by_filter %}&amp;verified_by={{ verified_by_filter }}{% endif %}{% if sort_by %}&amp;sort_by={{ sort_by }}{% endif %}{% if sort_order %}&amp;sort_order={{ sort_order }}{% endif %}"><i class="fas fa-angle-double-left"></i></a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if method_filter %}&amp;method={{ method_filter }}{% endif %}{% if date_from %}&amp;date_from={{ date_from }}{% endif %}{% if date_to %}&amp;date_to={{ date_to }}{% endif %}{% if verified_by_filter %}&amp;verified_by={{ verified_by_filter }}{% endif %}{% if sort_by %}&amp;sort_by={{ sort_by }}{% endif %}{% if sort_order %}&amp;sort_order={{ sort_order }}{% endif %}"><i class="fas fa-angle-left"></i></a>
+                    </li>
+                    {% endif %}
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if num == page_obj.number %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if method_filter %}&amp;method={{ method_filter }}{% endif %}{% if date_from %}&amp;date_from={{ date_from }}{% endif %}{% if date_to %}&amp;date_to={{ date_to }}{% endif %}{% if verified_by_filter %}&amp;verified_by={{ verified_by_filter }}{% endif %}{% if sort_by %}&amp;sort_by={{ sort_by }}{% endif %}{% if sort_order %}&amp;sort_order={{ sort_order }}{% endif %}">{{ num }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if method_filter %}&amp;method={{ method_filter }}{% endif %}{% if date_from %}&amp;date_from={{ date_from }}{% endif %}{% if date_to %}&amp;date_to={{ date_to }}{% endif %}{% if verified_by_filter %}&amp;verified_by={{ verified_by_filter }}{% endif %}{% if sort_by %}&amp;sort_by={{ sort_by }}{% endif %}{% if sort_order %}&amp;sort_order={{ sort_order }}{% endif %}"><i class="fas fa-angle-right"></i></a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if status_filter %}&amp;status={{ status_filter }}{% endif %}{% if method_filter %}&amp;method={{ method_filter }}{% endif %}{% if date_from %}&amp;date_from={{ date_from }}{% endif %}{% if date_to %}&amp;date_to={{ date_to }}{% endif %}{% if verified_by_filter %}&amp;verified_by={{ verified_by_filter }}{% endif %}{% if sort_by %}&amp;sort_by={{ sort_by }}{% endif %}{% if sort_order %}&amp;sort_order={{ sort_order }}{% endif %}"><i class="fas fa-angle-double-right"></i></a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="fas fa-receipt fa-2x text-muted"></i>
+            </div>
+            <h5 class="empty-state-title">No payments found</h5>
+            <p class="empty-state-text">Try adjusting your filters or check back later.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
