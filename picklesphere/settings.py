@@ -198,10 +198,15 @@ if not DEBUG:
 # WhiteNoise: gzip/brotli compression and far-future cache headers for hashed assets
 WHITENOISE_MAX_AGE = 60 * 60 * 24 * 365  # 1 year
 WHITENOISE_COMPRESS = True
-WHITENOISE_USE_FINDERS = True
-# Only treat files as immutable when they carry a content hash (manifest storage)
-if not DEBUG:
-    WHITENOISE_IMMUTABLE_FILE_TEST = True
+# Serve files through the staticfiles finders in development only. In
+# production, assets must come from the collected STATIC_ROOT so the hashed
+# (manifest) filenames are the ones actually served.
+WHITENOISE_USE_FINDERS = DEBUG
+# NOTE: WHITENOISE_IMMUTABLE_FILE_TEST is deliberately left at its default.
+# WhiteNoise's built-in test already treats content-hashed filenames produced
+# by ManifestStaticFilesStorage as immutable, and the setting must be a regex
+# string or a callable - setting it to a bool raised TypeError inside
+# re.compile() on every startup with DEBUG=False.
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
