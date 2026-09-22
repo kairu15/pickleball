@@ -260,6 +260,25 @@ AXES_ENABLE_ADMIN = True
 CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=False, cast=bool)
 CSRF_COOKIE_HTTPONLY = False  # Must be False for JavaScript POST
 
+# ========== PRODUCTION SECURITY HEADERS ==========
+# Each flag defaults to "on in production" (DEBUG=False) and is overridable
+# per-environment, mirroring SESSION_COOKIE_SECURE / CSRF_COOKIE_SECURE above.
+#
+# SECURE_SSL_REDIRECT assumes TLS is terminated in front of Django. Set
+# SECURE_SSL_REDIRECT=False for an environment where a load balancer or
+# health check speaks plain HTTP to the application server.
+SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=not DEBUG, cast=bool)
+# HSTS is only honoured over HTTPS, so it stays off in DEBUG.
+SECURE_HSTS_SECONDS = config('SECURE_HSTS_SECONDS', default=31536000 if not DEBUG else 0, cast=int)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = config('SECURE_HSTS_INCLUDE_SUBDOMAINS', default=not DEBUG, cast=bool)
+SECURE_HSTS_PRELOAD = config('SECURE_HSTS_PRELOAD', default=not DEBUG, cast=bool)
+# Clickjacking protection: nothing in templates/ embeds this app in a frame.
+X_FRAME_OPTIONS = 'DENY'
+# Stop browsers from MIME-sniffing a response away from the declared type.
+SECURE_CONTENT_TYPE_NOSNIFF = True
+# Limit how much referrer information is sent to other origins.
+SECURE_REFERRER_POLICY = config('SECURE_REFERRER_POLICY', default='same-origin')
+
 # Stripe Payment Gateway Settings
 STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
 STRIPE_PUBLISHABLE_KEY = config('STRIPE_PUBLISHABLE_KEY', default='')
