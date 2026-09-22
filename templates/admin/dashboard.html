@@ -1,5 +1,6 @@
 {% extends 'base/dashboard_base.html' %}
 {% load static %}
+{% load dashboard_filters %}
 
 {% block title %}System Analytics Dashboard{% endblock %}
 {% block page_title %}System Analytics{% endblock %}
@@ -621,8 +622,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const infoColor = '#17a2b8';
 
     // ===== 1. User Registration Chart =====
-    var months = {{ months|safe }};
-    var userCounts = {{ user_counts|safe }};
+    var months = {{ months|to_json }};
+    var userCounts = {{ user_counts|to_json }};
     var ctx = document.getElementById('userRegistrationChart');
     if (ctx) {
         new Chart(ctx, {
@@ -653,9 +654,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ===== 2. Revenue Trend Chart =====
-    var revLabels = {{ revenue_trend_labels|safe }};
-    var revValues = {{ revenue_trend_values|safe }};
-    var bookingValues = {{ booking_trend_values|safe }};
+    var revLabels = {{ revenue_trend_labels|to_json }};
+    var revValues = {{ revenue_trend_values|to_json }};
+    var bookingValues = {{ booking_trend_values|to_json }};
     var revCtx = document.getElementById('revenueTrendChart');
     if (revCtx) {
         new Chart(revCtx, {
@@ -700,9 +701,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ===== 3. Peak Hours Chart =====
-    var peakLabels = {{ peak_hours_labels|safe }};
-    var peakCounts = {{ peak_hours_counts|safe }};
-    var peakRevenue = {{ peak_hours_revenue|safe }};
+    var peakLabels = {{ peak_hours_labels|to_json }};
+    var peakCounts = {{ peak_hours_counts|to_json }};
+    var peakRevenue = {{ peak_hours_revenue|to_json }};
     var peakCtx = document.getElementById('peakHoursChart');
     if (peakCtx) {
         new Chart(peakCtx, {

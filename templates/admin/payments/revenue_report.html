@@ -1,5 +1,6 @@
 {% extends 'base/dashboard_base.html' %}
 {% load static %}
+{% load dashboard_filters %}
 
 {% block title %}Revenue Reports{% endblock %}
 {% block page_title %}Revenue Reports{% endblock %}
@@ -467,9 +468,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const infoColor = '#17a2b8';
 
     // ===== 1. Daily Revenue Chart =====
-    var dailyLabels = {{ chart_data.daily_labels|safe }};
-    var dailyRevenue = {{ chart_data.daily_revenue|safe }};
-    var dailyBookings = {{ chart_data.daily_bookings|safe }};
+    var dailyLabels = {{ chart_data.daily_labels|to_json }};
+    var dailyRevenue = {{ chart_data.daily_revenue|to_json }};
+    var dailyBookings = {{ chart_data.daily_bookings|to_json }};
     var dailyCtx = document.getElementById('dailyRevenueChart');
     if (dailyCtx && dailyLabels.length > 0) {
         new Chart(dailyCtx, {
@@ -558,8 +559,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ===== 3. Court Revenue Chart =====
-    var courtLabels = {{ chart_data.court_labels|safe }};
-    var courtRevenue = {{ chart_data.court_revenue|safe }};
+    var courtLabels = {{ chart_data.court_labels|to_json }};
+    var courtRevenue = {{ chart_data.court_revenue|to_json }};
     var courtCtx = document.getElementById('courtRevenueChart');
     if (courtCtx && courtLabels.length > 0) {
         new Chart(courtCtx, {
@@ -597,9 +598,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ===== 4. Hourly Distribution Chart =====
-    var hourlyLabels = {{ chart_data.hourly_labels|safe }};
-    var hourlyBookings = {{ chart_data.hourly_bookings|safe }};
-    var hourlyRevenue = {{ chart_data.hourly_revenue|safe }};
+    var hourlyLabels = {{ chart_data.hourly_labels|to_json }};
+    var hourlyBookings = {{ chart_data.hourly_bookings|to_json }};
+    var hourlyRevenue = {{ chart_data.hourly_revenue|to_json }};
     var hourlyCtx = document.getElementById('hourlyChart');
     if (hourlyCtx && hourlyLabels.length > 0) {
         new Chart(hourlyCtx, {

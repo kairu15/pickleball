@@ -1,7 +1,23 @@
+import re
+
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+
+
+# Characters that let a stored CMS value escape its own CSS declaration: `;`
+# ends the declaration, `{`/`}` open and close a rule block, `\` enables CSS
+# escapes, and `/*`/`*/` start and end a comment. Newlines go too, so a value
+# cannot smuggle in an extra declaration. Every legitimate token this model
+# stores (hex colours, lengths, font stacks, box-shadow lists) survives.
+_CSS_UNSAFE = re.compile(r'[;{}\\]|/\*|\*/|[\r\n]')
+
+
+def sanitize_css_value(value):
+    """Strip characters that would let a CMS design value inject extra CSS
+    when it is interpolated unescaped into a <style> block."""
+    return _CSS_UNSAFE.sub('', str(value or '')).strip()
 
 
 class PricingContent(models.Model):
@@ -1700,47 +1716,62 @@ class GlobalDesignSettings(models.Model):
         return 'Global Design Settings'
 
     def _hex_to_rgb(self, hex_color):
-        """Convert hex color to RGB comma-separated string (e.g. '#3B7A8C' -> '59, 122, 140')."""
-        hex_color = hex_color.lstrip('#')
+        """Convert hex color to RGB comma-separated string (e.g. '#3B7A8C' -> '59, 122, 140').
+
+        Falls back to the default primary colour when the stored value is not
+        a 6-digit hex colour, so a malformed CMS value cannot raise a
+        ValueError while the page is being rendered.
+        """
+        hex_color = str(hex_color or '').lstrip('#')
         if len(hex_color) == 6:
-            r = int(hex_color[0:2], 16)
-            g = int(hex_color[2:4], 16)
-            b = int(hex_color[4:6], 16)
-            return f'{r}, {g}, {b}'
+            try:
+                r, g, b = (int(hex_color[i:i + 2], 16) for i in (0, 2, 4))
+            except ValueError:
+                pass
+            else:
+                return f'{r}, {g}, {b}'
         return '59, 122, 140'  # fallback to default
 
     def get_css_variables(self):
-        """Return a CSS custom properties string for injection into templates."""
-        return f'''
-:root {{
-  --primary-color: {self.primary_color};
-  --primary-rgb: {self._hex_to_rgb(self.primary_color)};
-  --primary-hover: {self.primary_hover_color};
-  --secondary-color: {self.secondary_color};
-  --accent-color: {self.accent_color};
-  --success-color: {self.success_color};
-  --warning-color: {self.warning_color};
-  --danger-color: {self.danger_color};
-  --info-color: {self.info_color};
-  --text-primary: {self.text_primary_color};
-  --text-muted: {self.text_muted_color};
-  --bg-light: {self.background_light_color};
-  --bg-dark: {self.background_dark_color};
-  --border-radius-sm: {self.border_radius_sm};
-  --border-radius-md: {self.border_radius_md};
-  --border-radius-lg: {self.border_radius_lg};
-  --border-radius-full: {self.border_radius_full};
-  --shadow-sm: {self.shadow_sm};
-  --shadow-md: {self.shadow_md};
-  --shadow-lg: {self.shadow_lg};
-  --spacing-unit: {self.spacing_unit};
-  --section-padding: {self.section_padding};
-  --container-max-width: {self.container_max_width};
-  --heading-font: {self.heading_font_family};
-  --body-font: {self.body_font_family};
-  --base-font-size: {self.base_font_size};
-  --heading-font-weight: {self.heading_font_weight};
-}}'''
+        """Return a CSS custom properties string for injection into templates.
+
+        Every value originates from a super-admin-editable CharField and is
+        rendered unescaped, so each one is passed through
+        :func:`sanitize_css_value` first. Legitimate values are unchanged.
+        """
+        values = {
+            '--primary-color': self.primary_color,
+            '--primary-rgb': self._hex_to_rgb(self.primary_color),
+            '--primary-hover': self.primary_hover_color,
+            '--secondary-color': self.secondary_color,
+            '--accent-color': self.accent_color,
+            '--success-color': self.success_color,
+            '--warning-color': self.warning_color,
+            '--danger-color': self.danger_color,
+            '--info-color': self.info_color,
+            '--text-primary': self.text_primary_color,
+            '--text-muted': self.text_muted_color,
+            '--bg-light': self.background_light_color,
+            '--bg-dark': self.background_dark_color,
+            '--border-radius-sm': self.border_radius_sm,
+            '--border-radius-md': self.border_radius_md,
+            '--border-radius-lg': self.border_radius_lg,
+            '--border-radius-full': self.border_radius_full,
+            '--shadow-sm': self.shadow_sm,
+            '--shadow-md': self.shadow_md,
+            '--shadow-lg': self.shadow_lg,
+            '--spacing-unit': self.spacing_unit,
+            '--section-padding': self.section_padding,
+            '--container-max-width': self.container_max_width,
+            '--heading-font': self.heading_font_family,
+            '--body-font': self.body_font_family,
+            '--base-font-size': self.base_font_size,
+            '--heading-font-weight': self.heading_font_weight,
+        }
+        lines = [':root {']
+        lines += [f'  {name}: {sanitize_css_value(value)};' for name, value in values.items()]
+        lines.append('}')
+        return '\n'.join(lines)
 
 
 # ============================================================================
