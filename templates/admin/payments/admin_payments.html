@@ -302,7 +302,7 @@
                         <td data-label="User">
                             <div class="d-flex align-items-center">
                                 {% if payment.reservation.user.profile_picture %}
-                                <img src="{{ payment.reservation.user.profile_picture.url }}" alt="" class="rounded-circle me-2" width="28" height="28">
+                                <img src="{{ payment.reservation.user.profile_picture.url }}" alt="" class="rounded-circle me-2" width="28" height="28" loading="lazy" decoding="async">
                                 {% else %}
                                 <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center me-2" style="width: 28px; height: 28px;">
                                     <span class="text-primary fw-bold small">{{ payment.reservation.user.username|first|upper }}</span>

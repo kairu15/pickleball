@@ -172,7 +172,7 @@
                     <tr>
                         <td>
                             {% if member.photo %}
-                            <img src="{{ member.photo.url }}" alt="{{ member.name }}" class="avatar avatar-sm" style="object-fit: cover;">
+                            <img src="{{ member.photo.url }}" alt="{{ member.name }}" class="avatar avatar-sm" style="object-fit: cover;" loading="lazy" decoding="async">
                             {% else %}
                             <div class="avatar avatar-sm avatar-placeholder">
                                 <i class="fas fa-user"></i>
@@ -378,7 +378,7 @@
                     <tr>
                         <td>
                             {% if image.image %}
-                            <img src="{{ image.image.url }}" alt="{{ image.alt_text }}" class="avatar" style="width: 80px; height: 50px; object-fit: cover; border-radius: 6px;">
+                            <img src="{{ image.image.url }}" alt="{{ image.alt_text }}" class="avatar" style="width: 80px; height: 50px; object-fit: cover; border-radius: 6px;" loading="lazy" decoding="async">
                             {% else %}
                             <div class="avatar avatar-placeholder" style="width: 80px; height: 50px; border-radius: 6px;">
                                 <i class="fas fa-image text-muted"></i>

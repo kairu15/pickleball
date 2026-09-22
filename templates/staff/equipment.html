@@ -106,7 +106,7 @@
                             <div class="equipment-item">
                                 {% if item.image %}
                                     <div class="equipment-image-wrapper-sm clickable-image" data-lightbox data-caption="{{ item.name }} - {{ item.get_type_display }}" style="cursor: zoom-in;">
-                                        <img src="{{ item.image.url }}" alt="{{ item.name }}" class="equipment-image">
+                                        <img src="{{ item.image.url }}" alt="{{ item.name }}" class="equipment-image" loading="lazy" decoding="async">
                                     </div>
                                 {% else %}
                                     <div class="equipment-image-placeholder">

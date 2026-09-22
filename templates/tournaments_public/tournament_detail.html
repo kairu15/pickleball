@@ -148,7 +148,7 @@
                             <div class="list-group-item d-flex align-items-center py-3 px-2 border-bottom" style="min-width: 0;">
                                 <div class="flex-shrink-0">
                                     {% if reg.user.profile_picture %}
-                                        <img src="{{ reg.user.profile_picture.url }}" alt="" class="rounded-circle" style="width: 45px; height: 45px; object-fit: cover;">
+                                        <img src="{{ reg.user.profile_picture.url }}" alt="" class="rounded-circle" style="width: 45px; height: 45px; object-fit: cover;" loading="lazy" decoding="async">
                                     {% else %}
                                         <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
                                             <span class="fw-bold">{{ reg.user.username|first|upper }}</span>

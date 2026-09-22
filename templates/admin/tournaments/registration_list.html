@@ -136,7 +136,7 @@
                             <td style="padding: 15px 20px;">
                                 <div class="d-flex align-items-center">
                                     {% if reg.user.profile_picture %}
-                                        <img src="{{ reg.user.profile_picture.url }}" class="rounded-circle me-3" style="width: 45px; height: 45px; object-fit: cover;">
+                                        <img src="{{ reg.user.profile_picture.url }}" alt="{{ reg.user.get_full_name|default:reg.user.username }}" class="rounded-circle me-3" style="width: 45px; height: 45px; object-fit: cover;" loading="lazy" decoding="async">
                                     {% else %}
                                         <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 45px; height: 45px;">
                                             <span class="fw-bold">{{ reg.user.username|first|upper }}</span>

@@ -108,7 +108,7 @@
                     <div class="col-md-4 col-lg-2">
                         <div class="text-center p-3 border rounded-3 bg-light">
                             {% if item.image %}
-                            <img src="{{ item.image.url }}" alt="{{ item.alt_text }}" class="rounded-2 mb-2" style="width: 100%; height: 80px; object-fit: cover;">
+                            <img src="{{ item.image.url }}" alt="{{ item.alt_text }}" class="rounded-2 mb-2" style="width: 100%; height: 80px; object-fit: cover;" loading="lazy" decoding="async">
                             {% endif %}
                             <h6 class="mb-0 small">{{ item.title|default:"Untitled" }}</h6>
                             <small class="text-muted d-block">{{ item.alt_text|truncatechars:20 }}</small>

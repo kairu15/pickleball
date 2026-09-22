@@ -69,7 +69,7 @@
                         {% for img in court.images.all %}
                         <div class="col-3">
                             <div class="image-wrapper">
-                                <img src="{{ img.image.url }}" class="img-fluid rounded-3 cursor-pointer" style="height: 80px; object-fit: cover; width: 100%;" onclick="document.getElementById('mainImage').src='{{ img.image.url }}'" alt="{{ img.alt_text|default:court.name }}">
+                                <img src="{{ img.image.url }}" class="img-fluid rounded-3 cursor-pointer" style="height: 80px; object-fit: cover; width: 100%;" onclick="document.getElementById('mainImage').src='{{ img.image.url }}'" alt="{{ img.alt_text|default:court.name }}" loading="lazy" decoding="async">
                             </div>
                         </div>
                         {% endfor %}
@@ -311,7 +311,7 @@
                 <div class="card h-100 border-0 shadow-lg hover-card" style="border-radius: 15px; overflow: hidden;">
                     <div class="position-relative">
                         {% if related.image %}
-                            <img src="{{ related.image.url }}" class="card-img-top" alt="{{ related.name }}" style="height: 200px; object-fit: cover;">
+                            <img src="{{ related.image.url }}" class="card-img-top" alt="{{ related.name }}" style="height: 200px; object-fit: cover;" loading="lazy" decoding="async">
                         {% else %}
                             <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
                                 <i class="fas fa-table-tennis fa-3x text-muted"></i>

@@ -129,7 +129,7 @@
         <div class="card border-0 shadow-sm h-100 equipment-card" style="border-radius: 16px; overflow: hidden; transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);">
             <div class="equipment-image-wrapper image-wrapper" style="height: 200px; overflow: hidden;">
                 {% if item.image %}
-                    <img src="{{ item.image.url }}" class="card-img-top equipment-image equipment-list-image clickable-image" alt="{{ item.name }}" data-lightbox data-caption="{{ item.name }} - {{ item.get_type_display }}" style="transition: transform 0.4s ease;">
+                    <img src="{{ item.image.url }}" class="card-img-top equipment-image equipment-list-image clickable-image" alt="{{ item.name }}" loading="lazy" decoding="async" data-lightbox data-caption="{{ item.name }} - {{ item.get_type_display }}" style="transition: transform 0.4s ease;">
                 {% else %}
                     <div class="card-img-top bg-light d-flex align-items-center justify-content-center h-100">
                         <div class="equipment-placeholder" style="width: 70px; height: 70px; background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: transform 0.3s ease;">

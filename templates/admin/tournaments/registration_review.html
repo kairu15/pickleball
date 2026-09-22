@@ -37,7 +37,7 @@
                                     <h6 class="fw-bold mb-3"><i class="fas fa-user me-2 text-primary"></i>Player Information</h6>
                                     <div class="d-flex align-items-center mb-3">
                                         {% if registration.user.profile_picture %}
-                                            <img src="{{ registration.user.profile_picture.url }}" class="rounded-circle me-3" style="width: 70px; height: 70px; object-fit: cover;">
+                                            <img src="{{ registration.user.profile_picture.url }}" alt="{{ registration.user.get_full_name|default:registration.user.username }}" class="rounded-circle me-3" style="width: 70px; height: 70px; object-fit: cover;">
                                         {% else %}
                                             <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 70px; height: 70px; font-size: 1.75rem;">
                                                 {{ registration.user.username|first|upper }}
