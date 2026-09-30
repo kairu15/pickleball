@@ -10,7 +10,13 @@ from django.http import JsonResponse
 from datetime import datetime, timedelta, date as date_type
 import calendar
 from accounts.decorators import admin_required, staff_or_admin_required, user_required
-from .models import Reservation, ReservationEquipment, CancellationRequest, CancellationPolicy
+from .models import (
+    Reservation, ReservationEquipment, CancellationRequest, CancellationPolicy,
+    WaitlistEntry,
+)
+from .services import (
+    WaitlistError, join_waitlist, release_slot_and_notify_waitlist,
+)
 from .forms import ReservationForm, ReservationApprovalForm, CancellationRequestForm, AdminReservationForm, MATCH_FORMAT_CHOICES, GAME_TYPE_CHOICES, SCORING_FORMAT_CHOICES
 from payments.models import Payment, PaymentLog, Refund
 from scoring.models import MatchSettings
@@ -576,6 +582,9 @@ def cancel_reservation_view(request, reservation_id):
             # Update reservation status
             reservation.status = 'cancelled'
             reservation.save()
+
+            # Offer the freed slot to the next waitlisted user
+            release_slot_and_notify_waitlist(reservation)
 
             # Update payment status to refunded
             try:
@@ -1175,8 +1184,11 @@ def admin_reservation_delete_view(request, reservation_id):
     reservation.status = 'cancelled'
     reservation.save(update_fields=['status'])
 
-    # Update related payment
-    Payment.objects.filter(reservation=reservation).update(status='cancelled')
+    # Offer the freed slot to the next waitlisted user
+    release_slot_and_notify_waitlist(reservation)
+
+    # Update any non-paid related payment
+    Payment.objects.filter(reservation=reservation).exclude(status='paid').update(status='cancelled')
 
     messages.success(request, f'Reservation #{reservation.id} cancelled successfully.')
     return redirect('admin_reservation_list')
@@ -1307,3 +1319,74 @@ def verify_slot_api(request):
         })
 
     return JsonResponse({'available': True, 'message': 'Slot is available.'})
+
+
+# ==================== WAITLIST ====================
+
+@login_required
+@user_required
+def waitlist_list_view(request):
+    """Show the signed-in user's active waitlist entries."""
+    entries = WaitlistEntry.objects.filter(
+        user=request.user,
+    ).select_related('court', 'court__site').order_by('-created_at')
+
+    return render(request, 'user/reservations/waitlist_list.html', {
+        'entries': entries,
+    })
+
+
+@login_required
+@user_required
+def waitlist_join_view(request, court_id):
+    """Join the waitlist for a fully booked court/time slot."""
+    court = get_object_or_404(Court, id=court_id, is_active=True)
+
+    if request.method != 'POST':
+        return redirect('court_detail', court_id=court.id)
+
+    try:
+        slot_date = datetime.strptime(request.POST.get('date', ''), '%Y-%m-%d').date()
+        start_time = datetime.strptime(request.POST.get('start', ''), '%H:%M').time()
+        end_time = datetime.strptime(request.POST.get('end', ''), '%H:%M').time()
+    except ValueError:
+        messages.error(request, 'Invalid date or time for the waitlist.')
+        return redirect('court_detail', court_id=court.id)
+
+    try:
+        entry, created = join_waitlist(
+            user=request.user, court=court, date=slot_date,
+            start_time=start_time, end_time=end_time,
+        )
+    except WaitlistError as exc:
+        messages.error(request, str(exc))
+        return redirect('court_detail', court_id=court.id)
+
+    if created:
+        messages.success(
+            request,
+            'You have been added to the waitlist. We will notify you if the '
+            'slot opens up.',
+        )
+    else:
+        messages.info(request, 'You are already on the waitlist for this slot.')
+    return redirect('waitlist_list')
+
+
+@login_required
+@user_required
+def waitlist_leave_view(request, entry_id):
+    """Remove the signed-in user from a waitlist entry."""
+    entry = get_object_or_404(WaitlistEntry, id=entry_id, user=request.user)
+
+    if request.method != 'POST':
+        return redirect('waitlist_list')
+
+    if entry.status in ('waiting', 'notified'):
+        entry.status = 'cancelled'
+        entry.save()
+        messages.success(request, 'You have left the waitlist.')
+    else:
+        messages.info(request, 'This waitlist entry can no longer be cancelled.')
+
+    return redirect('waitlist_list')

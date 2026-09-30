@@ -121,6 +121,7 @@ class Payment(models.Model):
         ('paid', 'Paid'),
         ('failed', 'Failed'),
         ('refunded', 'Refunded'),
+        ('cancelled', 'Cancelled'),
     )
     
     METHOD_CHOICES = (

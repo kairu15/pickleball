@@ -152,6 +152,8 @@ def _handle_checkout_session_expired(session):
         if reservation.status == 'pending':
             reservation.status = 'cancelled'
             reservation.save(update_fields=['status'])
+            from reservations.services import release_slot_and_notify_waitlist
+            release_slot_and_notify_waitlist(reservation)
         logger.info(
             "Payment #%s and reservation #%s cancelled due to expired Stripe session",
             payment.id, reservation.id,
