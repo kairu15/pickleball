@@ -8,7 +8,9 @@ from decouple import config
 from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+# This file lives at <root>/picklesphere/settings/base.py, so three levels
+# up is the repository/project root (templates/, static/, manage.py).
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Clean up empty env vars that would override .env values
 # (System env vars with empty values take priority over .env via decouple)
