@@ -1,0 +1,83 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}My Waitlist{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h1 class="h4 fw-bold mb-1">
+                <i class="fas fa-hourglass-half me-2" style="color: var(--primary-color, #3B7A8C);"></i>
+                My Waitlist
+            </h1>
+            <p class="text-muted mb-0 small">
+                Slots you are queued for. We notify you the moment one opens up.
+            </p>
+        </div>
+        <a href="{% url 'reservation_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i>New Booking
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body p-0">
+            {% if entries %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Court</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in entries %}
+                        <tr>
+                            <td>{{ entry.court.name }}<div class="text-muted small">{{ entry.court.site.name }}</div></td>
+                            <td>{{ entry.date|date:"M d, Y" }}</td>
+                            <td>{{ entry.start_time|time:"g:i A" }} – {{ entry.end_time|time:"g:i A" }}</td>
+                            <td>
+                                {% if entry.status == 'waiting' %}
+                                    <span class="badge bg-secondary">Waiting</span>
+                                {% elif entry.status == 'notified' %}
+                                    <span class="badge bg-success">Slot available</span>
+                                {% elif entry.status == 'claimed' %}
+                                    <span class="badge bg-primary">Claimed</span>
+                                {% else %}
+                                    <span class="badge bg-light text-dark">{{ entry.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if entry.status == 'notified' %}
+                                <a class="btn btn-sm btn-primary me-1"
+                                   href="{% url 'reservation_create' %}?court={{ entry.court_id }}&amp;date={{ entry.date|date:'Y-m-d' }}">
+                                    Book now
+                                </a>
+                                {% endif %}
+                                {% if entry.status == 'waiting' or entry.status == 'notified' %}
+                                <form method="post" action="{% url 'waitlist_leave' entry.id %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">Leave</button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-hourglass-start fa-3x text-muted mb-3"></i>
+                <p class="text-muted mb-3">You are not on any waitlists yet.</p>
+                <a href="{% url 'court_list' %}" class="btn btn-outline-primary">Browse courts</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -176,6 +176,8 @@ class AuthAuditMiddleware:
         'court_list',
         'court_availability',
         'all_courts',
+        # Infrastructure
+        'health_check',
     })
 
     # Path prefixes that are always public (bypass URL resolution)

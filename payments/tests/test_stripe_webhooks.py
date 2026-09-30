@@ -9,7 +9,9 @@ upcoming payments refactor will move into a service module, so the money
 behaviour itself is exercised directly.
 """
 
+import json
 from datetime import date, time as dt_time
+from decimal import Decimal
 
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -18,7 +20,7 @@ from unittest.mock import patch
 from accounts.models import User
 from courts.models import Court, Site
 from notifications.models import Notification
-from payments.models import Payment, PaymentLog
+from payments.models import Payment, PaymentLog, Refund, StripeWebhookEvent
 from reservations.models import Reservation
 
 FAST_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']
@@ -237,3 +239,164 @@ class HandlePaymentIntentTests(TestCase):
         self.assertIn('declined', self.payment.payment_notes)
         self.assertEqual(self.reservation.status, 'pending')
         self.assertTrue(PaymentLog.objects.filter(action='Stripe Payment Failed').exists())
+
+
+class WebhookIdempotencyTests(TestCase):
+    """Stripe retries and re-delivers; a processed event must not run twice."""
+
+    def setUp(self):
+        _, self.reservation, self.payment = make_pending_booking(
+            'idemuser', 'Court ID', dt_time(9, 0), dt_time(11, 0), 2, 1000,
+        )
+        self.url = reverse('stripe_webhook')
+
+    def event(self, event_id='evt_1'):
+        return ('checkout.session.completed', {
+            'id': event_id,
+            'data': {'object': {
+                'id': 'cs_1',
+                'metadata': {'payment_id': str(self.payment.id)},
+            }},
+        })
+
+    def post(self, event):
+        payload = json.dumps(event[1]).encode()
+        with patch('payments.webhooks.process_stripe_webhook', return_value=event):
+            return self.client.post(
+                self.url, data=payload, content_type='application/json',
+                HTTP_STRIPE_SIGNATURE='t=1,v1=x',
+            )
+
+    def test_duplicate_delivery_runs_the_handler_only_once(self):
+        with patch(
+            'payments.webhooks.handle_checkout_session_completed', return_value=True,
+        ) as handler:
+            first = self.post(self.event('evt_dup'))
+            second = self.post(self.event('evt_dup'))
+
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(handler.call_count, 1)
+        self.assertTrue(
+            StripeWebhookEvent.objects.filter(event_id='evt_dup').exists()
+        )
+
+    def test_failed_handler_releases_the_event_for_retry(self):
+        with patch(
+            'payments.webhooks.handle_checkout_session_completed', return_value=False,
+        ):
+            failed = self.post(self.event('evt_retry'))
+
+        self.assertEqual(failed.status_code, 500)
+        self.assertFalse(
+            StripeWebhookEvent.objects.filter(event_id='evt_retry').exists()
+        )
+
+        with patch(
+            'payments.webhooks.handle_checkout_session_completed', return_value=True,
+        ):
+            retried = self.post(self.event('evt_retry'))
+
+        self.assertEqual(retried.status_code, 200)
+        self.assertTrue(
+            StripeWebhookEvent.objects.filter(event_id='evt_retry').exists()
+        )
+
+
+class CheckoutCompletionIdempotencyTests(TestCase):
+    def setUp(self):
+        self.user, self.reservation, self.payment = make_pending_booking(
+            'replayuser', 'Court R', dt_time(9, 0), dt_time(11, 0), 2, 1000,
+        )
+        self.session = {
+            'id': 'cs_replay',
+            'payment_intent': 'pi_replay',
+            'metadata': {'payment_id': str(self.payment.id)},
+        }
+
+    def test_replayed_completion_does_not_duplicate_logs_or_notifications(self):
+        from payments.stripe_integration import handle_checkout_session_completed
+
+        handle_checkout_session_completed(self.session)
+        after_first = Notification.objects.filter(user=self.user).count()
+
+        handle_checkout_session_completed(self.session)
+
+        self.payment.refresh_from_db()
+        self.assertEqual(self.payment.status, 'paid')
+        self.assertEqual(
+            PaymentLog.objects.filter(action='Stripe Payment Completed').count(), 1,
+        )
+        # Replay must not add another notification.
+        self.assertEqual(
+            Notification.objects.filter(user=self.user).count(), after_first,
+        )
+
+    def test_amount_mismatch_does_not_confirm_the_payment(self):
+        from payments.stripe_integration import handle_checkout_session_completed
+
+        session = dict(self.session, amount_total=1, currency='php')
+        success = handle_checkout_session_completed(session)
+
+        self.assertFalse(success)
+        self.payment.refresh_from_db()
+        self.reservation.refresh_from_db()
+        self.assertEqual(self.payment.status, 'pending')
+        self.assertEqual(self.reservation.status, 'pending')
+
+    def test_currency_mismatch_does_not_confirm_the_payment(self):
+        from payments.stripe_integration import handle_checkout_session_completed
+
+        session = dict(self.session, amount_total=100000, currency='usd')
+        success = handle_checkout_session_completed(session)
+
+        self.assertFalse(success)
+        self.payment.refresh_from_db()
+        self.assertEqual(self.payment.status, 'pending')
+
+
+class ChargeRefundedTests(TestCase):
+    """Refunds issued from Stripe must reconcile into local records."""
+
+    def setUp(self):
+        self.user, self.reservation, self.payment = make_pending_booking(
+            'refunduser', 'Court RF', dt_time(9, 0), dt_time(11, 0), 2, 1000,
+        )
+        self.payment.status = 'paid'
+        self.payment.stripe_payment_intent_id = 'pi_refund'
+        self.payment.save(update_fields=['status', 'stripe_payment_intent_id'])
+
+    def charge(self, **overrides):
+        payload = {
+            'id': 'ch_refund',
+            'payment_intent': 'pi_refund',
+            'refunded': True,
+            'amount_refunded': 100000,  # 1000.00 PHP in cents
+            'refunds': {'data': [{'id': 're_1', 'amount': 100000}]},
+        }
+        payload.update(overrides)
+        return payload
+
+    def test_full_refund_marks_the_payment_refunded_and_records_it(self):
+        from payments.stripe_integration import handle_charge_refunded
+
+        self.assertTrue(handle_charge_refunded(self.charge()))
+
+        self.payment.refresh_from_db()
+        self.assertEqual(self.payment.status, 'refunded')
+        refund = Refund.objects.get(stripe_refund_id='re_1')
+        self.assertEqual(refund.amount, Decimal('1000'))
+
+    def test_replayed_refund_is_not_duplicated(self):
+        from payments.stripe_integration import handle_charge_refunded
+
+        handle_charge_refunded(self.charge())
+        handle_charge_refunded(self.charge())
+
+        self.assertEqual(Refund.objects.filter(stripe_refund_id='re_1').count(), 1)
+
+    def test_unknown_payment_intent_is_acknowledged(self):
+        from payments.stripe_integration import handle_charge_refunded
+
+        self.assertTrue(handle_charge_refunded(self.charge(payment_intent='pi_nope')))
+        self.assertEqual(Refund.objects.count(), 0)

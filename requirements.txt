@@ -17,3 +17,6 @@ whitenoise>=6.6,<7.0
 django-anymail>=10.1
 # Stripe payment gateway
 stripe>=15.0
+# Background jobs (optional at runtime; see picklesphere/celery.py)
+# Schedule lives in CELERY_BEAT_SCHEDULE, so django-celery-beat is not needed.
+celery[redis]>=5.4,<6.0

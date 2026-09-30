@@ -15,6 +15,7 @@ Environment variables needed:
 
 import stripe
 import logging
+from decimal import Decimal
 from datetime import timedelta
 from django.conf import settings
 from django.urls import reverse
@@ -173,7 +174,28 @@ def handle_checkout_session_completed(session):
     except Payment.DoesNotExist:
         logger.error(f"Payment #{payment_id} not found for checkout session completion")
         return False
-    
+
+    # Idempotency: Stripe delivers at least once; never re-confirm or re-log a
+    # payment that is already paid (the webhook layer also dedupes by event id).
+    if payment.status == 'paid':
+        logger.info(f"Payment #{payment.id} already paid; skipping checkout completion")
+        return True
+
+    # Verify the amount and currency Stripe actually collected match our record.
+    amount_total = session.get('amount_total')
+    if amount_total is not None and int(amount_total) != int(payment.amount * 100):
+        logger.error(
+            f"Stripe amount mismatch for payment #{payment.id}: "
+            f"collected {amount_total}, expected {int(payment.amount * 100)}"
+        )
+        return False
+    currency = (session.get('currency') or '').lower()
+    if currency and currency != 'php':
+        logger.error(
+            f"Stripe currency mismatch for payment #{payment.id}: {currency}"
+        )
+        return False
+
     # Get the PaymentIntent to access charge details (receipt_url is on the Charge, not Session)
     payment_intent_id = session.get('payment_intent')
     receipt_url = ''
@@ -386,6 +408,66 @@ def process_stripe_refund(payment, amount=None):
             details=f'Error: {str(e)}',
         )
         return None
+
+
+def handle_charge_refunded(charge):
+    """Reconcile a Stripe ``charge.refunded`` event into local records.
+
+    Refunds issued from the Stripe dashboard (or via API) previously did not
+    touch PickleSphere at all. This mirrors each Stripe refund and flips the
+    payment to ``refunded`` once the full amount has been returned.
+    """
+    from .models import Payment, Refund, PaymentLog
+
+    payment_intent_id = charge.get('payment_intent')
+    if not payment_intent_id:
+        logger.warning("charge.refunded event has no payment_intent; skipping")
+        return True
+
+    payment = Payment.objects.select_related('reservation').filter(
+        stripe_payment_intent_id=payment_intent_id
+    ).first()
+    if payment is None:
+        # Not one of ours (or not yet linked); acknowledge so Stripe stops retrying.
+        logger.warning(
+            "charge.refunded for unknown payment_intent %s", payment_intent_id,
+        )
+        return True
+
+    refunded_total = Decimal(charge.get('amount_refunded') or 0) / 100
+
+    for refund_data in (charge.get('refunds') or {}).get('data') or []:
+        refund_id = refund_data.get('id')
+        if not refund_id:
+            continue
+        amount = Decimal(refund_data.get('amount') or 0) / 100
+        _, was_created = Refund.objects.get_or_create(
+            stripe_refund_id=refund_id,
+            defaults={
+                'payment': payment,
+                'amount': amount,
+                'reason': f'Refund issued via Stripe ({refund_id})',
+                'status': 'processed',
+                'requested_by': payment.reservation.user,
+                'processed_at': timezone.now(),
+            },
+        )
+        if was_created:
+            PaymentLog.objects.create(
+                payment=payment,
+                action='Stripe Refund Recorded',
+                details=f'Stripe refund {refund_id} of ₱{amount:,.2f}',
+            )
+
+    if charge.get('refunded') and refunded_total >= payment.amount:
+        payment.status = 'refunded'
+        payment.save(update_fields=['status'])
+
+    logger.info(
+        "Reconciled charge.refunded for payment #%s (total refunded %.2f)",
+        payment.id, refunded_total,
+    )
+    return True
 
 
 def get_publishable_key():

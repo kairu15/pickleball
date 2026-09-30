@@ -12,6 +12,7 @@ check are covered separately in ``test_stripe_webhooks.py``.
 
 from datetime import time as dt_time
 from datetime import timedelta
+from unittest.mock import patch
 
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -295,31 +296,57 @@ class OnlinePaymentTests(CheckoutFlowTestCase):
 
 
 class CardPaymentTests(CheckoutFlowTestCase):
-    """The in-app card path marks the payment paid and confirms the reservation."""
+    """Card payments must go through Stripe; the client cannot self-confirm.
 
-    def test_card_payment_confirms_the_reservation_immediately(self):
+    The previous in-app branch fabricated a ``paid`` payment and a ``confirmed``
+    reservation with no gateway call, which let anyone book for free. These
+    tests pin the safe contract: a card request only ever creates a *pending*
+    payment and defers confirmation to the signed Stripe webhook.
+    """
+
+    def test_card_payment_does_not_self_confirm_without_stripe(self):
         self.start_checkout()
 
+        # The test settings have no Stripe key, so the session cannot be created.
         response = self.client.post(
             reverse('checkout_page', args=[CHECKOUT_TOKEN]), {'method': 'card'},
         )
 
         reservation = Reservation.objects.get()
         payment = Payment.objects.get()
-        self.assertRedirects(response, reverse('reservation_detail', args=[reservation.id]))
-        self.assertEqual(reservation.status, 'confirmed')
-        self.assertEqual(payment.status, 'paid')
+        self.assertRedirects(response, reverse('payment_checkout', args=[reservation.id]))
+        self.assertEqual(reservation.status, 'pending')
+        self.assertEqual(payment.status, 'pending')
         self.assertEqual(payment.method, 'card')
-        self.assertTrue(payment.transaction_id)
+        self.assertFalse(payment.transaction_id)
 
-    def test_card_payment_is_logged_against_the_paying_user(self):
+    @patch('payments.views.create_checkout_session')
+    def test_card_payment_redirects_to_stripe_checkout(self, create_session):
+        # Stripe's session object is dict-like (``session.get('id')``) and also
+        # exposes ``.url``; mirror both in the fake.
+        class FakeSession(dict):
+            @property
+            def url(self):
+                return 'https://checkout.stripe.test/session'
+
+        create_session.return_value = FakeSession(id='cs_test_card')
         self.start_checkout()
 
-        self.client.post(reverse('checkout_page', args=[CHECKOUT_TOKEN]), {'method': 'card'})
+        response = self.client.post(
+            reverse('checkout_page', args=[CHECKOUT_TOKEN]), {'method': 'card'},
+        )
 
-        log = PaymentLog.objects.get()
-        self.assertEqual(log.action, 'Card Payment Processed')
-        self.assertEqual(log.performed_by, self.user)
+        self.assertRedirects(
+            response, 'https://checkout.stripe.test/session',
+            fetch_redirect_response=False,
+        )
+        payment = Payment.objects.get()
+        self.assertEqual(payment.status, 'pending')
+        self.assertEqual(payment.method, 'card')
+        self.assertEqual(payment.stripe_checkout_session_id, 'cs_test_card')
+        self.assertEqual(
+            PaymentLog.objects.get().action, 'Stripe Checkout Initiated',
+        )
 
 
 class PaymentStatusViewTests(CheckoutFlowTestCase):

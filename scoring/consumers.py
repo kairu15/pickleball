@@ -206,16 +206,28 @@ class MatchScoreConsumer(AsyncWebsocketConsumer):
     def _update_game_score(self, team1_score, team2_score, status):
         """Update the current game score in the database."""
         try:
-            from .models import Match, Game
+            from .models import Match, Game, ScoreAuditLog
             match = Match.objects.get(id=self.match_id)
             current_game = match.games.filter(ended_at__isnull=True).first()
 
             if current_game:
+                old_team1 = current_game.team1_score
+                old_team2 = current_game.team2_score
                 if team1_score is not None:
                     current_game.team1_score = team1_score
                 if team2_score is not None:
                     current_game.team2_score = team2_score
                 current_game.save(update_fields=['team1_score', 'team2_score'])
+                ScoreAuditLog.objects.create(
+                    match=match,
+                    game=current_game,
+                    changed_by=self.user,
+                    old_team1_score=old_team1,
+                    old_team2_score=old_team2,
+                    new_team1_score=current_game.team1_score,
+                    new_team2_score=current_game.team2_score,
+                    source='websocket',
+                )
 
             if status:
                 match.status = status

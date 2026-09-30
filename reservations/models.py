@@ -1,5 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator
+from django.utils import timezone
+
 from accounts.models import User
 from courts.models import Court
 from equipment.models import Equipment

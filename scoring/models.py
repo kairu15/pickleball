@@ -176,6 +176,46 @@ class GuestPlayer(models.Model):
 
 
 
+class ScoreAuditLog(models.Model):
+    """Immutable trail of every score change (referee/staff or player).
+
+    Live scoring allows more than one person to touch a match, so a record of
+    who changed what score (and when) is needed to resolve disputes.
+    """
+
+    match = models.ForeignKey(
+        Match, on_delete=models.CASCADE, related_name='score_audit_logs'
+    )
+    game = models.ForeignKey(
+        Game, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='score_audit_logs',
+    )
+    changed_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='score_changes',
+    )
+    old_team1_score = models.IntegerField()
+    old_team2_score = models.IntegerField()
+    new_team1_score = models.IntegerField()
+    new_team2_score = models.IntegerField()
+    source = models.CharField(max_length=20, default='staff', help_text='staff or websocket')
+    note = models.CharField(max_length=255, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'score_audit_logs'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['match', '-created_at']),
+        ]
+
+    def __str__(self):
+        return (
+            f'Match #{self.match_id}: {self.old_team1_score}-{self.old_team2_score} '
+            f'-> {self.new_team1_score}-{self.new_team2_score}'
+        )
+
+
 class MatchSettings(models.Model):
     FORMAT_CHOICES = (
         ('singles', 'Singles'),

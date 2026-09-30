@@ -13,6 +13,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from . import session_views
+import picklesphere.health
 
 urlpatterns = [
     # Django Admin (superuser only)
@@ -64,6 +65,9 @@ urlpatterns = [
     path('api/session/heartbeat/', session_views.session_heartbeat, name='session_heartbeat'),
     path('api/session/info/', session_views.session_info, name='session_info'),
     path('api/session/extend/', session_views.extend_session, name='extend_session'),
+
+    # ========== HEALTH CHECK (containers / load balancers) ==========
+    path('health/', picklesphere.health.health_check, name='health_check'),
 ]
 
 if settings.DEBUG:

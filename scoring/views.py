@@ -8,7 +8,30 @@ from django.utils import timezone
 from django.http import JsonResponse
 from accounts.decorators import admin_required, staff_or_admin_required, user_required
 from accounts.models import User
-from .models import Match, Game, ScorePoint, PlayerStats, MatchSettings, GuestPlayer
+from .models import (
+    Match, Game, ScorePoint, PlayerStats, MatchSettings, GuestPlayer, ScoreAuditLog,
+)
+
+
+def _user_can_access_match(user, match):
+    """Object-level access check for a single match.
+
+    Staff/admins may view any match; everyone else must be the reservation
+    owner or one of the four players. Without this, every authenticated user
+    could read any match by guessing its id.
+    """
+    if not user.is_authenticated:
+        return False
+    if user.is_staff_user() or user.is_admin():
+        return True
+    if match.reservation.user_id == user.id:
+        return True
+    player_ids = {
+        match.team1_player1_id, match.team1_player2_id,
+        match.team2_player1_id, match.team2_player2_id,
+    }
+    player_ids.discard(None)
+    return user.id in player_ids
 from .forms import MatchSetupForm, ScoreUpdateForm, MatchSettingsForm
 from reservations.models import Reservation
 from notifications.models import Notification
@@ -34,7 +57,11 @@ def match_list_view(request):
 @login_required
 def match_detail_view(request, match_id):
     match = get_object_or_404(Match.objects.all(), id=match_id)
-    
+
+    if not _user_can_access_match(request.user, match):
+        messages.error(request, 'You do not have permission to view this match.')
+        return redirect('dashboard')
+
     return render(request, 'scoring/match_detail.html', {'match': match})
 
 
@@ -194,7 +221,11 @@ def start_match_view(request, reservation_id):
 @login_required
 def match_live_view(request, match_id):
     match = get_object_or_404(Match.objects.all(), id=match_id)
-    
+
+    if not _user_can_access_match(request.user, match):
+        messages.error(request, 'You do not have permission to view this match.')
+        return redirect('dashboard')
+
     # Get current game
     current_game = match.games.filter(ended_at__isnull=True).first()
     if not current_game:
@@ -247,6 +278,7 @@ def update_score_view(request, game_id):
     if request.method == 'POST':
         team = request.POST.get('team')
         action = request.POST.get('action')  # 'add' or 'subtract'
+        old_team1, old_team2 = game.team1_score, game.team2_score
         
         if action == 'add':
             if team == '1':
@@ -269,6 +301,18 @@ def update_score_view(request, game_id):
                 game.team2_score -= 1
         
         game.save()
+
+        ScoreAuditLog.objects.create(
+            match=game.match,
+            game=game,
+            changed_by=request.user,
+            old_team1_score=old_team1,
+            old_team2_score=old_team2,
+            new_team1_score=game.team1_score,
+            new_team2_score=game.team2_score,
+            source='staff',
+            note=f'{action} team {team}',
+        )
         
         # Check if game is won
         match = game.match
@@ -401,13 +445,17 @@ def update_player_stats(match):
 
 
 @login_required
+@staff_or_admin_required
 def search_users_api(request):
-    """API endpoint for searching users for player assignment.
+    """API endpoint for staff player-assignment search.
     Supports searching by: username, first_name, middle_name, last_name,
     full name (*), email, staff_id, and player ID (numeric pk).
 
     (*) Full name matching uses CONCAT(first_name, ' ', last_name)
         so queries like "John Smith" match the combined full name.
+
+    Staff/admin only: the response includes contact details, so it must not be
+    reachable by regular players.
     """
     q = request.GET.get('q', '').strip()
     exclude_ids = request.GET.get('exclude_ids', '')
@@ -471,9 +519,14 @@ def search_users_api(request):
     return JsonResponse({'users': results})
 
 
+@login_required
 def match_score_api(request, match_id):
     """API endpoint for getting live match score"""
     match = get_object_or_404(Match.objects.all(), id=match_id)
+
+    if not _user_can_access_match(request.user, match):
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+
     current_game = match.games.filter(ended_at__isnull=True).first()
     
     data = {

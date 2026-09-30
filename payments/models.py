@@ -1,6 +1,8 @@
 from django.db import models
 from reservations.models import Reservation
 
+from utils.validators import IMAGE_UPLOAD_VALIDATORS
+
 
 class PaymentSettings(models.Model):
     """
@@ -47,6 +49,7 @@ class PaymentSettings(models.Model):
     # QR Code
     qr_code = models.ImageField(
         upload_to='payments/qr/', blank=True, null=True,
+        validators=IMAGE_UPLOAD_VALIDATORS,
         help_text='QR code image for payments (shown on the checkout page)'
     )
 
@@ -118,6 +121,7 @@ class Payment(models.Model):
         ('paid', 'Paid'),
         ('failed', 'Failed'),
         ('refunded', 'Refunded'),
+        ('cancelled', 'Cancelled'),
     )
     
     METHOD_CHOICES = (
@@ -135,7 +139,10 @@ class Payment(models.Model):
     
     # For GCash payments (also used as generic proof of payment for any method)
     gcash_reference = models.CharField(max_length=100, blank=True, null=True)
-    gcash_proof_image = models.ImageField(upload_to='payments/gcash/', blank=True, null=True)
+    gcash_proof_image = models.ImageField(
+        upload_to='payments/gcash/', blank=True, null=True,
+        validators=IMAGE_UPLOAD_VALIDATORS,
+    )
 
     # For cash payments
     cash_received_by = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='cash_payments_received')
@@ -180,6 +187,12 @@ class Refund(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     reason = models.TextField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    # Stripe refund ID (re_xxx) when the refund originated from Stripe. Unique so
+    # webhook deliveries for the same refund are idempotent.
+    stripe_refund_id = models.CharField(
+        max_length=255, blank=True, null=True, unique=True,
+        help_text='Stripe Refund ID (re_xxx) for refunds mirrored from Stripe',
+    )
     
     requested_by = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='refund_requests')
     requested_at = models.DateTimeField(auto_now_add=True)
@@ -199,6 +212,30 @@ class Refund(models.Model):
     
     def __str__(self):
         return f"Refund #{self.id} - Payment #{self.payment.id} - ₱{self.amount}"
+
+
+class StripeWebhookEvent(models.Model):
+    """One row per processed Stripe webhook event (event.id, e.g. evt_xxx).
+
+    Stripe delivers webhooks at least once and retries on failure, so handlers
+    must be idempotent. A row is written before a handler runs and deleted again
+    if the handler fails, so a failed event can still be retried while a
+    successful one is never processed twice.
+    """
+
+    event_id = models.CharField(max_length=255, unique=True)
+    event_type = models.CharField(max_length=100)
+    processed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'stripe_webhook_events'
+        ordering = ['-processed_at']
+        indexes = [
+            models.Index(fields=['event_type', '-processed_at']),
+        ]
+
+    def __str__(self):
+        return f'{self.event_type} ({self.event_id})'
 
 
 class PaymentLog(models.Model):

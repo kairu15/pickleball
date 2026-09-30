@@ -1,0 +1,98 @@
+# Tool configuration for PickleSphere.
+# The Django app itself is not packaged, so there is no [build-system] table.
+
+# ---------------------------------------------------------------------------
+# pytest + pytest-django
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "picklesphere.settings"
+python_files = ["test_*.py", "*_test.py", "tests_*.py"]
+testpaths = [
+    "accounts",
+    "courts",
+    "dashboard",
+    "equipment",
+    "notifications",
+    "payments",
+    "reservations",
+    "scoring",
+    "tournaments",
+    "utils",
+]
+addopts = "-q -p no:cacheprovider"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+# ---------------------------------------------------------------------------
+# coverage — the target is 80%+ on the transactional core.
+# ---------------------------------------------------------------------------
+[tool.coverage.run]
+source = ["reservations", "payments", "scoring"]
+branch = true
+omit = [
+    "*/migrations/*",
+    "*/tests/*",
+    "*/tests_*.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+
+# ---------------------------------------------------------------------------
+# ruff (lint)
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = [
+    ".git",
+    ".venv",
+    "*/migrations/*",
+    "staticfiles",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "DJ"]
+# E501 is handled by black; DJ012 is style-only for Django.
+ignore = ["E501", "B008"]
+
+[tool.ruff.lint.per-file-ignores]
+"*/tests/*" = ["DJ", "B"]
+
+# ---------------------------------------------------------------------------
+# black (format)
+# ---------------------------------------------------------------------------
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+extend-exclude = '''
+/(
+    migrations
+  | staticfiles
+)/
+'''
+
+# ---------------------------------------------------------------------------
+# mypy + django-stubs
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.11"
+plugins = ["mypy_django_plugin.main"]
+ignore_missing_imports = true
+warn_unused_ignores = false
+check_untyped_defs = true
+exclude = [
+    "migrations/",
+    "staticfiles/",
+]
+
+[tool.django-stubs]
+django_settings_module = "picklesphere.settings"

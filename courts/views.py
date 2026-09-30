@@ -4,12 +4,14 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q, OuterRef, Subquery, Avg, FloatField
 from django.http import JsonResponse
+from django.utils import timezone
 from urllib.parse import urlencode
 from datetime import datetime, timedelta, time
 
 from accounts.decorators import admin_required
-from .models import Site, Court, FavoriteCourt
-from .forms import CourtForm, SiteForm
+from .models import Site, Court, FavoriteCourt, CourtMaintenanceBlock
+from .forms import CourtForm, SiteForm, MaintenanceBlockForm
+from .services import get_maintenance_blocks_for_date
 from dashboard.cache_utils import pages_cache_get_or_set
 from dashboard.models import CourtPageSettings, FeaturedCourt, Rating
 from reservations.models import Reservation
@@ -123,6 +125,9 @@ def _build_time_slots(court, slot_date, exclude_reservation_id=None):
         status__in=['confirmed', 'pending']
     ).exclude(id=exclude_reservation_id))
 
+    # Maintenance windows / closures make covered slots unavailable
+    maintenance_blocks = list(get_maintenance_blocks_for_date(court, slot_date))
+
     # Court operating schedule for that weekday (falls back to 8 AM - 11 PM)
     availability = court.availability.filter(day_of_week=slot_date.weekday()).first()
     court_closed = bool(availability and availability.is_closed)
@@ -138,6 +143,7 @@ def _build_time_slots(court, slot_date, exclude_reservation_id=None):
         end_minute = 59 if hour == 23 else 0
         slot_start, slot_end = time(hour, 0), time(end_hour, end_minute)
         is_booked = any(r.start_time < slot_end and r.end_time > slot_start for r in reservations)
+        is_blocked = any(b.covers(slot_date, slot_start, slot_end) for b in maintenance_blocks)
         # 12-hour start time (e.g. '8:00 AM', '12:00 PM', '11:00 PM')
         period = 'AM' if hour < 12 else 'PM'
         hour12 = hour % 12 or 12
@@ -147,7 +153,7 @@ def _build_time_slots(court, slot_date, exclude_reservation_id=None):
         is_outside_schedule = court_closed or under_maintenance or (
             opening and closing and (slot_start < opening or slot_end > closing)
         )
-        if is_past or is_outside_schedule:
+        if is_past or is_outside_schedule or is_blocked:
             status = 'unavailable'
         elif is_booked:
             status = 'booked'
@@ -176,6 +182,13 @@ def court_detail_view(request, court_id):
     
     # Operating hours
     operating_hours = court.availability.all().order_by('day_of_week')
+
+    # Upcoming maintenance windows / closures shown to members
+    upcoming_blocks = (
+        court.maintenance_blocks
+        .filter(end_datetime__gt=timezone.now())
+        .order_by('start_datetime')[:5]
+    )
     
     # Upcoming reservations
     today = datetime.now().date()
@@ -213,6 +226,7 @@ def court_detail_view(request, court_id):
         'time_slots': time_slots,
         'selected_date': selected_date,
         'today': today,
+        'upcoming_blocks': upcoming_blocks,
     })
 
 
@@ -502,3 +516,111 @@ def admin_site_delete_view(request, site_id):
     site.delete()
     messages.success(request, f'Site {site.name} deleted successfully.')
     return redirect('admin_site_list')
+
+
+# ==================== MAINTENANCE BLOCKS / CLOSURES ====================
+
+@login_required
+@admin_required
+def admin_maintenance_list_view(request):
+    """List maintenance blocks / closures, soonest first."""
+    blocks = (
+        CourtMaintenanceBlock.objects
+        .select_related('court', 'court__site', 'created_by')
+        .all()
+    )
+    status_filter = request.GET.get('status', 'upcoming')
+    now = timezone.now()
+    if status_filter == 'upcoming':
+        blocks = blocks.filter(end_datetime__gt=now)
+    elif status_filter == 'past':
+        blocks = blocks.filter(end_datetime__lte=now)
+
+    return render(request, 'admin/courts/maintenance_list.html', {
+        'blocks': blocks,
+        'status_filter': status_filter,
+    })
+
+
+@login_required
+@admin_required
+def admin_maintenance_create_view(request):
+    """Create a maintenance window or closure, auto-cancelling overlapped
+    reservations and notifying their owners."""
+    if request.method == 'POST':
+        form = MaintenanceBlockForm(request.POST)
+        if form.is_valid():
+            block = form.save(commit=False)
+            block.created_by = request.user
+            block.save()
+
+            from reservations.services import cancel_reservations_for_block
+            cancelled_ids = cancel_reservations_for_block(block)
+
+            if cancelled_ids:
+                messages.warning(
+                    request,
+                    f'{block.get_block_type_display()} saved. '
+                    f'{len(cancelled_ids)} overlapping reservation(s) were '
+                    f'cancelled and their owners notified.'
+                )
+            else:
+                messages.success(request, f'{block.get_block_type_display()} saved.')
+            return redirect('admin_maintenance_list')
+    else:
+        initial = {}
+        court_id = request.GET.get('court')
+        if court_id:
+            initial['court'] = court_id
+        form = MaintenanceBlockForm(initial=initial)
+
+    return render(request, 'admin/courts/maintenance_form.html', {
+        'form': form,
+        'edit_mode': False,
+    })
+
+
+@login_required
+@admin_required
+def admin_maintenance_edit_view(request, block_id):
+    """Edit an existing block. Re-runs the overlap scan, so newly overlapped
+    reservations (from changed times) are cancelled too."""
+    block = get_object_or_404(CourtMaintenanceBlock.objects.select_related('court'), id=block_id)
+
+    if request.method == 'POST':
+        form = MaintenanceBlockForm(request.POST, instance=block)
+        if form.is_valid():
+            block = form.save()
+            from reservations.services import cancel_reservations_for_block
+            cancelled_ids = cancel_reservations_for_block(block)
+            if cancelled_ids:
+                messages.warning(
+                    request,
+                    f'{block.get_block_type_display()} updated. '
+                    f'{len(cancelled_ids)} newly overlapped reservation(s) were '
+                    f'cancelled and their owners notified.'
+                )
+            else:
+                messages.success(request, f'{block.get_block_type_display()} updated.')
+            return redirect('admin_maintenance_list')
+    else:
+        form = MaintenanceBlockForm(instance=block)
+
+    return render(request, 'admin/courts/maintenance_form.html', {
+        'form': form,
+        'edit_mode': True,
+        'block': block,
+    })
+
+
+@login_required
+@admin_required
+def admin_maintenance_delete_view(request, block_id):
+    if request.method != 'POST':
+        messages.error(request, 'Invalid request method.')
+        return redirect('admin_maintenance_list')
+
+    block = get_object_or_404(CourtMaintenanceBlock, id=block_id)
+    block.delete()
+    messages.success(request, 'Maintenance block deleted.')
+    return redirect('admin_maintenance_list')

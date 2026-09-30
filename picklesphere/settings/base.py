@@ -8,7 +8,9 @@ from decouple import config
 from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+# This file lives at <root>/picklesphere/settings/base.py, so three levels
+# up is the repository/project root (templates/, static/, manage.py).
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Clean up empty env vars that would override .env values
 # (System env vars with empty values take priority over .env via decouple)
@@ -43,21 +45,30 @@ if not DEBUG and SECRET_KEY == 'django-insecure-ci-dev-key-not-for-production' a
         'the insecure default key.'
     )
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
-# Add ngrok domains for external tunneling
-ALLOWED_HOSTS += ['*.ngrok-free.app', '*.ngrok-free.dev', '*.ngrok.io', '*.ngrok.app']
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+    if host.strip()
+]
 
-CSRF_TRUSTED_ORIGINS = [
-    'http://127.0.0.1:8001',
-    'http://localhost:8001',
-]
-# Add ngrok HTTPS origins for CSRF protection
-CSRF_TRUSTED_ORIGINS += [
-    'https://*.ngrok-free.app',
-    'https://*.ngrok-free.dev',
-    'https://*.ngrok.io',
-    'https://*.ngrok.app',
-]
+# Derive the CSRF origin from SITE_URL so production deployments do not need a
+# hard-coded host/port here. SITE_URL is also read again later in this module.
+SITE_URL = config('SITE_URL', default='http://localhost:8000').rstrip('/')
+CSRF_TRUSTED_ORIGINS = [SITE_URL]
+
+if DEBUG:
+    # Development conveniences only. Production must list its own hosts in the
+    # ALLOWED_HOSTS env var rather than inheriting wildcard ngrok patterns.
+    ALLOWED_HOSTS += [
+        'localhost', '127.0.0.1', '0.0.0.0',
+        '*.ngrok-free.app', '*.ngrok-free.dev', '*.ngrok.io', '*.ngrok.app',
+    ]
+    CSRF_TRUSTED_ORIGINS += [
+        'http://127.0.0.1:8000', 'http://localhost:8000',
+        'http://127.0.0.1:8001', 'http://localhost:8001',
+        'https://*.ngrok-free.app', 'https://*.ngrok-free.dev',
+        'https://*.ngrok.io', 'https://*.ngrok.app',
+    ]
 
 # Application definition
 
@@ -136,13 +147,37 @@ ASGI_APPLICATION = 'picklesphere.asgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
+#
+# SQLite by default (zero-config development). Set DB_ENGINE in the
+# environment to switch to PostgreSQL or MySQL without code changes:
+#   DB_ENGINE=django.db.backends.postgresql  (+ DB_NAME/DB_USER/DB_PASSWORD/DB_HOST/DB_PORT)
+# PostgreSQL is recommended for production - see AUDIT.md §6: an
+# EXCLUDE USING gist constraint can then back the booking-overlap checks
+# at the database level, and select_for_update() contention drops.
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+_DB_ENGINE = config('DB_ENGINE', default='django.db.backends.sqlite3')
+
+if _DB_ENGINE == 'django.db.backends.sqlite3':
+    DATABASES = {
+        'default': {
+            'ENGINE': _DB_ENGINE,
+            'NAME': config('DB_NAME', default=str(BASE_DIR / 'db.sqlite3')),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': _DB_ENGINE,
+            'NAME': config('DB_NAME', default='picklesphere'),
+            'USER': config('DB_USER', default='picklesphere'),
+            'PASSWORD': config('DB_PASSWORD', default=''),
+            'HOST': config('DB_HOST', default='localhost'),
+            'PORT': config('DB_PORT', default='5432'),
+            # Persist connections across requests; a fresh connection per
+            # request was the main source of booking-race latency.
+            'CONN_MAX_AGE': config('CONN_MAX_AGE', default=60, cast=int),
+        }
+    }
 
 
 # Password validation
@@ -390,3 +425,53 @@ CACHES = {
 # being persisted to the DB for durability.
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db' if USE_REDIS_CACHE else 'django.contrib.sessions.backends.db'
 SESSION_CACHE_ALIAS = 'sessions' if USE_REDIS_CACHE else ''
+
+
+# ========== BACKGROUND JOBS (Celery) ==========
+# Celery is optional: the app boots without it (see picklesphere/__init__.py).
+# In DEBUG tasks run eagerly so no broker is required for development/tests.
+REDIS_URL = config('REDIS_URL', default='redis://127.0.0.1:6379/0')
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default=REDIS_URL)
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default=REDIS_URL)
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_ALWAYS_EAGER = config('CELERY_TASK_ALWAYS_EAGER', default=DEBUG, cast=bool)
+CELERY_TASK_EAGER_PROPAGATES = True
+CELERY_BEAT_SCHEDULE = {
+    # Cancel unpaid holds so abandoned checkouts stop blocking courts.
+    'expire-unpaid-reservations': {
+        'task': 'reservations.expire_unpaid_reservations',
+        'schedule': 300.0,  # every 5 minutes
+        'kwargs': {'minutes': 30},
+    },
+    # Remind users roughly 24h before their booking.
+    'send-reservation-reminders': {
+        'task': 'notifications.send_reservation_reminders',
+        'schedule': 3600.0,  # hourly
+        'kwargs': {'hours': 24},
+    },
+}
+
+
+# ========== WEBSOCKET CHANNEL LAYER ==========
+# Use Redis so live scoring / notifications work across Daphne workers in
+# production. Falls back to the in-memory layer (defined above) when disabled
+# or when channels_redis is not installed, which keeps dev and tests broker-free.
+CHANNEL_LAYER_BACKEND = config(
+    'CHANNEL_LAYER_BACKEND', default='memory' if DEBUG else 'redis'
+).strip().lower()
+if CHANNEL_LAYER_BACKEND == 'redis':
+    try:
+        import channels_redis  # noqa: F401
+
+        CHANNEL_LAYERS = {
+            'default': {
+                'BACKEND': 'channels_redis.core.RedisChannelLayer',
+                'CONFIG': {'hosts': [REDIS_URL]},
+            },
+        }
+    except ImportError:
+        # Keep the in-memory layer defined earlier.
+        pass

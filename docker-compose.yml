@@ -1,0 +1,101 @@
+name: picklesphere
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:-picklesphere}
+      POSTGRES_USER: ${DB_USER:-picklesphere}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-picklesphere-dev-password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-picklesphere} -d ${DB_NAME:-picklesphere}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # Expose only for local debugging; remove in a locked-down deployment.
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build: .
+    # DJANGO_ENV selects the settings module (dev by default; use prod for a
+    # real deployment - it fails fast on insecure configuration).
+    environment: &web_environment
+      DJANGO_ENV: ${DJANGO_ENV:-dev}
+      # Only the web service migrates/collects static (see docker/entrypoint.sh).
+      RUN_MIGRATIONS: "1"
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env or the environment}
+      DEBUG: ${DEBUG:-true}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,web}
+      SITE_URL: ${SITE_URL:-http://localhost:8000}
+      DB_ENGINE: django.db.backends.postgresql
+      DB_NAME: ${DB_NAME:-picklesphere}
+      DB_USER: ${DB_USER:-picklesphere}
+      DB_PASSWORD: ${DB_PASSWORD:-picklesphere-dev-password}
+      DB_HOST: db
+      DB_PORT: "5432"
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      CACHE_BACKEND: ${CACHE_BACKEND:-locmem}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.console.EmailBackend}
+      ELASTICEMAIL_API_KEY: ${ELASTICEMAIL_API_KEY:-}
+    volumes:
+      - media_data:/app/media
+      - static_data:/app/staticfiles
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  celery-worker:
+    build: .
+    environment: *web_environment
+    volumes:
+      - media_data:/app/media
+    # RUN_MIGRATIONS is set only on the web service so worker/beat containers
+    # do not race the entrypoint's migrate/collectstatic at startup.
+    command: ["celery", "-A", "picklesphere", "worker", "--loglevel=info"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  celery-beat:
+    build: .
+    environment: *web_environment
+    command: ["celery", "-A", "picklesphere", "beat", "--loglevel=info"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  media_data:
+  static_data:

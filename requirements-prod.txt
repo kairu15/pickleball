@@ -1,0 +1,4 @@
+# Production image dependencies: everything in requirements.txt plus the
+# PostgreSQL driver. Django 4.2 supports psycopg 3 for the postgres backend.
+-r requirements.txt
+psycopg[binary]>=3.1,<4.0

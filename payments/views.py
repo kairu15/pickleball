@@ -20,6 +20,10 @@ from .stripe_integration import create_checkout_session, create_payment_intent, 
 from courts.models import Court
 from reservations.models import Reservation, CancellationRequest
 from reservations.models import ReservationEquipment
+from reservations.services import (
+    SlotUnavailable,
+    lock_court_and_ensure_available,
+)
 from equipment.models import Equipment
 from notifications.models import Notification
 from notifications.email_utils import (
@@ -265,6 +269,10 @@ def checkout_page_view(request, checkout_token):
             if gcash_form.is_valid():
                 try:
                     with transaction.atomic():
+                        # Lock the court and re-check availability inside the
+                        # transaction so a concurrent booking cannot slip in
+                        # between the check and the insert (double booking).
+                        court = lock_court_and_ensure_available(court, date, start_time, end_time)
                         # Create the reservation
                         duration_hours = checkout_data['duration_hours']
                         hourly_rate = checkout_data['hourly_rate']
@@ -304,7 +312,7 @@ def checkout_page_view(request, checkout_token):
                         equipment_fee = 0
                         for eq_id in checkout_data.get('equipment_ids', []):
                             try:
-                                equipment = Equipment.objects.get(id=eq_id, is_active=True)
+                                equipment = Equipment.objects.select_for_update().get(id=eq_id, is_active=True)
                                 if equipment.quantity_available > 0:
                                     ReservationEquipment.objects.create(
                                         reservation=reservation,
@@ -365,8 +373,12 @@ def checkout_page_view(request, checkout_token):
                     messages.success(request, f'{method_label} payment details submitted. Please wait for verification.')
                     return redirect('payment_status', payment_id=payment.id)
                     
-                except Exception as e:
-                    messages.error(request, f'An error occurred while processing your reservation. Please try again. Error: {str(e)}')
+                except SlotUnavailable:
+                    messages.error(request, 'Sorry, this time slot was just booked by another user. Please start a new reservation.')
+                    request.session.pop('checkout_data', None)
+                    return redirect('reservation_create')
+                except Exception:
+                    messages.error(request, 'An error occurred while processing your reservation. Please try again.')
                     return _render_checkout()
             else:
                 # GCash form invalid
@@ -377,6 +389,10 @@ def checkout_page_view(request, checkout_token):
             if cash_form.is_valid():
                 try:
                     with transaction.atomic():
+                        # Lock the court and re-check availability inside the
+                        # transaction so a concurrent booking cannot slip in
+                        # between the check and the insert (double booking).
+                        court = lock_court_and_ensure_available(court, date, start_time, end_time)
                         # Create the reservation
                         duration_hours = checkout_data['duration_hours']
                         hourly_rate = checkout_data['hourly_rate']
@@ -415,7 +431,7 @@ def checkout_page_view(request, checkout_token):
                         equipment_fee = 0
                         for eq_id in checkout_data.get('equipment_ids', []):
                             try:
-                                equipment = Equipment.objects.get(id=eq_id, is_active=True)
+                                equipment = Equipment.objects.select_for_update().get(id=eq_id, is_active=True)
                                 if equipment.quantity_available > 0:
                                     ReservationEquipment.objects.create(
                                         reservation=reservation,
@@ -468,16 +484,26 @@ def checkout_page_view(request, checkout_token):
                     messages.success(request, 'Please proceed to the counter to complete your cash payment.')
                     return redirect('payment_status', payment_id=payment.id)
                     
-                except Exception as e:
-                    messages.error(request, f'An error occurred while processing your reservation. Please try again. Error: {str(e)}')
+                except SlotUnavailable:
+                    messages.error(request, 'Sorry, this time slot was just booked by another user. Please start a new reservation.')
+                    request.session.pop('checkout_data', None)
+                    return redirect('reservation_create')
+                except Exception:
+                    messages.error(request, 'An error occurred while processing your reservation. Please try again.')
                     return _render_checkout()
             else:
                 return _render_checkout()
             
-        elif method == 'stripe':
-            # Stripe Checkout - create reservation first, then redirect to Stripe
+        elif method in ('stripe', 'card'):
+            # Card payments always go through Stripe Checkout. The old in-app
+            # 'card' branch fabricated a paid Payment without any gateway, which
+            # let anyone book for free; it has been removed.
             try:
                 with transaction.atomic():
+                    # Lock the court and re-check availability inside the
+                    # transaction so a concurrent booking cannot slip in
+                    # between the check and the insert (double booking).
+                    court = lock_court_and_ensure_available(court, date, start_time, end_time)
                     duration_hours = checkout_data['duration_hours']
                     hourly_rate = checkout_data['hourly_rate']
                     subtotal = checkout_data['subtotal']
@@ -514,7 +540,7 @@ def checkout_page_view(request, checkout_token):
                     equipment_fee = 0
                     for eq_id in checkout_data.get('equipment_ids', []):
                         try:
-                            equipment_item = Equipment.objects.get(id=eq_id, is_active=True)
+                            equipment_item = Equipment.objects.select_for_update().get(id=eq_id, is_active=True)
                             if equipment_item.quantity_available > 0:
                                 ReservationEquipment.objects.create(
                                     reservation=reservation,
@@ -570,101 +596,12 @@ def checkout_page_view(request, checkout_token):
                     messages.error(request, 'Unable to process Stripe payment. Please try again or choose a different payment method.')
                     return redirect('payment_checkout', reservation_id=reservation.id)
                     
-            except Exception as e:
-                messages.error(request, f'An error occurred while processing your payment. Please try again. Error: {str(e)}')
-                return _render_checkout()
-        
-        elif method == 'card':
-            try:
-                with transaction.atomic():
-                    duration_hours = checkout_data['duration_hours']
-                    hourly_rate = checkout_data['hourly_rate']
-                    subtotal = checkout_data['subtotal']
-                    
-                    reservation = Reservation.objects.create(
-                        user=request.user,
-                        court=court,
-                        date=date,
-                        start_time=start_time,
-                        end_time=end_time,
-                        duration_hours=duration_hours,
-                        hourly_rate=hourly_rate,
-                        subtotal=subtotal,
-                        equipment_fee=0,
-                        total_amount=0,
-                        status='confirmed',
-                        notes=checkout_data.get('notes', ''),
-                        match_name=checkout_data.get('match_name', ''),
-                        match_format=checkout_data.get('match_format', 'singles'),
-                        game_type=checkout_data.get('game_type', 'friendly'),
-                        scoring_format=checkout_data.get('scoring_format', '11'),
-                        points_per_game=checkout_data.get('points_per_game') or 11,
-                        games_to_win=checkout_data.get('games_to_win') or 2,
-                        win_by_two=checkout_data.get('win_by_two') if checkout_data.get('win_by_two') is not None else True,
-                        # Match participants from user selection during reservation
-                        team1_player2_id=checkout_data.get('team1_player2_id'),
-                        team2_player1_id=checkout_data.get('team2_player1_id'),
-                        team2_player2_id=checkout_data.get('team2_player2_id'),
-                        team1_name=checkout_data.get('team1_name', ''),
-                        team2_name=checkout_data.get('team2_name', ''),
-                        guest_players_data=checkout_data.get('guest_players_data'),
-                    )
-                    
-                    equipment_fee = 0
-                    for eq_id in checkout_data.get('equipment_ids', []):
-                        try:
-                            equipment_item = Equipment.objects.get(id=eq_id, is_active=True)
-                            if equipment_item.quantity_available > 0:
-                                ReservationEquipment.objects.create(
-                                    reservation=reservation,
-                                    equipment=equipment_item,
-                                    quantity=1,
-                                    rental_fee=equipment_item.rental_price
-                                )
-                                equipment_fee += float(equipment_item.rental_price)
-                                equipment_item.quantity_available -= 1
-                                equipment_item.save()
-                        except Equipment.DoesNotExist:
-                            pass
-                    
-                    reservation.equipment_fee = equipment_fee
-                    reservation.total_amount = reservation.calculate_total()
-                    reservation.save()
-                    
-                    # Send invitations to selected registered users
-                    _send_match_invitations(reservation, checkout_data, request.user)
-                    
-                    transaction_id = str(uuid.uuid4())[:8].upper()
-                    payment = Payment.objects.create(
-                        reservation=reservation,
-                        amount=reservation.total_amount,
-                        status='paid',
-                        method='card',
-                        transaction_id=transaction_id,
-                    )
-                    
-                    PaymentLog.objects.create(
-                        payment=payment,
-                        action='Card Payment Processed',
-                        details=f'Transaction ID: {transaction_id}',
-                        performed_by=request.user
-                    )
-                    
-                    Notification.objects.create(
-                        user=request.user,
-                        message=f"Payment successful for reservation #{reservation.id}. Your reservation is confirmed!"
-                    )
-                    
-                    send_payment_confirmed_email(request.user, payment)
-                    send_payment_receipt_email(request.user, payment)
-
-                    request.session.pop('checkout_data', None)
-
-                    messages.success(request, 'Payment successful! Your reservation is confirmed.')
-                    return redirect('reservation_detail', reservation_id=reservation.id)
-                
-            except Exception as e:
-                messages.error(request, f'An error occurred while processing your payment. Please try again. Error: {str(e)}')
+            except SlotUnavailable:
+                messages.error(request, 'Sorry, this time slot was just booked by another user. Please start a new reservation.')
+                request.session.pop('checkout_data', None)
+                return redirect('reservation_create')
+            except Exception:
+                messages.error(request, 'An error occurred while processing your payment. Please try again.')
                 return _render_checkout()
         
         else:
@@ -759,34 +696,25 @@ def payment_checkout_view(request, reservation_id):
                 messages.success(request, 'Please proceed to the counter to complete your cash payment.')
                 return redirect('payment_status', payment_id=payment.id)
             
-        elif method == 'card':
-            # Generate transaction ID for card payment
-            payment.transaction_id = str(uuid.uuid4())[:8].upper()
-            payment.status = 'paid'
-            payment.save()
-            
-            PaymentLog.objects.create(
-                payment=payment,
-                action='Card Payment Processed',
-                details=f'Transaction ID: {payment.transaction_id}',
-                performed_by=request.user
+        elif method in ('stripe', 'card'):
+            # Card payments always go through Stripe Checkout. The reservation is
+            # confirmed by the signed webhook, never by the client asserting
+            # success. (The old branch fabricated a paid Payment here.)
+            payment.method = 'card'
+            payment.save(update_fields=['method'])
+            success_url = request.build_absolute_uri(
+                reverse('payment_status', args=[payment.id])
+            ) + '?stripe_session_id={CHECKOUT_SESSION_ID}'
+            cancel_url = request.build_absolute_uri(
+                reverse('payment_checkout', args=[reservation.id])
             )
-            
-            # Confirm the reservation
-            reservation.status = 'confirmed'
-            reservation.save()
-            
-            Notification.objects.create(
-                user=request.user,
-                message=f"Payment successful for reservation #{reservation.id}. Your reservation is confirmed!"
-            )
-            
-            # Send payment confirmation and receipt emails
-            send_payment_confirmed_email(request.user, payment)
-            send_payment_receipt_email(request.user, payment)
-            
-            messages.success(request, 'Payment successful! Your reservation is confirmed.')
-            return redirect('reservation_detail', reservation_id=reservation.id)
+            session = create_checkout_session(payment, success_url, cancel_url)
+            if session:
+                payment.stripe_checkout_session_id = session.get('id')
+                payment.save(update_fields=['stripe_checkout_session_id'])
+                return redirect(session.url)
+            messages.error(request, 'Unable to process card payment right now. Please try another method.')
+            return redirect('payment_checkout', reservation_id=reservation.id)
     else:
         gcash_form = GCashPaymentForm(instance=payment) if payment else GCashPaymentForm()
         cash_form = CashPaymentForm(instance=payment) if payment else CashPaymentForm()
