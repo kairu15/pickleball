@@ -16,7 +16,7 @@ guard until the project moves to PostgreSQL (see AUDIT.md §6), where a
 ``daterange`` exclusion constraint can additionally back this up in the database.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.db import transaction
 from django.db.models import F
@@ -231,3 +231,64 @@ def release_slot_and_notify_waitlist(reservation):
         reservation.court, reservation.date,
         reservation.start_time, reservation.end_time,
     )
+
+
+def expire_stale_pending_reservations(older_than_minutes=30, now=None):
+    """Cancel unpaid reservations that have held their slot for too long.
+
+    A booking is created as ``pending`` at checkout and only becomes
+    ``confirmed`` once paid. If the user abandons cash/online payment the slot
+    would otherwise be held forever, so anything still pending after
+    ``older_than_minutes`` is cancelled, its equipment returned to stock, its
+    payment marked failed, and the freed slot offered to the waitlist.
+
+    Returns the list of expired reservation ids. Safe to run repeatedly; each
+    reservation is locked so a concurrent payment is never clobbered.
+    """
+    cutoff = (now or timezone.now()) - timedelta(minutes=older_than_minutes)
+    candidates = Reservation.objects.filter(
+        status='pending', created_at__lt=cutoff,
+    ).values_list('id', flat=True)
+
+    expired_ids = []
+    for reservation_id in list(candidates):
+        with transaction.atomic():
+            reservation = (
+                Reservation.objects.select_for_update()
+                .select_related('court')
+                .get(pk=reservation_id)
+            )
+            # Re-check under the lock: it may have been paid or cancelled since.
+            if reservation.status != 'pending':
+                continue
+
+            payment = _get_payment(reservation)
+            if payment is not None and payment.status == 'paid':
+                continue
+
+            # Return any reserved equipment to stock.
+            for rental in reservation.rented_equipment.select_related('equipment'):
+                Equipment.objects.filter(pk=rental.equipment_id).update(
+                    quantity_available=F('quantity_available') + rental.quantity,
+                )
+
+            reservation.status = 'cancelled'
+            reservation.save(update_fields=['status'])
+
+            if payment is not None:
+                payment.status = 'failed'
+                payment.payment_notes = 'Cancelled: unpaid hold expired'
+                payment.save(update_fields=['status', 'payment_notes'])
+
+        release_slot_and_notify_waitlist(reservation)
+        expired_ids.append(reservation.id)
+
+    return expired_ids
+
+
+def _get_payment(reservation):
+    """Return the reservation's payment or None without raising."""
+    try:
+        return reservation.payment
+    except Exception:
+        return None

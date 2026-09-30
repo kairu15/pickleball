@@ -399,3 +399,53 @@ CACHES = {
 # being persisted to the DB for durability.
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db' if USE_REDIS_CACHE else 'django.contrib.sessions.backends.db'
 SESSION_CACHE_ALIAS = 'sessions' if USE_REDIS_CACHE else ''
+
+
+# ========== BACKGROUND JOBS (Celery) ==========
+# Celery is optional: the app boots without it (see picklesphere/__init__.py).
+# In DEBUG tasks run eagerly so no broker is required for development/tests.
+REDIS_URL = config('REDIS_URL', default='redis://127.0.0.1:6379/0')
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default=REDIS_URL)
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default=REDIS_URL)
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_ALWAYS_EAGER = config('CELERY_TASK_ALWAYS_EAGER', default=DEBUG, cast=bool)
+CELERY_TASK_EAGER_PROPAGATES = True
+CELERY_BEAT_SCHEDULE = {
+    # Cancel unpaid holds so abandoned checkouts stop blocking courts.
+    'expire-unpaid-reservations': {
+        'task': 'reservations.expire_unpaid_reservations',
+        'schedule': 300.0,  # every 5 minutes
+        'kwargs': {'minutes': 30},
+    },
+    # Remind users roughly 24h before their booking.
+    'send-reservation-reminders': {
+        'task': 'notifications.send_reservation_reminders',
+        'schedule': 3600.0,  # hourly
+        'kwargs': {'hours': 24},
+    },
+}
+
+
+# ========== WEBSOCKET CHANNEL LAYER ==========
+# Use Redis so live scoring / notifications work across Daphne workers in
+# production. Falls back to the in-memory layer (defined above) when disabled
+# or when channels_redis is not installed, which keeps dev and tests broker-free.
+CHANNEL_LAYER_BACKEND = config(
+    'CHANNEL_LAYER_BACKEND', default='memory' if DEBUG else 'redis'
+).strip().lower()
+if CHANNEL_LAYER_BACKEND == 'redis':
+    try:
+        import channels_redis  # noqa: F401
+
+        CHANNEL_LAYERS = {
+            'default': {
+                'BACKEND': 'channels_redis.core.RedisChannelLayer',
+                'CONFIG': {'hosts': [REDIS_URL]},
+            },
+        }
+    except ImportError:
+        # Keep the in-memory layer defined earlier.
+        pass
