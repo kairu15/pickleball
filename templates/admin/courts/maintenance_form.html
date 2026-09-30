@@ -1,0 +1,131 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}{% if edit_mode %}Edit{% else %}Schedule{% endif %} Maintenance{% endblock %}
+{% block page_title %}{% if edit_mode %}Edit Maintenance / Closure{% else %}Schedule Maintenance / Closure{% endif %}{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        {% if user.is_super_admin %}
+            <li class="breadcrumb-item"><a href="{% url 'super_admin_analytics' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        {% else %}
+            <li class="breadcrumb-item"><a href="{% url 'staff_dashboard' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        {% endif %}
+        <li class="breadcrumb-item"><a href="{% url 'admin_maintenance_list' %}">Maintenance</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{% if edit_mode %}Edit{% else %}Schedule{% endif %}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="admin-card">
+    <div class="admin-card-header bg-gradient-light">
+        <h5 class="admin-card-title">
+            <i class="fas fa-tools text-warning"></i>
+            {% if edit_mode %}Update Maintenance Window{% else %}New Maintenance Window / Closure{% endif %}
+        </h5>
+        <a href="{% url 'admin_maintenance_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back
+        </a>
+    </div>
+    <div class="admin-card-body">
+        {% if not edit_mode %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            Saving a block automatically <strong>cancels any overlapping reservations</strong>,
+            returns their equipment, and notifies the affected members.
+            Slots covered by the block become unavailable for new bookings immediately.
+        </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                {% for error in form.non_field_errors %}
+                    <div>{{ error }}</div>
+                {% endfor %}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endif %}
+
+            <div class="admin-form-section">
+                <h6 class="admin-form-section-title">
+                    <i class="fas fa-info-circle text-primary"></i>
+                    Block Details
+                </h6>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.court.id_for_label }}" class="admin-form-label">
+                            Court <span class="text-danger">*</span>
+                        </label>
+                        {{ form.court }}
+                        {% for error in form.court.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.block_type.id_for_label }}" class="admin-form-label">
+                            Type <span class="text-danger">*</span>
+                        </label>
+                        {{ form.block_type }}
+                        {% for error in form.block_type.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-12">
+                        <label for="{{ form.reason.id_for_label }}" class="admin-form-label">Reason</label>
+                        {{ form.reason }}
+                        <div class="form-text text-muted small">Shown to members on the court page, e.g. "Resurfacing the playing surface".</div>
+                        {% for error in form.reason.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.start_datetime.id_for_label }}" class="admin-form-label">
+                            Starts <span class="text-danger">*</span>
+                        </label>
+                        {{ form.start_datetime }}
+                        {% for error in form.start_datetime.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.end_datetime.id_for_label }}" class="admin-form-label">
+                            Ends <span class="text-danger">*</span>
+                        </label>
+                        {{ form.end_datetime }}
+                        {% for error in form.end_datetime.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center pt-4 border-top">
+                <a href="{% url 'admin_maintenance_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    {% if edit_mode %}
+                        <i class="fas fa-save me-2"></i>Save Changes
+                    {% else %}
+                        <i class="fas fa-tools me-2"></i>Schedule Block
+                    {% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('input:not([type="checkbox"]), select, textarea').forEach(function(input) {
+    input.classList.add('form-control', 'admin-form-control');
+});
+document.querySelectorAll('select').forEach(function(select) {
+    select.classList.add('form-select');
+});
+</script>
+{% endblock %}

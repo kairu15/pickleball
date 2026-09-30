@@ -1,0 +1,106 @@
+{% extends 'base/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}Maintenance & Closures{% endblock %}
+{% block page_title %}Maintenance & Closures{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        {% if user.is_super_admin %}
+            <li class="breadcrumb-item"><a href="{% url 'super_admin_analytics' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        {% else %}
+            <li class="breadcrumb-item"><a href="{% url 'staff_dashboard' %}"><i class="fas fa-home me-1"></i>Home</a></li>
+        {% endif %}
+        <li class="breadcrumb-item active" aria-current="page">Maintenance</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+{% include 'components/filter_bar_start.html' %}
+            <div class="col-md-4">
+                <label class="filter-label"><i class="fas fa-filter me-1 text-primary"></i>Show</label>
+                <select name="status" class="filter-select" onchange="this.form.submit()">
+                    <option value="upcoming" {% if status_filter == 'upcoming' %}selected{% endif %}>Upcoming / Active</option>
+                    <option value="past" {% if status_filter == 'past' %}selected{% endif %}>Past</option>
+                    <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All</option>
+                </select>
+            </div>
+            <div class="col-md-8">
+                <div class="filter-btn-row">
+                    <a href="{% url 'admin_maintenance_create' %}" class="btn btn-success w-100">
+                        <i class="fas fa-tools me-1"></i>Schedule Maintenance / Closure
+                    </a>
+                </div>
+            </div>
+{% include 'components/filter_bar_end.html' %}
+
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">
+            <i class="fas fa-tools text-warning"></i>
+            Scheduled Maintenance & Closures
+        </h5>
+        <span class="badge bg-warning text-dark">{{ blocks|length }} listed</span>
+    </div>
+    <div class="card-body p-0">
+        {% if blocks %}
+        <div class="admin-table-container">
+            <table class="table admin-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Court</th>
+                        <th>Type</th>
+                        <th>Reason</th>
+                        <th>Starts</th>
+                        <th>Ends</th>
+                        <th>Created By</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for block in blocks %}
+                    <tr>
+                        <td data-label="Court">
+                            <span class="fw-semibold">{{ block.court.name }}</span>
+                            <div class="text-muted small">{{ block.court.site.name }}</div>
+                        </td>
+                        <td data-label="Type">
+                            {% if block.block_type == 'maintenance' %}
+                            <span class="badge bg-warning text-dark"><i class="fas fa-tools me-1"></i>Maintenance</span>
+                            {% else %}
+                            <span class="badge bg-danger"><i class="fas fa-ban me-1"></i>Closure</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Reason">{{ block.reason|default:"—" }}</td>
+                        <td data-label="Starts">{{ block.start_datetime|date:"M d, Y g:i A" }}</td>
+                        <td data-label="Ends">{{ block.end_datetime|date:"M d, Y g:i A" }}</td>
+                        <td data-label="Created By">{% if block.created_by %}{{ block.created_by.get_full_name|default:block.created_by.username }}{% else %}—{% endif %}</td>
+                        <td data-label="Actions">
+                            <div class="action-buttons justify-content-end">
+                                <a href="{% url 'admin_maintenance_edit' block.id %}" class="action-btn edit" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form method="post" action="{% url 'admin_maintenance_delete' block.id %}" class="d-inline" data-confirm-message="Delete this maintenance block? Blocked slots will become bookable again.">
+                                    {% csrf_token %}
+                                    <button type="submit" class="action-btn delete" title="Delete" onclick="event.preventDefault(); customConfirm(this.closest('form').dataset.confirmMessage, () => { this.closest('form').submit(); })">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="fas fa-tools fa-3x mb-3"></i>
+            <p class="mb-0">No maintenance blocks scheduled.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -151,6 +151,15 @@ def reservation_create_view(request):
             end_time = form.cleaned_data['end_time']
             
             # Re-verify slot availability on the server
+            from reservations.services import maintenance_blocks_overlapping
+            if maintenance_blocks_overlapping(court, date, start_time, end_time).exists():
+                messages.error(request, 'This court is unavailable for the selected time slot (maintenance or closure). Please select a different slot.')
+                equipment_list = Equipment.objects.filter(quantity_available__gt=0, is_active=True)
+                return render(request, 'user/reservations/reservation_create.html', {
+                    'form': form,
+                    'equipment_list': equipment_list
+                })
+
             overlapping = Reservation.objects.filter(
                 court=court,
                 date=date,
@@ -1300,6 +1309,14 @@ def verify_slot_api(request):
     slot_datetime = timezone.make_aware(datetime.combine(date, start))
     if slot_datetime < timezone.now():
         return JsonResponse({'available': False, 'message': 'This time slot has already passed.'})
+
+    # Check for maintenance blocks / closures
+    from reservations.services import maintenance_blocks_overlapping
+    if maintenance_blocks_overlapping(court, date, start, end).exists():
+        return JsonResponse({
+            'available': False,
+            'message': 'This court is unavailable for the selected time slot (maintenance or closure).'
+        })
 
     # Check for overlapping reservations
     overlapping = Reservation.objects.filter(

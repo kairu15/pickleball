@@ -22,7 +22,7 @@ from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
 
-from courts.models import Court
+from courts.models import Court, CourtMaintenanceBlock
 from equipment.models import Equipment
 
 from .models import Reservation, ReservationEquipment, WaitlistEntry
@@ -36,12 +36,42 @@ class WaitlistError(Exception):
     """Raised when a waitlist action is not valid for the current slot state."""
 
 
+def _booking_window(date, start_time, end_time):
+    """Return the aware ``(start, end)`` datetimes of a same-day booking.
+
+    All bookings are same-day, so comparing aware datetimes against the
+    block windows in the project timezone is a faithful overlap test.
+    """
+    tz = timezone.get_current_timezone()
+    return (
+        timezone.make_aware(datetime.combine(date, start_time), tz),
+        timezone.make_aware(datetime.combine(date, end_time), tz),
+    )
+
+
+def maintenance_blocks_overlapping(court, date, start_time, end_time):
+    """Return maintenance/closure blocks overlapping the booking window."""
+    slot_start, slot_end = _booking_window(date, start_time, end_time)
+    return CourtMaintenanceBlock.objects.filter(
+        court=court,
+        start_datetime__lt=slot_end,
+        end_datetime__gt=slot_start,
+    )
+
+
 def ensure_slot_available(court, date, start_time, end_time, exclude_reservation_id=None):
-    """Raise :class:`SlotUnavailable` if the slot overlaps an active booking.
+    """Raise :class:`SlotUnavailable` if the slot overlaps an active booking
+    or falls inside a maintenance window / closure.
 
     Two time ranges overlap when ``start < other_end`` and ``end > other_start``;
     ranges that merely touch (09:00-11:00 vs 11:00-13:00) do not.
     """
+    if maintenance_blocks_overlapping(court, date, start_time, end_time).exists():
+        raise SlotUnavailable(
+            f'{court.name} is unavailable for the selected time slot '
+            f'(maintenance or closure).'
+        )
+
     active = Reservation.objects.filter(
         court=court,
         date=date,
@@ -191,6 +221,12 @@ def join_waitlist(*, user, court, date, start_time, end_time,
     if slot_datetime < timezone.now():
         raise WaitlistError('This time slot has already passed.')
 
+    if maintenance_blocks_overlapping(court, date, start_time, end_time).exists():
+        raise WaitlistError(
+            'This court is unavailable for the selected time slot '
+            '(maintenance or closure).'
+        )
+
     if ensure_slot_free(court, date, start_time, end_time):
         raise WaitlistError('This slot is still available; book it directly.')
 
@@ -284,6 +320,94 @@ def expire_stale_pending_reservations(older_than_minutes=30, now=None):
         expired_ids.append(reservation.id)
 
     return expired_ids
+
+
+def cancel_reservations_for_block(block):
+    """Cancel reservations overlapped by a new maintenance block / closure.
+
+    For each affected pending/confirmed reservation: return its equipment to
+    stock, mark it cancelled, fail any non-paid payment, and notify the owner
+    (in-app notification in the ``maintenance`` category plus a cancellation
+    email). Waitlist entries for the covered slots are cancelled too so users
+    are not notified about slots that no longer exist.
+
+    Returns the list of cancelled reservation ids. Safe to call again: an
+    already-cancelled reservation is skipped, so re-saving a block (which
+    re-runs the overlap scan) never double-cancels or re-notifies.
+    """
+    from notifications.email_utils import send_reservation_cancelled_email
+    from notifications.models import Notification
+
+    affected = (
+        Reservation.objects
+        .select_related('court', 'user')
+        .filter(
+            court=block.court,
+            status__in=['pending', 'confirmed'],
+            # Reservations on any calendar day the block touches; the precise
+            # time overlap is re-checked below against each reservation window.
+            date__gte=block.start_datetime.date(),
+            date__lte=block.end_datetime.date(),
+        )
+    )
+
+    cancelled_ids = []
+    for reservation in affected:
+        res_start, res_end = _booking_window(
+            reservation.date, reservation.start_time, reservation.end_time,
+        )
+        if not (res_start < block.end_datetime and res_end > block.start_datetime):
+            continue
+
+        with transaction.atomic():
+            locked = Reservation.objects.select_for_update().get(pk=reservation.pk)
+            if locked.status not in ('pending', 'confirmed'):
+                continue
+
+            for rental in locked.rented_equipment.select_related('equipment'):
+                Equipment.objects.filter(pk=rental.equipment_id).update(
+                    quantity_available=F('quantity_available') + rental.quantity,
+                )
+
+            locked.status = 'cancelled'
+            locked.save(update_fields=['status'])
+
+            payment = _get_payment(locked)
+            if payment is not None and payment.status != 'paid':
+                payment.status = 'failed'
+                payment.payment_notes = 'Cancelled: court closed for maintenance'
+                payment.save(update_fields=['status', 'payment_notes'])
+
+            Notification.objects.create(
+                user=locked.user,
+                title='Court unavailable - reservation cancelled',
+                message=(
+                    f'Your reservation for {locked.court.name} on '
+                    f'{locked.date.strftime("%b %d, %Y")} '
+                    f'({locked.start_time.strftime("%I:%M %p")} - '
+                    f'{locked.end_time.strftime("%I:%M %p")}) was cancelled '
+                    f'because the court is {block.get_block_type_display().lower()} '
+                    f'during that time.'
+                ),
+                notification_type='warning',
+                category='maintenance',
+                priority='high',
+                action_url=f'/user/reservations/{locked.id}/',
+                action_text='View Details',
+            )
+
+        send_reservation_cancelled_email(locked.user, locked)
+        cancelled_ids.append(locked.id)
+
+    # Waitlist entries for the blocked court whose day overlaps the block.
+    WaitlistEntry.objects.filter(
+        court=block.court,
+        status__in=['waiting', 'notified'],
+        date__gte=block.start_datetime.date(),
+        date__lte=block.end_datetime.date(),
+    ).update(status='cancelled')
+
+    return cancelled_ids
 
 
 def _get_payment(reservation):

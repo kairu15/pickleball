@@ -143,6 +143,29 @@
         </div>
         {% endif %}
 
+        <!-- Upcoming Maintenance / Closures -->
+        {% if upcoming_blocks %}
+        <div class="card border-0 shadow-sm mb-4" style="border-radius: 14px;">
+            <div class="card-body p-4">
+                <h5 class="fw-bold mb-3"><i class="fas fa-tools me-2 text-warning"></i>Upcoming Maintenance & Closures</h5>
+                {% for block in upcoming_blocks %}
+                <div class="d-flex align-items-start p-3 mb-2 rounded-3 {% if block.block_type == 'maintenance' %}bg-warning bg-opacity-10{% else %}bg-danger bg-opacity-10{% endif %}">
+                    <i class="fas {% if block.block_type == 'maintenance' %}fa-tools text-warning{% else %}fa-ban text-danger{% endif %} me-3 mt-1"></i>
+                    <div>
+                        <div class="fw-semibold">
+                            {{ block.get_block_type_display }}
+                            <span class="text-muted fw-normal">— {{ block.reason|default:"Schedule adjustment" }}</span>
+                        </div>
+                        <div class="small text-muted">
+                            {{ block.start_datetime|date:"D, M d, Y g:i A" }} – {{ block.end_datetime|date:"D, M d, Y g:i A" }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            </div>
+        {% endif %}
+
         <!-- Location Map -->
         {% if court.organization and court.organization.latitude and court.organization.longitude %}
         <div class="card border-0 shadow-sm mb-4 overflow-hidden" style="border-radius: 14px;">
