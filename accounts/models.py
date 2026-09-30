@@ -1,6 +1,8 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+from utils.validators import IMAGE_UPLOAD_VALIDATORS
+
 
 class User(AbstractUser):
     ROLE_CHOICES = (
@@ -33,8 +35,14 @@ class User(AbstractUser):
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, blank=True, null=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
-    profile_picture = models.ImageField(upload_to='profiles/', blank=True, null=True)
-    cover_photo = models.ImageField(upload_to='covers/', blank=True, null=True)
+    profile_picture = models.ImageField(
+        upload_to='profiles/', blank=True, null=True,
+        validators=IMAGE_UPLOAD_VALIDATORS,
+    )
+    cover_photo = models.ImageField(
+        upload_to='covers/', blank=True, null=True,
+        validators=IMAGE_UPLOAD_VALIDATORS,
+    )
     bio = models.TextField(blank=True, null=True, max_length=500, help_text='Tell others about yourself')
     birth_date = models.DateField(blank=True, null=True)
     skill_level = models.CharField(max_length=20, choices=SKILL_LEVEL_CHOICES, blank=True, null=True)

@@ -43,21 +43,30 @@ if not DEBUG and SECRET_KEY == 'django-insecure-ci-dev-key-not-for-production' a
         'the insecure default key.'
     )
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
-# Add ngrok domains for external tunneling
-ALLOWED_HOSTS += ['*.ngrok-free.app', '*.ngrok-free.dev', '*.ngrok.io', '*.ngrok.app']
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+    if host.strip()
+]
 
-CSRF_TRUSTED_ORIGINS = [
-    'http://127.0.0.1:8001',
-    'http://localhost:8001',
-]
-# Add ngrok HTTPS origins for CSRF protection
-CSRF_TRUSTED_ORIGINS += [
-    'https://*.ngrok-free.app',
-    'https://*.ngrok-free.dev',
-    'https://*.ngrok.io',
-    'https://*.ngrok.app',
-]
+# Derive the CSRF origin from SITE_URL so production deployments do not need a
+# hard-coded host/port here. SITE_URL is also read again later in this module.
+SITE_URL = config('SITE_URL', default='http://localhost:8000').rstrip('/')
+CSRF_TRUSTED_ORIGINS = [SITE_URL]
+
+if DEBUG:
+    # Development conveniences only. Production must list its own hosts in the
+    # ALLOWED_HOSTS env var rather than inheriting wildcard ngrok patterns.
+    ALLOWED_HOSTS += [
+        'localhost', '127.0.0.1', '0.0.0.0',
+        '*.ngrok-free.app', '*.ngrok-free.dev', '*.ngrok.io', '*.ngrok.app',
+    ]
+    CSRF_TRUSTED_ORIGINS += [
+        'http://127.0.0.1:8000', 'http://localhost:8000',
+        'http://127.0.0.1:8001', 'http://localhost:8001',
+        'https://*.ngrok-free.app', 'https://*.ngrok-free.dev',
+        'https://*.ngrok.io', 'https://*.ngrok.app',
+    ]
 
 # Application definition
 

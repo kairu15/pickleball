@@ -1,6 +1,8 @@
 from django.db import models
 from reservations.models import Reservation
 
+from utils.validators import IMAGE_UPLOAD_VALIDATORS
+
 
 class PaymentSettings(models.Model):
     """
@@ -47,6 +49,7 @@ class PaymentSettings(models.Model):
     # QR Code
     qr_code = models.ImageField(
         upload_to='payments/qr/', blank=True, null=True,
+        validators=IMAGE_UPLOAD_VALIDATORS,
         help_text='QR code image for payments (shown on the checkout page)'
     )
 
@@ -135,7 +138,10 @@ class Payment(models.Model):
     
     # For GCash payments (also used as generic proof of payment for any method)
     gcash_reference = models.CharField(max_length=100, blank=True, null=True)
-    gcash_proof_image = models.ImageField(upload_to='payments/gcash/', blank=True, null=True)
+    gcash_proof_image = models.ImageField(
+        upload_to='payments/gcash/', blank=True, null=True,
+        validators=IMAGE_UPLOAD_VALIDATORS,
+    )
 
     # For cash payments
     cash_received_by = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='cash_payments_received')
