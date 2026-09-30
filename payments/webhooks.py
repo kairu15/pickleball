@@ -8,22 +8,39 @@ Processes incoming Stripe webhook events:
 - charge.refunded
 
 All webhook endpoints are CSRF-exempt and require signature verification.
+
+Idempotency: Stripe delivers events at least once and retries non-2xx
+responses. Every event is recorded in ``StripeWebhookEvent`` before it is
+handled. A duplicate delivery is acknowledged (200) without re-processing. If a
+handler fails, the marker is removed and a 500 is returned so Stripe retries.
 """
 
-import json
 import logging
-from django.http import HttpResponse, JsonResponse
+
+from django.db import transaction
+from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
+from .models import StripeWebhookEvent
 from .stripe_integration import (
     process_stripe_webhook,
     handle_checkout_session_completed,
     handle_payment_intent_succeeded,
     handle_payment_intent_payment_failed,
+    handle_charge_refunded,
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _event_id(event):
+    """Extract the Stripe event id from a dict or a Stripe object."""
+    if event is None:
+        return None
+    if isinstance(event, dict):
+        return event.get('id')
+    return getattr(event, 'id', None)
 
 
 @csrf_exempt
@@ -32,85 +49,111 @@ def stripe_webhook(request):
     """
     Main Stripe webhook endpoint.
     Receives events from Stripe and processes them accordingly.
-    
+
     URL: /payments/stripe/webhook/
     """
     payload = request.body
     sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
-    
+
     if not sig_header:
         logger.warning("Stripe webhook received without signature header")
         return HttpResponse(status=400)
-    
+
     event_type, event = process_stripe_webhook(payload, sig_header)
-    
+
     if event_type is None:
         logger.error("Stripe webhook processing failed - invalid signature or payload")
         return HttpResponse(status=400)
-    
-    logger.info(f"Stripe webhook received: {event_type}")
-    
-    # Handle specific event types
+
+    event_id = _event_id(event)
+
+    # Record the event before handling it. ``created`` is False on a duplicate
+    # delivery, in which case we acknowledge without re-processing.
+    if event_id:
+        try:
+            _, created = StripeWebhookEvent.objects.get_or_create(
+                event_id=event_id,
+                defaults={'event_type': event_type},
+            )
+        except Exception:
+            logger.exception("Failed to record Stripe webhook event %s", event_id)
+            return HttpResponse(status=500)
+        if not created:
+            logger.info("Stripe webhook %s already processed; skipping", event_id)
+            return HttpResponse(status=200)
+    else:
+        created = None
+        logger.warning("Stripe webhook %s has no event id; cannot deduplicate", event_type)
+
     try:
-        if event_type == 'checkout.session.completed':
-            session = event['data']['object']
-            success = handle_checkout_session_completed(session)
-            if success:
-                logger.info(f"Checkout session {session.get('id')} processed successfully")
-                return HttpResponse(status=200)
-            else:
-                logger.error(f"Failed to process checkout session {session.get('id')}")
-                return HttpResponse(status=500)
-        
-        elif event_type == 'payment_intent.succeeded':
-            intent = event['data']['object']
-            success = handle_payment_intent_succeeded(intent)
-            if success:
-                logger.info(f"Payment intent {intent.get('id')} processed successfully")
-                return HttpResponse(status=200)
-            else:
-                logger.error(f"Failed to process payment intent {intent.get('id')}")
-                return HttpResponse(status=500)
-        
-        elif event_type == 'payment_intent.payment_failed':
-            intent = event['data']['object']
-            handle_payment_intent_payment_failed(intent)
-            return HttpResponse(status=200)  # Acknowledge even if processing fails
-        
-        elif event_type == 'charge.refunded':
-            charge = event['data']['object']
-            logger.info(f"Charge refunded: {charge.get('id')}")
-            # Update local refund status if needed
-            return HttpResponse(status=200)
-        
-        elif event_type == 'checkout.session.expired':
-            session = event['data']['object']
-            logger.info(f"Checkout session expired: {session.get('id')}")
-            # Clean up: mark the associated payment as failed and cancel the pending reservation
-            payment_id = session.get('metadata', {}).get('payment_id')
-            if payment_id:
-                from .models import Payment
-                try:
-                    payment = Payment.objects.select_related('reservation').get(id=payment_id)
-                    if payment.status == 'pending':
-                        payment.status = 'failed'
-                        payment.payment_notes = 'Stripe checkout session expired'
-                        payment.save()
-                        # Cancel the pending reservation too
-                        reservation = payment.reservation
-                        if reservation.status == 'pending':
-                            reservation.status = 'cancelled'
-                            reservation.save()
-                        logger.info(f"Payment #{payment.id} and reservation #{reservation.id} cancelled due to expired Stripe session")
-                except Payment.DoesNotExist:
-                    logger.warning(f"Payment #{payment_id} not found for expired session cleanup")
-            return HttpResponse(status=200)
-        
-        else:
-            # Unhandled event types - acknowledge receipt
-            logger.debug(f"Unhandled Stripe webhook event type: {event_type}")
-            return HttpResponse(status=200)
-            
-    except Exception as e:
-        logger.error(f"Error processing Stripe webhook event {event_type}: {e}", exc_info=True)
+        success = _dispatch(event_type, event)
+        if not success:
+            raise RuntimeError(f'Handler for {event_type} reported failure')
+        logger.info("Stripe webhook %s processed", event_type)
+        return HttpResponse(status=200)
+
+    except Exception as exc:
+        # Remove the marker so Stripe's retry can process this event again.
+        if event_id and created:
+            StripeWebhookEvent.objects.filter(event_id=event_id).delete()
+        logger.error(
+            "Error processing Stripe webhook event %s: %s", event_type, exc,
+            exc_info=True,
+        )
         return HttpResponse(status=500)
+
+
+@transaction.atomic
+def _dispatch(event_type, event):
+    """Run the handler for a verified, non-duplicate event.
+
+    Returns True when the event was handled (or intentionally ignored).
+    Unhandled event types are acknowledged so Stripe stops retrying them.
+    """
+    if event_type == 'checkout.session.completed':
+        return handle_checkout_session_completed(event['data']['object'])
+
+    if event_type == 'payment_intent.succeeded':
+        return handle_payment_intent_succeeded(event['data']['object'])
+
+    if event_type == 'payment_intent.payment_failed':
+        handle_payment_intent_payment_failed(event['data']['object'])
+        return True
+
+    if event_type == 'charge.refunded':
+        return handle_charge_refunded(event['data']['object'])
+
+    if event_type == 'checkout.session.expired':
+        return _handle_checkout_session_expired(event['data']['object'])
+
+    logger.debug("Unhandled Stripe webhook event type: %s", event_type)
+    return True
+
+
+def _handle_checkout_session_expired(session):
+    """Fail the pending payment and release the reservation it held."""
+    from .models import Payment
+
+    payment_id = (session.get('metadata') or {}).get('payment_id')
+    if not payment_id:
+        return True
+
+    try:
+        payment = Payment.objects.select_related('reservation').get(id=payment_id)
+    except Payment.DoesNotExist:
+        logger.warning("Payment #%s not found for expired session cleanup", payment_id)
+        return True
+
+    if payment.status == 'pending':
+        payment.status = 'failed'
+        payment.payment_notes = 'Stripe checkout session expired'
+        payment.save(update_fields=['status', 'payment_notes'])
+        reservation = payment.reservation
+        if reservation.status == 'pending':
+            reservation.status = 'cancelled'
+            reservation.save(update_fields=['status'])
+        logger.info(
+            "Payment #%s and reservation #%s cancelled due to expired Stripe session",
+            payment.id, reservation.id,
+        )
+    return True
