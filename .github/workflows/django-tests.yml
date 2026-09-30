@@ -1,13 +1,19 @@
-name: Django Tests
+name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
+
+env:
+  # CI-only key: settings.py refuses to boot with DEBUG=False without a real key.
+  SECRET_KEY: ci-secret-key-not-for-production-0000000000000000
+  CI: "true"
 
 jobs:
   test:
+    name: Test & migrations
     runs-on: ubuntu-latest
 
     strategy:
@@ -22,7 +28,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip'
+          cache: pip
 
       - name: Install system dependencies
         run: |
@@ -32,17 +38,64 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt 2>&1 || \
-          pip install Django>=4.2,<5.0 Pillow>=10.0.0 python-decouple>=3.8 2>&1
+          pip install -r requirements.txt -r requirements-dev.txt
 
-      - name: Run migrations
-        run: |
-          python manage.py migrate --verbosity=0 2>&1
+      - name: Django system checks
+        run: python manage.py check
 
-      - name: Run role access control tests
-        run: |
-          python manage.py test accounts.tests --verbosity=2
+      - name: Fail if model changes have no migration
+        run: python manage.py makemigrations --check --dry-run
 
-      - name: Run Django system checks
+      - name: Run the full test suite with coverage
         run: |
-          python manage.py check --deploy 2>&1 || echo "Deploy check warnings are acceptable in CI"
+          pytest \
+            --cov=reservations --cov=payments --cov=scoring \
+            --cov-report=term-missing \
+            --cov-report=xml
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml
+          if-no-files-found: ignore
+
+      - name: Dependency vulnerability audit
+        # Non-blocking for now: report known CVEs without failing the build.
+        continue-on-error: true
+        run: pip-audit -r requirements.txt
+
+  lint:
+    name: Lint & types
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install lint tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      # NOTE: these steps are non-blocking while the existing code is brought
+      # up to the configured lint/type baseline. Remove `continue-on-error`
+      # once `pre-commit run --all-files` is clean locally.
+      - name: ruff
+        continue-on-error: true
+        run: ruff check .
+
+      - name: black --check
+        continue-on-error: true
+        run: black --check .
+
+      - name: mypy
+        continue-on-error: true
+        run: mypy . --config-file=pyproject.toml
