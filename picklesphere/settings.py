@@ -145,13 +145,37 @@ ASGI_APPLICATION = 'picklesphere.asgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
+#
+# SQLite by default (zero-config development). Set DB_ENGINE in the
+# environment to switch to PostgreSQL or MySQL without code changes:
+#   DB_ENGINE=django.db.backends.postgresql  (+ DB_NAME/DB_USER/DB_PASSWORD/DB_HOST/DB_PORT)
+# PostgreSQL is recommended for production - see AUDIT.md §6: an
+# EXCLUDE USING gist constraint can then back the booking-overlap checks
+# at the database level, and select_for_update() contention drops.
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+_DB_ENGINE = config('DB_ENGINE', default='django.db.backends.sqlite3')
+
+if _DB_ENGINE == 'django.db.backends.sqlite3':
+    DATABASES = {
+        'default': {
+            'ENGINE': _DB_ENGINE,
+            'NAME': config('DB_NAME', default=str(BASE_DIR / 'db.sqlite3')),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': _DB_ENGINE,
+            'NAME': config('DB_NAME', default='picklesphere'),
+            'USER': config('DB_USER', default='picklesphere'),
+            'PASSWORD': config('DB_PASSWORD', default=''),
+            'HOST': config('DB_HOST', default='localhost'),
+            'PORT': config('DB_PORT', default='5432'),
+            # Persist connections across requests; a fresh connection per
+            # request was the main source of booking-race latency.
+            'CONN_MAX_AGE': config('CONN_MAX_AGE', default=60, cast=int),
+        }
+    }
 
 
 # Password validation
